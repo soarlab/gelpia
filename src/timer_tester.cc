@@ -12,7 +12,7 @@ typedef std::function<interval<double>(box_t)> function_t;
 typedef std::function<double (box_t, double, double, int, function_t)> solver_t;
 
 
-std::vector<solver_t> SOLVERS = {serial_solver};
+std::vector<solver_t> SOLVERS{serial_solver, par1_solver};
 std::vector<function_t> FUNCTIONS = {F0, F1};
 double EPSILON = 0.00000000001;
 int SOLVER_ITERS = 1000;

@@ -5,6 +5,9 @@
 #include <iostream>
 #include <functional>
 #include <cassert>
+#include <mutex>
+#include <thread>
+#include <atomic>
 
 using boost::numeric::interval;
 using std::vector;
@@ -14,35 +17,26 @@ typedef interval<double> interval_t;
 typedef vector<interval_t>  box_t;
 typedef unsigned int uint;
 
+/* Number of threads */
+int num_threads = 2;
+
+/* Global queue */
+std::queue<box_t> Q;
+/* Global queue guard */
+std::mutex Q_l;
+
+std::atomic<double> f_best_low{-INFINITY};
+std::atomic<double> f_best_high{INFINITY};
+std::atomic<int> iter_count{0};
+std::atomic<bool> not_done{true};
+
 /*
  * Divides given interval box along longest dimension
  * Arguments:
  *          X - given box
  * Return: vector of two new boxes
  */
-vector<box_t> split_box(const box_t & X)
-{
-  // Split the box along longest dimension
-  double longest = 0.0;
-  int longest_idx = 0;
-  for(uint i = 0; i < X.size(); ++i) {
-    if(width(X[i]) > longest) {
-      longest = width(X[i]);
-      longest_idx = i;
-    }
-  }
-
-  // create two copies
-  box_t X1(X);
-  box_t X2(X);
-
-  // split boxes along longest dimension
-  double m = median(X[longest_idx]);
-  X1[longest_idx].assign(X1[longest_idx].lower(), m);
-  X2[longest_idx].assign(m, X2[longest_idx].upper());
-
-  return vector<box_t>{X1, X2};
-}
+vector<box_t> split_box(const box_t & X);
 
 
 
@@ -53,17 +47,7 @@ vector<box_t> split_box(const box_t & X)
  *          X - given box
  * Return: box whose dimentions align to the single midpoint
  */
-box_t midpoint(const box_t & X)
-{
-  box_t result(X.size());
-
-  for(uint i = 0; i < X.size(); ++i) {
-    double m = median(X[i]);
-    result[i].assign(m,m);
-  }
-
-  return result;
-}
+box_t midpoint(const box_t & X);
 
 
 
@@ -74,20 +58,28 @@ box_t midpoint(const box_t & X)
  *          X - given box
  * Return: width scalar
  */
-double width(const box_t & X)
+double width(const box_t & X);
+
+void par1_worker(double x_tol, double f_tol, int max_iter,
+		 const function<interval<double>(const box_t &)> & F);
+
+double par1_solver(const box_t & X_0, double x_tol, double f_tol, int max_iter,
+		   const function<interval<double>(const box_t &)> & F)
 {
-  double longest = 0.0;
-  for(uint i = 0; i < X.size(); ++i) {
-    if(width(X[i]) > longest) {
-      longest = width(X[i]);
-    }
+  // Initialize queue
+  Q.push(X_0);
+  // Create threads
+  std::vector<std::thread> threads;
+  for(int i = 0; i < num_threads; ++i) {
+    threads.push_back(std::thread(par1_worker, x_tol, f_tol, max_iter, std::ref(F)));
   }
-
-  return longest;
+    
+  // Wait
+  for(auto & t : threads)
+    t.join();
+  // Return result
+  return f_best_high;
 }
-
-
-
 
 /*
  * Global maximum solver
@@ -98,20 +90,20 @@ double width(const box_t & X)
  *          max_iter - maximum iterations
  *          F        - function to fin maximum of
  */
-double serial_solver(const box_t & X_0, double x_tol, double f_tol, int max_iter,
-		     const function<interval<double>(const box_t &)> & F)
+void par1_worker(double x_tol, double f_tol, int max_iter,
+		   const function<interval<double>(const box_t &)> & F)
 {
-  std::queue<box_t> Q;
-  Q.push(X_0);
-
-  double f_best_low = -INFINITY, f_best_high = -INFINITY;
-  int iter_count = 0;
-
-  while(!Q.empty()) {
+  while(true) {
     // grab new work item
-    box_t X = Q.front();
-    Q.pop();
+    box_t X;
 
+    {
+      std::lock_guard<std::mutex> m{Q_l};
+      if(Q.empty())
+	return;
+      X = Q.front();
+      Q.pop();
+    }
 
     interval<double> f = F(X);
     double w = width(X);
@@ -132,9 +124,11 @@ double serial_solver(const box_t & X_0, double x_tol, double f_tol, int max_iter
 	if(e.lower() > f_best_low) {
 	  f_best_low = e.lower();
 	}
-	Q.push(Xi);
+	{
+	  std::lock_guard<std::mutex> lock{Q_l};
+	  Q.push(Xi);
+	}
       }
     }
   }
-  return f_best_high;
 }
