@@ -4,6 +4,7 @@
 #include <chrono>
 #include <functional>
 #include <vector>
+#include <iostream>
 
 using namespace std::chrono;
 using namespace boost::numeric;
@@ -16,7 +17,7 @@ std::vector<solver_t> SOLVERS{serial_solver, par1_solver};
 std::vector<function_t> FUNCTIONS = {F0, F1};
 double EPSILON = 0.00000000001;
 int SOLVER_ITERS = 1000;
-
+int ITERS = 100;
 /*
  * Times multiple executions of the given solver on the given function and 
  *     returns the average execution time
@@ -48,27 +49,33 @@ duration <double, std::nano> time_solver(solver_t solver,
 
 
 
-bool test_solver(solver_t solver ,function_t function, double solution,
+double test_solver(solver_t solver ,function_t function, double solution,
 		 double epsilon, int solver_iters)
 {
   box_t X_0{interval<double>(-5,5), interval<double>(-5,5)};
   auto actual = solver(X_0, EPSILON, EPSILON, solver_iters, function);
-  return (std::abs(actual - solution) < epsilon);
+  return (std::abs(actual - solution));
 }
 
 
 
 int main(int argc, char* argv[])
 {
-  bool correct;
+  std::cout << "Function \t sequential_correct \t sequential_time \t par1_correct \t par1_time" << std::endl;
   for (auto function : FUNCTIONS) {
+    std::cout << "function  \t ";
     box_t X_0{interval<double>(-5,5), interval<double>(-5,5)};
     auto solution = serial_solver(X_0, EPSILON, EPSILON, SOLVER_ITERS, function);
     for (auto solver : SOLVERS) {
-      correct = test_solver(solver, function, solution, EPSILON,
+      auto correct = test_solver(solver, function, solution, EPSILON,
 			    SOLVER_ITERS);
+      auto execution_time = time_solver(solver, function, ITERS, SOLVER_ITERS);
+      std::cout << correct;
+      std::cout << " \t\t\t ";
+      std::cout << execution_time.count(); 
+      std::cout << " \t\t ";
     }
+    std::cout << std::endl;
   }
-  return correct;
 }
 
