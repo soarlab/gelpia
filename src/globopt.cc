@@ -25,7 +25,8 @@ vector<box_t> split_box(const box_t & X)
 // Split the box along longest dimension
   double longest = 0.0;
   int longest_idx = 0;
-  for(uint i = 0; i < X.size(); ++i) {
+  uint i;
+  for(i = 0; i < X.size(); ++i) {
     if(width(X[i]) > longest) {
       longest = width(X[i]);
       longest_idx = i;
@@ -162,7 +163,7 @@ double bb(const box_t & X_0, double x_tol, double f_tol, int max_iter,
 
     if(f.upper() < f_best_low 
       || w <= x_tol 
-      || fw <= f_tol 
+      || fw <= f_tol
       || iter_count > max_iter) {
 // found new maximum
       f_best_high = fmax(f_best_high, f.upper());
