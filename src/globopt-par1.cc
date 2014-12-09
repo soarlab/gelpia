@@ -25,10 +25,10 @@ std::queue<box_t> Q;
 /* Global queue guard */
 std::mutex Q_l;
 
-std::atomic<double> f_best_low{-INFINITY};
-std::atomic<double> f_best_high{INFINITY};
-std::atomic<int> iter_count{0};
-std::atomic<bool> not_done{true};
+std::atomic<double> f_best_low;
+std::atomic<double> f_best_high;
+std::atomic<int> iter_count;
+std::atomic<int> current_working;
 
 /*
  * Divides given interval box along longest dimension
@@ -66,6 +66,11 @@ void par1_worker(double x_tol, double f_tol, int max_iter,
 double par1_solver(const box_t & X_0, double x_tol, double f_tol, int max_iter,
 		   const function<interval<double>(const box_t &)> & F)
 {
+  f_best_low = -INFINITY;
+  f_best_high = -INFINITY;
+  iter_count = 0;
+  current_working = 0;
+
   // Initialize queue
   Q.push(X_0);
   // Create threads
@@ -99,10 +104,12 @@ void par1_worker(double x_tol, double f_tol, int max_iter,
 
     {
       std::lock_guard<std::mutex> m{Q_l};
-      if(Q.empty())
+      if(Q.empty()) {
 	return;
+      }
       X = Q.front();
       Q.pop();
+      current_working++;
     }
 
     interval<double> f = F(X);
@@ -114,8 +121,7 @@ void par1_worker(double x_tol, double f_tol, int max_iter,
        || fw <= f_tol
        || iter_count > max_iter) {
       // found new maximum
-      f_best_high = fmax(f_best_high, f.upper());
-      continue;
+      f_best_high = fmax(f_best_high.load(), f.upper());
     } else {
       iter_count++;
       vector<box_t> X_12 = split_box(X);
@@ -130,5 +136,6 @@ void par1_worker(double x_tol, double f_tol, int max_iter,
 	}
       }
     }
+    current_working--;
   }
 }
