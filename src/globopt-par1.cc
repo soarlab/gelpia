@@ -8,6 +8,7 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include "helpers.h"
 
 using boost::numeric::interval;
 using std::vector;
@@ -29,36 +30,6 @@ std::atomic<double> f_best_low;
 std::atomic<double> f_best_high;
 std::atomic<int> iter_count;
 std::atomic<int> current_working;
-
-/*
- * Divides given interval box along longest dimension
- * Arguments:
- *          X - given box
- * Return: vector of two new boxes
- */
-vector<box_t> split_box(const box_t & X);
-
-
-
-
-/*
- * Finds midpoint of given box
- * Arguments:
- *          X - given box
- * Return: box whose dimentions align to the single midpoint
- */
-box_t midpoint(const box_t & X);
-
-
-
-
-/*
- * Caluclates the width of the box, the length of the longest dimension
- * Arguments:
- *          X - given box
- * Return: width scalar
- */
-double width(const box_t & X);
 
 void par1_worker(double x_tol, double f_tol, int max_iter,
 		 const function<interval<double>(const box_t &)> & F);
