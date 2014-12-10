@@ -105,8 +105,14 @@ void par1_worker(double x_tol, double f_tol, int max_iter,
     {
       std::lock_guard<std::mutex> m{Q_l};
       if(Q.empty()) {
-	return;
+	if(!current_working.load()) {
+	  return;
+	}
+	else {
+	  continue;
+	}
       }
+
       X = Q.front();
       Q.pop();
       current_working++;
