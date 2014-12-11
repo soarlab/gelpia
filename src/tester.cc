@@ -49,29 +49,13 @@ duration <double, std::nano> time_solver(solver_t solver,
 
 
 
-double test_solver(solver_t solver ,function_t function, double solution,
-		 double epsilon, int solver_iters)
-{
-  box_t X_0{interval<double>(-5,5), interval<double>(-5,5)};
-  auto actual = solver(X_0, EPSILON, EPSILON, solver_iters, function);
-  return (std::abs(actual - solution));
-}
-
-
-
 int main(int argc, char* argv[])
 {
-  std::cout << "Function \t sequential_correct \t sequential_time \t par1_correct \t par1_time" << std::endl;
+  std::cout << "Function \t sequential_time \t par1_time \t par1_lockfree_time" << std::endl;
   for (auto function : FUNCTIONS) {
     std::cout << "function  \t ";
-    box_t X_0{interval<double>(-5,5), interval<double>(-5,5)};
-    auto solution = serial_solver(X_0, EPSILON, EPSILON, SOLVER_ITERS, function);
     for (auto solver : SOLVERS) {
-      auto correct = test_solver(solver, function, solution, EPSILON,
-			    SOLVER_ITERS);
       auto execution_time = time_solver(solver, function, ITERS, SOLVER_ITERS);
-      std::cout << correct;
-      std::cout << " \t\t\t ";
       std::cout << execution_time.count(); 
       std::cout << " \t\t ";
     }
