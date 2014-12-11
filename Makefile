@@ -1,5 +1,5 @@
 
-all: bin/timer_tester
+all: bin/timer bin/tester
 
 bin/helpers.o: src/helpers.cc src/helpers.h
 	$(CXX) $(CXXFLAGS) -c -std=c++11 -Wall -Werror src/helpers.cc -o bin/helpers.o
@@ -13,14 +13,18 @@ bin/globopt-par1.o: src/globopt-par1.cc src/helpers.h
 bin/functions.o: src/functions.cc
 	$(CXX) $(CXXFLAGS) -c -std=c++11 -Wall -Werror src/functions.cc -o bin/functions.o
 
-bin/timer_tester: src/timer_tester.cc bin/globopt.o bin/functions.o bin/globopt-par1.o bin/helpers.o
-	$(CXX) $(CXXFLAGS) -std=c++11 -Wall -Werror src/timer_tester.cc bin/globopt.o bin/globopt-par1.o bin/functions.o bin/helpers.o -o bin/timer_tester
+bin/timer: src/timer.cc bin/globopt.o bin/functions.o bin/globopt-par1.o bin/helpers.o
+	$(CXX) $(CXXFLAGS) -std=c++11 -Wall -Werror src/timer.cc bin/globopt.o bin/globopt-par1.o bin/functions.o bin/helpers.o -o bin/timer
+
+bin/tester: src/tester.cc bin/globopt.o bin/functions.o bin/globopt-par1.o bin/helpers.o
+	$(CXX) $(CXXFLAGS) -std=c++11 -Wall -Werror src/tester.cc bin/globopt.o bin/globopt-par1.o bin/functions.o bin/helpers.o -o bin/tester
 
 .PHONY: clean
 clean:
-	$(RM) -f bin/globopt
-	$(RM) -f bin/globopt.o
-	$(RM) -f bin/globopt-par1.o
-	$(RM) -f bin/helpers.o
-	$(RM) -f bin/functions.o
-	$(RM) -f bin/timer_tester
+	$(RM) bin/globopt
+	$(RM) bin/globopt.o
+	$(RM) bin/globopt-par1.o
+	$(RM) bin/helpers.o
+	$(RM) bin/functions.o
+	$(RM) bin/timer
+	$(RM) bin/tester
