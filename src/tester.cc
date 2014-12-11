@@ -44,25 +44,25 @@ double test_solver(solver_p_t solver ,function_p_t function, double solution,
 int main(int argc, char* argv[])
 {
   num_threads = 2;
-  std::cout << "Function \t TrueSolution \t sequ \t par1 \t sol2" << std::endl;
+  std::cout << "Function, TrueSolution, sequ, par1, sol2" << std::endl;
   for (int f_index=0; f_index< FUNCTIONS.size(); f_index++) {
-    std::cout << "function  \t ";
+    std::cout << "function , ";
     box_t X_0{interval<double>(-100000,100000), interval<double>(-100000,100000)};
     auto solution = serial_solver(X_0, EPSILON, EPSILON, SOLVER_ITERS, FUNCTIONS[f_index]);
     std::cout << solution;
-    std::cout << " \t ";
+    std::cout << ", ";
     for (auto solver : SOLVERS) {
       auto correct = test_solver(solver, FUNCTIONS[f_index], solution, EPSILON,
 			    SOLVER_ITERS);
       std::cout << correct;
-      std::cout << " \t ";
+      std::cout << ", ";
     }
 
     for (auto solver : P_SOLVERS) {
       auto correct = test_solver(solver, P_FUNCTIONS[f_index], solution, EPSILON,
 			    SOLVER_ITERS);
       std::cout << correct;
-      std::cout << " \t ";
+      std::cout << ", ";
     }
     std::cout << std::endl;
   }

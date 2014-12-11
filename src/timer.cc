@@ -82,20 +82,20 @@ duration <double, std::nano> time_solver(solver_p_t solver,
 int main(int argc, char* argv[])
 {
   num_threads = 2;
-  std::cout << "Function \t sequential_time \t par1_time \t sol2_time" << std::endl;
+  std::cout << "Function, sequential_time, par1_time, sol2_time" << std::endl;
   for (int f_index=0; f_index< FUNCTIONS.size(); f_index++) {
-    std::cout << "function  \t ";
+    std::cout << "function , ";
 
     for (auto solver : SOLVERS) {
       auto execution_time = time_solver(solver, FUNCTIONS[f_index], ITERS, SOLVER_ITERS);
       std::cout << execution_time.count(); 
-      std::cout << " \t\t ";
+      std::cout << ", ";
     }
 
     for (auto solver : P_SOLVERS) {
       auto execution_time = time_solver(solver, P_FUNCTIONS[f_index], ITERS, SOLVER_ITERS);
       std::cout << execution_time.count(); 
-      std::cout << " \t\t ";
+      std::cout << ", ";
     }
     std::cout << std::endl;
   }
