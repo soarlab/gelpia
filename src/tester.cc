@@ -18,7 +18,7 @@ typedef std::function<double (box_t, double, double, int, function_p_t)> solver_
 
 std::vector<solver_t> SOLVERS{serial_solver, par1_solver, sol2_solver};
 std::vector<solver_p_t> P_SOLVERS{};
-std::vector<function_t> FUNCTIONS = {F0, F1};
+std::vector<function_t> FUNCTIONS = {F0, F1, F2, F3, F4};
 std::vector<function_p_t> P_FUNCTIONS = {F0_p, F1_p};
 double EPSILON = 0.00000000001;
 int SOLVER_ITERS = 10000;
