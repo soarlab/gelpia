@@ -23,6 +23,7 @@ typedef unsigned int uint;
 /* Global queue */
 static vector<double> f_best_highs;
 static vector<std::queue<box_t>> Qs;
+static std::atomic<int> iter_count;
 
 void sol2_worker(double x_tol, double f_tol, int max_iter,
 		 const function<interval<double>(const box_t &)> & F, int i);
@@ -54,7 +55,7 @@ double sol2_solver(const box_t & X_0, double x_tol, double f_tol, int max_iter,
 {
   Qs = std::vector<std::queue<box_t>>(num_threads);
   f_best_highs = std::vector<double>(num_threads);
-  
+  iter_count = -int(num_threads*max_iter*.1);
   vector<box_t> parts = multi_split(X_0);
 
   // Create threads
@@ -94,7 +95,6 @@ void sol2_worker(double x_tol, double f_tol, int max_iter,
 		 const function<interval<double>(const box_t &)> & F,
 		 int my_index)
 {
-  int iter_count = 0;
   double f_best_low = -INFINITY;
   while(!Qs[my_index].empty()) {
     // grab new work item
