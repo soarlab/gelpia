@@ -35,6 +35,8 @@ box_t midpoint(const box_t & X);
  */
 double width(const box_t & X);
 
+
+double width(const interval_t* X, size_t size);
 /*
  * Divides given interval box along longest dimension
  * Arguments:

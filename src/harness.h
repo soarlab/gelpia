@@ -5,8 +5,6 @@
 typedef boost::numeric::interval<double> interval_t;
 typedef std::vector<interval_t>  box_t;
 
-
-
 double solve(const box_t & X_0,
 	     double x_tol,
 	     double f_tol,

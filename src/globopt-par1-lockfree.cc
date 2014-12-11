@@ -31,25 +31,12 @@ std::atomic<double> f_best_high;
 std::atomic<int> iter_count;
 std::atomic<int> current_working;
 
-interval_t* midpoint_p(const interval_t* const X, size_t size);
 
-
-interval<double> F0_p(const interval_t* const X)
-{
-  return -(pow(X[0],2)*12.0 
-    - pow(X[0],4)*6.3
-    + pow(X[0],6) 
-    + X[0]*X[1]*3.0
-    - pow(X[1],2)*12.0
-    + pow(X[1],4)*12.0);
-}
-
-
-void par1_worker(double x_tol, double f_tol, int max_iter,
-		 const function<interval<double>(const box_t &)> & F);
+void par1_lockfree_worker(double x_tol, double f_tol, int max_iter, size_t,
+			  const function<interval<double>(const interval_t*, size_t)> & F);
 
 double par1_lockfree_solver(const box_t & X_0, double x_tol, double f_tol, int max_iter,
-		   const function<interval<double>(const box_t &)> & F)
+			    const function<interval<double>(const interval_t*, size_t)> & F)
 {
   f_best_low = -INFINITY;
   f_best_high = -INFINITY;
@@ -62,10 +49,19 @@ double par1_lockfree_solver(const box_t & X_0, double x_tol, double f_tol, int m
     X_0_p[i] = X_0[i];
   }
   Q.push(X_0_p);
+
+  size_t size = X_0.size();
   // Create threads
   std::vector<std::thread> threads;
   for(int i = 0; i < num_threads; ++i) {
-    threads.push_back(std::thread(par1_worker, x_tol, f_tol, max_iter, std::ref(F)));
+    threads.push_back(
+		      std::thread(
+				  par1_lockfree_worker,
+				  x_tol,
+				  f_tol,
+				  max_iter,
+				  size,
+				  std::ref(F)));
   }
     
   // Wait
@@ -73,18 +69,6 @@ double par1_lockfree_solver(const box_t & X_0, double x_tol, double f_tol, int m
     t.join();
   // Return result
   return f_best_high;
-}
-
-double width_p(const interval_t* const X, int size)
-{
-  double longest = 0.0;
-  for(uint i = 0; i < size; ++i) {
-    if(width(X[i]) > longest) {
-      longest = width(X[i]);
-    }
-  }
-
-  return longest;
 }
 
 /*
@@ -96,8 +80,8 @@ double width_p(const interval_t* const X, int size)
  *          max_iter - maximum iterations
  *          F        - function to fin maximum of
  */
-void par1_worker(double x_tol, double f_tol, int max_iter,
-		   const function<interval<double>(const box_t &)> & F)
+void par1_lockfree_worker(double x_tol, double f_tol, int max_iter, size_t size,
+			  const function<interval<double>(const interval_t*, size_t)> & F)
 {
   while(true) {
     // grab new work item
@@ -118,8 +102,8 @@ void par1_worker(double x_tol, double f_tol, int max_iter,
       current_working++;
     }
 
-    interval<double> f = F0_p(X);
-    double w = width_p(X, 2);
+    interval<double> f = F(X, size);
+    double w = width(X, size);
     double fw = width(f);
 
     if(f.upper() < f_best_low
@@ -130,9 +114,9 @@ void par1_worker(double x_tol, double f_tol, int max_iter,
       f_best_high = fmax(f_best_high.load(), f.upper());
     } else {
       iter_count++;
-      vector<interval_t*> X_12 = split_box_p(X,2);
+      vector<interval_t*> X_12 = split_box(X,size);
       for(auto Xi : X_12) {
-	interval<double> e = F0_p(midpoint_p(Xi,2));
+	interval<double> e = F(midpoint(Xi,size), size);
 	if(e.lower() > f_best_low) {
 	  f_best_low = e.lower();
 	}

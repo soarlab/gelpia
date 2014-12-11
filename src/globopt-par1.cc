@@ -19,17 +19,17 @@ typedef vector<interval_t>  box_t;
 typedef unsigned int uint;
 
 /* Number of threads */
-int num_threads = 2;
+extern int num_threads;
 
 /* Global queue */
-std::queue<box_t> Q;
+static std::queue<box_t> Q;
 /* Global queue guard */
-std::mutex Q_l;
+static std::mutex Q_l;
 
-std::atomic<double> f_best_low;
-std::atomic<double> f_best_high;
-std::atomic<int> iter_count;
-std::atomic<int> current_working;
+static std::atomic<double> f_best_low;
+static std::atomic<double> f_best_high;
+static std::atomic<int> iter_count;
+static std::atomic<int> current_working;
 
 void par1_worker(double x_tol, double f_tol, int max_iter,
 		 const function<interval<double>(const box_t &)> & F);

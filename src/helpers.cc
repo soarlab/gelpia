@@ -127,3 +127,21 @@ interval_t* midpoint(const interval_t* const X, size_t size)
   }
   return result;
 }
+
+/*
+ * Caluclates the width of the box, the length of the longest dimension
+ * Arguments:
+ *          X - given box
+ * Return: width scalar
+ */
+double width(const interval_t* X, size_t size)
+{
+  double longest = 0.0;
+  for(uint i = 0; i < size; ++i) {
+    if(width(X[i]) > longest) {
+      longest = width(X[i]);
+    }
+  }
+
+  return longest;
+}
