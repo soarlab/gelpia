@@ -1,7 +1,7 @@
 #include <boost/numeric/interval.hpp>
 #include <vector>
 #include <functional>
-
+#include "harness.h"
 using boost::numeric::interval;
 using std::vector;
 using std::function;

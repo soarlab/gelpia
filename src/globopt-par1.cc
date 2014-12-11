@@ -9,6 +9,7 @@
 #include <thread>
 #include <atomic>
 #include "helpers.h"
+#include "harness.h"
 
 using boost::numeric::interval;
 using std::vector;
@@ -17,9 +18,6 @@ using std::function;
 typedef interval<double> interval_t;
 typedef vector<interval_t>  box_t;
 typedef unsigned int uint;
-
-/* Number of threads */
-extern int num_threads;
 
 /* Global queue */
 static std::queue<box_t> Q;
