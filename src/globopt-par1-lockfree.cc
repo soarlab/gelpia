@@ -48,7 +48,7 @@ interval<double> F0_p(const interval_t* const X)
 void par1_worker(double x_tol, double f_tol, int max_iter,
 		 const function<interval<double>(const box_t &)> & F);
 
-double par1_solver(const box_t & X_0, double x_tol, double f_tol, int max_iter,
+double par1_lockfree_solver(const box_t & X_0, double x_tol, double f_tol, int max_iter,
 		   const function<interval<double>(const box_t &)> & F)
 {
   f_best_low = -INFINITY;
