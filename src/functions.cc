@@ -163,8 +163,10 @@ interval_t dih_x(const box_t& X)
   const interval_t& x1 = X[0], &x2 = X[1], &x3 = X[2], &x4 = X[3], &x5 = X[4], &x6 = X[5];
   interval_t d_x4 = delta_x4(X);
   interval_t d = delta_x(X);
+
+  auto pi = boost::numeric::interval_lib::pi<interval_t>();
   
-  return boost::numeric::interval_lib::pi<interval_t>()/interval_t(2) + atn2({sqrt(interval_t(4)*x1*d), -d_x4});
+  return pi/interval_t(2) + atn2({sqrt(interval_t(4)*x1*d), -d_x4});
 }
 
 interval_t dih_y(const box_t& Y)
@@ -198,7 +200,7 @@ interval_t opt3(const box_t& Y)
   return -(dih_y(Y) - 1.629 +
 	   (0.414*(y2 + y3 + y5 + y6 -8.0)) -
 	   (0.763*(y4 - 2.52)) -
-	   (0.3 * (y1 - 2.0)));
+	   (0.315 * (y1 - 2.0)));
 }
 
 box_t opt3_int = {interval_t(2, 2.52), interval_t(2, 2.52), interval_t(2, 2.52),
