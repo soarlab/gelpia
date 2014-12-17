@@ -180,7 +180,7 @@ interval_t opt1(const box_t& Y)
   return -delta_y(Y);
 }
 
-box_t opt1_int(6,interval_t(2, 2.52));
+box_t opt1_int = {interval_t(2, 2.52), interval_t(2, 2.52), interval_t(2, 2.52), interval_t(2, 2.52), interval_t(2, 2.52), interval_t(2, 2.52)};
 
 interval_t opt2(const box_t& X)
 {
@@ -188,7 +188,7 @@ interval_t opt2(const box_t& X)
   return interval_t(2) - rad2_x(X);
 }
 
-box_t opt2_int{interval_t(2*2*1.3254*1.3254, 8), interval_t(2*2*1.3254*1.3254, 8),
+box_t opt2_int = {interval_t(2*2*1.3254*1.3254, 8), interval_t(2*2*1.3254*1.3254, 8),
     interval_t(4, 8), interval_t(4, 8), interval_t(4, 8), interval_t(4, 8)};
 
 interval_t opt3(const box_t& Y)
@@ -201,5 +201,5 @@ interval_t opt3(const box_t& Y)
 	   (0.3 * (y1 - 2.0)));
 }
 
-box_t opt3_int{interval_t(2, 2.52), interval_t(2, 2.52), interval_t(2, 2.52),
+box_t opt3_int = {interval_t(2, 2.52), interval_t(2, 2.52), interval_t(2, 2.52),
     interval_t(2.52, std::sqrt(8.0)), interval_t(2, 2.52), interval_t(2, 2.52)};
