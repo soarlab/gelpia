@@ -1,8 +1,3 @@
-#include <boost/numeric/interval.hpp>
-#include <vector>
-#include <functional>
-
-
 #include "optimizer_types.h"
 
 

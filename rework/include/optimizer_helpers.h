@@ -10,7 +10,7 @@
  *          X - given box
  * Return: vector of two new boxes
  */
-std::vector<box_t> split_box(const box_t & X);
+extern std::vector<box_t> split_box(const box_t & X);
 
 
 /*
@@ -19,7 +19,7 @@ std::vector<box_t> split_box(const box_t & X);
  *          X - given box
  * Return: box whose dimentions align to the single midpoint
  */
-box_t midpoint(const box_t & X);
+extern box_t midpoint(const box_t & X);
 
 
 /*
@@ -28,7 +28,7 @@ box_t midpoint(const box_t & X);
  *          X - given box
  * Return: width scalar
  */
-double width(const box_t & X);
+extern double width(const box_t & X);
 
 
 #endif
