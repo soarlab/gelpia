@@ -5,6 +5,26 @@
 #include "optimizer_types.h"
 
 /*
+ * Creates a box with given dimentions, must be paired with a call to del_box
+ * Arguments:
+ *     mins - array of doubles for minimum values along intervals
+ *     maxs - array of doubles for maximum values along intervals
+ *     len  - number of dimentions
+ * Return: new box
+ */
+extern box_t new_box(double mins[], double maxs[], int len);
+
+
+/*
+ * Deletes given box and frees associated memory
+ * Arguments:
+ *     box - given box
+ * Returns: Nothing
+ */
+extern void del_box(box_t box);
+
+
+/*
  * Divides given interval box along longest dimension
  * Arguments:
  *          X - given box

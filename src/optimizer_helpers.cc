@@ -8,6 +8,41 @@ using std::function;
 
 
 /*
+ * Creates a box with given dimentions
+ * Arguments:
+ *     mins - array of doubles for minimum values along intervals
+ *     maxs - array of doubles for maximum values along intervals
+ *     len  - number of dimentions
+ * Return: new box
+ */
+box_t new_box(double mins[], double maxs[], int len)
+{
+  // Commented out so the build still compiles
+  /*
+  box_t retval; // = box_t of size len. Mark, how do I do this?
+  for (int i=0; i<len; i++) {
+    retval.add_dimention(interval<double>(mins[i], maxs[i])); // Mark How would I do this?
+  }
+
+  return retval;
+  */
+  return box_t {interval_t(-10, 10), interval_t(-10, 10)};
+}
+
+
+
+/*
+ * Deletes given box and frees associated memory
+ * Arguments:
+ *     box - given box
+ * Returns: Nothing
+ */
+extern void del_box(box_t box)
+{
+  //  free(box); // Mark How do I C++?
+}
+
+/*
  * Divides given interval box along longest dimension
  * Arguments:
  *          X - given box
