@@ -12,7 +12,7 @@
  *     len  - number of dimentions
  * Return: new box
  */
-extern box_t new_box(double mins[], double maxs[], int len);
+extern box_t new_box(double mins[], double maxs[], int length);
 
 
 /*
