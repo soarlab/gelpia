@@ -1,2 +1,2 @@
-
+// Trailer for generated functions
 }

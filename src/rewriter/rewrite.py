@@ -12,4 +12,4 @@ def rewrite(fun_name, fun_def):
         out.write(fun_def)
         out.write("\n}")
         
-    subprocess.call(["clang++", "-dynamiclib", "-DFUN_NAME="+fun_name, "-std=c++11", "-o", "lib" + fun_name + ".dylib", fun_name + ".cc"])
+    subprocess.call(["clang++", "-dynamiclib", "-DFUN_NAME="+fun_name, "-O3", "-std=c++11", "-o", "lib" + fun_name + ".dylib", fun_name + ".cc"])
