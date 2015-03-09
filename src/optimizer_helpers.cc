@@ -15,7 +15,7 @@ using std::function;
  *     len  - number of dimentions
  * Return: new box
  */
-box_t new_box(double mins[], double maxs[], int length)
+box_t new_box()
 {
   // Commented out so the build still compiles
   /*
@@ -23,7 +23,7 @@ box_t new_box(double mins[], double maxs[], int length)
   for (int i=0; i<length; i++) {
     retval.add_dimention(interval<double>(mins[i], maxs[i])); // Mark How would I do this?
   }
-
+  
   return retval;
   */
   return box_t {interval_t(-10, 10), interval_t(-10, 10)};

@@ -4,6 +4,22 @@
 
 #include "optimizer_types.h"
 
+extern box_t left(std::vector<box_t> X_12) { return X_12[0];}
+extern box_t right(std::vector<box_t> X_12) { return X_12[1];}
+extern double upper(interval_t X) {return X.upper();}
+extern double lower(interval_t X) {return X.lower();}
+extern double point(box_t X) {return X[0].upper();}
+
+extern interval_t func(box_t X){
+  assert(X.size()==2);
+ return -(pow(X[0],2)*12.0
+	  - pow(X[0],4)*6.3
+	  + pow(X[0],6)
+	  + X[0]*X[1]*3.0
+	  - pow(X[1],2)*12.0
+	  + pow(X[1],4)*12.0);
+}
+
 /*
  * Creates a box with given dimentions, must be paired with a call to del_box
  * Arguments:
@@ -12,7 +28,7 @@
  *     len  - number of dimentions
  * Return: new box
  */
-extern box_t new_box(double mins[], double maxs[], int length);
+extern box_t new_box();
 
 
 /*
