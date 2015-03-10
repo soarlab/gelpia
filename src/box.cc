@@ -1,8 +1,6 @@
 
 #include "box.h"
 
-extern box first(std::vector<box> in) { return in[0];}
-extern box second(std::vector<box> in) { return in[1];}
 
 box::box()
 {
@@ -12,10 +10,14 @@ box::box()
 
 box::box(const box &in)
 {
-  box::box(in.value);
+  value = box_t();
+  
+  for (interval_t item : in.value) {
+    value.emplace_back(interval_t(item.lower(), item.upper()));
+  }
 }
 
-
+#include <stdio.h>
 box::box(const box_t &in)
 {
   value = box_t();
@@ -35,7 +37,7 @@ int box::append(const std::string &low, const std::string &high)
 
 large_float box::width() const
 {
-  large_float_t largest(-1);
+  large_float_t largest(0.0);
 
   for (interval_t item : this->value) {
     if (largest < item.upper()-item.lower()) {
@@ -47,7 +49,7 @@ large_float box::width() const
 }
 
 
-std::vector<box> box::split() const
+int box::split_index() const
 {
   large_float_t longest(0.0);
   int longest_idx = 0;
@@ -59,16 +61,27 @@ std::vector<box> box::split() const
     }
   }
 
-  // create two copies
-  box X1(value);
-  box X2(value);
+  return longest_idx;
+}
 
-  // split boxes along longest dimension
-  large_float_t m = value[longest_idx].lower() + (value[longest_idx].upper() - value[longest_idx].lower())/2;
-  X1.value[longest_idx].assign(X1.value[longest_idx].lower(), m);
-  X2.value[longest_idx].assign(m, X2.value[longest_idx].upper());
-  
-  return std::vector<box>{X1, X2};
+
+box box::first(int index) const
+{
+  box left(value);
+
+  large_float_t m = value[index].lower() + (value[index].upper() - value[index].lower())/2;
+  left.value[index].assign(left.value[index].lower(), m);
+  return left;
+}
+
+
+box box::second(int index) const
+{
+  box right(value);
+
+  large_float_t m = value[index].lower() + (value[index].upper() - value[index].lower())/2;
+  right.value[index].assign(m, right.value[index].upper());
+  return right;
 }
 
 

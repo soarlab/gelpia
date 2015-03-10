@@ -18,15 +18,16 @@ class box {
   int append(const std::string &low, const std::string &high);
   
   large_float width() const;
-  std::vector<box> split() const;
+  int split_index() const;
   box midpoint() const;
   int size() const { return value.size(); }
   box_t get_value() const { return this->value; }
+
+  box first(int index) const;
+  box second(int index) const;
   
   ~box();
 };
 
-extern box first(std::vector<box> in); 
-extern box second(std::vector<box> in);
 
 #endif

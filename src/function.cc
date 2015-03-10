@@ -8,7 +8,6 @@ function(const box &arg)
 {
   const box_t X = arg.get_value();
 
-  printf("%lu\n", X.size());
   assert(X.size() == 6);
   const interval_t &x1 = X[0],
     &x2 = X[1],

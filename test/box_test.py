@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
 import box as B
 
-print("ACTUALLY PUT TESTS IN BOX_TEST.PY")
+
+a = B.box()
+for i in range(10):
+    a.append("-10", "10")
+    assert(a.size() == i+1)
+
+b = B.box(a)
+
+assert(a.size() == 10)
+assert(b.size() == a.size())

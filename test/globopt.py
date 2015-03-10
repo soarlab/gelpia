@@ -27,15 +27,15 @@ def globopt(X_0, x_tol, f_tol, func):
             if (f_best_high < f.upper()):
                 f_best_high = f.upper()
         else:
-            X12 = X.split()
+            index = X.split_index()
             
-            X1 = B.first(X12)
+            X1 = X.first(index)
             e = func(X1.midpoint())
             if (f_best_low < e.upper()):
                 f_best_low = e.upper()
             local_queue.put(X1)
                 
-            X2 = B.second(X12)
+            X2 = X.second(index)
             e = func(X2.midpoint())
             if (f_best_low < e.upper()):
                 f_best_low = e.upper()
@@ -46,11 +46,11 @@ def globopt(X_0, x_tol, f_tol, func):
 if __name__ == "__main__":
     X_0 = B.box()
     for i in range(6):
-        X_0.append("-100.0", "100.0")
+        X_0.append("-10.0", "10.0")
 
 
-    f_tol = LF.large_float(".0000001")
-    x_tol = LF.large_float(".0000001")
+    f_tol = LF.large_float(".001")
+    x_tol = LF.large_float(".001")
 
     func = F.function
 
