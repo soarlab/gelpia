@@ -17,18 +17,23 @@ class interval {
 		       static_cast<large_float_t>(high_string));
   }
   
-  interval(interval &in) {
+  interval(const interval &in) {
     value = interval_t(static_cast<large_float_t>(in.value.lower()),
 		       static_cast<large_float_t>(in.value.upper()));
   }
 
+  interval(const interval_t &in) {
+    value = in;
+  }
+  
   large_float width() {
     return large_float(value.upper() - value.lower());
   }
 
   large_float lower() const {return static_cast<large_float>(this->value.lower()); }
   large_float upper() const {return static_cast<large_float>(this->value.upper()); }
-    
+
+  interval_t get_value() const { return value; }
   ~interval(){;}
 };
 

@@ -7,7 +7,7 @@ CXXFLAGS += -std=c++11 -Wall -Werror -g -Iinclude
 
 
 
-all: bin/_large_float.so bin/_interval.so bin/_box.so
+all: bin/_large_float.so bin/_interval.so bin/_box.so bin/_function.so
 
 
 
@@ -51,6 +51,23 @@ obj/box.o: src/box.cc include/box.h
 bin/_box.so: obj/box.o obj/box_wrap.o
 	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/box_wrap.o obj/box.o -o bin/_box.so
 	ln -f interface/box.py bin/box.py
+
+
+
+
+interface/function_wrap.cc: include/box.h include/interval.h include/large_float.h interface/function.i
+	swig $(SWIG_F) interface/function.i
+
+obj/function_wrap.o: interface/function_wrap.cc
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/function_wrap.cc -o obj/function_wrap.o
+
+obj/function.o: src/function.cc include/function.h
+	$(CXX) $(CXXFLAGS)  -c src/function.cc -o obj/function.o
+
+bin/_function.so: obj/function.o obj/function_wrap.o obj/box.o
+	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/function_wrap.o obj/function.o obj/box.o -o bin/_function.so
+	ln -f interface/function.py bin/function.py
+
 
 
 
@@ -99,4 +116,15 @@ box_test: bin/box_test.py
 
 bin/box_test.py: test/box_test.py bin/_box.so
 	@ln -f test/box_test.py bin/box_test.py
+
+
+
+.PHONY: globopt
+globopt: bin/globopt.py
+	./bin/globopt.py
+
+bin/globopt.py: test/globopt.py bin/_box.so
+	@ln -f test/globopt.py bin/globopt.py
+
+
 

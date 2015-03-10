@@ -29,6 +29,8 @@ class large_float {
   bool operator== (const large_float &c)const {
     return (this->value == c.value);
   }
+
+  std::string to_string() { return this->value.str(); }
   
   ~large_float(){;}
 };

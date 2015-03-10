@@ -1,6 +1,9 @@
 
 #include "box.h"
 
+extern box first(std::vector<box> in) { return in[0];}
+extern box second(std::vector<box> in) { return in[1];}
+
 box::box()
 {
   value = box_t();
@@ -23,14 +26,14 @@ box::box(const box_t &in)
 }
 
 
-int box::append(const interval_t &in)
+int box::append(const std::string &low, const std::string &high)
 {
-  value.emplace_back(interval_t(in.lower(), in.upper()));
+  value.emplace_back(interval(low, high).get_value());
   return value.size();
 }
 
 
-large_float box::width()
+large_float box::width() const
 {
   large_float_t largest(-1);
 
@@ -44,7 +47,7 @@ large_float box::width()
 }
 
 
-std::vector<box> box::split()
+std::vector<box> box::split() const
 {
   large_float_t longest(0.0);
   int longest_idx = 0;
@@ -69,7 +72,7 @@ std::vector<box> box::split()
 }
 
 
-box box::midpoint()
+box box::midpoint() const
 {
   box result(value);
   
