@@ -1,38 +1,76 @@
-# directories used
-IDIR = include
-INTDIR = interface
-ODIR = obj
-BDIR = bin
-TDIR = test
-SDIR = src
+
+SWIG_F = -c++ -Wall -cppext cc -python -Iinclude
 
 # c++11 code, catch all warnings as errors
-CXXFLAGS += -std=c++11 -Wall -Werror -g -I$(IDIR)
+CXXFLAGS += -std=c++11 -Wall -Werror -g -Iinclude
 
-all: $(BDIR)/_optimizer_helpers.so
-
-$(BDIR)/_optimizer_helpers.so: $(ODIR)/optimizer_helpers.o $(ODIR)/optimizer_helpers_wrap.o
-	$(CXX) -bundle `python3-config --ldflags` $(ODIR)/optimizer_helpers.o $(ODIR)/optimizer_helpers_wrap.o -o $(BDIR)/_optimizer_helpers.so
-	mv $(INTDIR)/optimizer_helpers.py $(BDIR)
-
-$(ODIR)/optimizer_helpers.o: $(SDIR)/optimizer_helpers.cc $(INTDIR)/optimizer_helpers_wrap.cc
-	$(CXX) $(CXXFLAGS) -c $(SDIR)/optimizer_helpers.cc -o $(ODIR)/optimizer_helpers.o
-
-$(ODIR)/optimizer_helpers_wrap.o: $(SDIR)/optimizer_helpers.cc $(INTDIR)/optimizer_helpers_wrap.cc
-	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c $(INTDIR)/optimizer_helpers_wrap.cc -o $(ODIR)/optimizer_helpers_wrap.o
-
-$(INTDIR)/optimizer_helpers_wrap.cc: $(IDIR)/optimizer_types.h $(IDIR)/optimizer_helpers.h $(INTDIR)/optimizer_helpers.i
-	swig -c++ -Wall -cppext cc -python -I$(IDIR) $(INTDIR)/optimizer_helpers.i
+all: bin/_large_float.so bin/_interval.so
 
 
-.PHONY: test
-test: $(BDIR)/example_swig.py $(BDIR)/_optimizer_helpers.so
-	./$(BDIR)/example_swig.py
 
-$(BDIR)/example_swig.py: $(TDIR)/example_swig.py
-	ln -f $(TDIR)/example_swig.py $(BDIR)/example_swig.py
+interface/interval_wrap.cc: include/interval.h include/large_float.h interface/interval.i
+	swig $(SWIG_F) interface/interval.i
+
+obj/interval_wrap.o: interface/interval_wrap.cc
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/interval_wrap.cc -o obj/interval_wrap.o
+
+bin/_interval.so: obj/interval_wrap.o
+	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/interval_wrap.o -o bin/_interval.so
+	cp interface/interval.py bin
+
+
+
+
+interface/large_float_wrap.cc: include/large_float.h interface/large_float.i
+	swig $(SWIG_F) interface/large_float.i
+
+obj/large_float_wrap.o: interface/large_float_wrap.cc
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/large_float_wrap.cc -o obj/large_float_wrap.o
+
+bin/_large_float.so: obj/large_float_wrap.o
+	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/large_float_wrap.o -o bin/_large_float.so
+	cp interface/large_float.py bin
+
+
+
+
+
+
+
+
+
 
 .PHONY: clean
 clean:
-	rm -f $(ODIR)/*.o $(TDIR)/*.tester $(INTDIR)/*.py $(INTDIR)/*.cc
-	rm -rf $(BDIR)/*
+	$(RM) -r bin/*
+	$(RM) interface/*.py
+	$(RM) interface/*_wrap.cc
+	$(RM) obj/*
+
+
+
+
+
+.PHONY: test
+test: large_float_test interval_test
+
+
+
+
+
+.PHONY: large_float_test
+large_float_test: bin/large_float_test.py
+	./bin/large_float_test.py
+
+bin/large_float_test.py: test/large_float_test.py bin/_large_float.so
+	ln -f test/large_float_test.py bin/large_float_test.py
+
+
+
+.PHONY: interval_test
+interval_test: bin/interval_test.py
+	./bin/interval_test.py
+
+bin/interval_test.py: test/interval_test.py bin/_interval.so
+	ln -f test/interval_test.py bin/interval_test.py
+
