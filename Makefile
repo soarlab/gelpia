@@ -4,19 +4,11 @@ SWIG_F = -c++ -Wall -cppext cc -python -Iinclude
 # c++11 code, catch all warnings as errors
 CXXFLAGS += -std=c++11 -Wall -Werror -g -Iinclude
 
-all: bin/_large_float.so bin/_interval.so
 
 
 
-interface/interval_wrap.cc: include/interval.h include/large_float.h interface/interval.i
-	swig $(SWIG_F) interface/interval.i
+all: bin/_large_float.so bin/_interval.so bin/_box.so
 
-obj/interval_wrap.o: interface/interval_wrap.cc
-	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/interval_wrap.cc -o obj/interval_wrap.o
-
-bin/_interval.so: obj/interval_wrap.o
-	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/interval_wrap.o -o bin/_interval.so
-	cp interface/interval.py bin
 
 
 
@@ -29,11 +21,36 @@ obj/large_float_wrap.o: interface/large_float_wrap.cc
 
 bin/_large_float.so: obj/large_float_wrap.o
 	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/large_float_wrap.o -o bin/_large_float.so
-	cp interface/large_float.py bin
+	ln -f interface/large_float.py bin/large_float.py
 
 
 
 
+interface/interval_wrap.cc: include/interval.h include/large_float.h interface/interval.i
+	swig $(SWIG_F) interface/interval.i
+
+obj/interval_wrap.o: interface/interval_wrap.cc
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/interval_wrap.cc -o obj/interval_wrap.o
+
+bin/_interval.so: obj/interval_wrap.o
+	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/interval_wrap.o -o bin/_interval.so
+	ln -f interface/interval.py bin/interval.py
+
+
+
+
+interface/box_wrap.cc: include/box.h include/interval.h include/large_float.h interface/box.i
+	swig $(SWIG_F) interface/box.i
+
+obj/box_wrap.o: interface/box_wrap.cc
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/box_wrap.cc -o obj/box_wrap.o
+
+obj/box.o: src/box.cc include/box.h
+	$(CXX) $(CXXFLAGS)  -c src/box.cc -o obj/box.o
+
+bin/_box.so: obj/box.o obj/box_wrap.o
+	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/box_wrap.o obj/box.o -o bin/_box.so
+	ln -f interface/box.py bin/box.py
 
 
 
@@ -52,7 +69,7 @@ clean:
 
 
 .PHONY: test
-test: large_float_test interval_test
+test: large_float_test interval_test box_test
 
 
 
@@ -63,7 +80,7 @@ large_float_test: bin/large_float_test.py
 	./bin/large_float_test.py
 
 bin/large_float_test.py: test/large_float_test.py bin/_large_float.so
-	ln -f test/large_float_test.py bin/large_float_test.py
+	@ln -f test/large_float_test.py bin/large_float_test.py
 
 
 
@@ -72,5 +89,14 @@ interval_test: bin/interval_test.py
 	./bin/interval_test.py
 
 bin/interval_test.py: test/interval_test.py bin/_interval.so
-	ln -f test/interval_test.py bin/interval_test.py
+	@ln -f test/interval_test.py bin/interval_test.py
+
+
+
+.PHONY: box_test
+box_test: bin/box_test.py
+	./bin/box_test.py
+
+bin/box_test.py: test/box_test.py bin/_box.so
+	@ln -f test/box_test.py bin/box_test.py
 

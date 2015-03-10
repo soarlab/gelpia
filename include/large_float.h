@@ -7,7 +7,7 @@
 typedef boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<300>>  large_float_t;
 
 class large_float {
-  large_float_t  value;
+  large_float_t value;
   
  public:
   large_float(const std::string &number) {
@@ -15,20 +15,21 @@ class large_float {
   }
   
   large_float(const large_float &in) {
-    value =  large_float_t(in.value);
+    value = static_cast<large_float_t>(in.value);
   }
   
-  large_float(large_float_t  in) {
+  large_float(large_float_t in) {
     value = in;
   }
 
   bool operator< (const large_float &c) const {
-    return this->value < c.value;
+    return (this->value < c.value);
   }
 
   bool operator== (const large_float &c)const {
-    return this->value == c.value;
+    return (this->value == c.value);
   }
+  
   ~large_float(){;}
 };
 

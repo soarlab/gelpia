@@ -21,10 +21,14 @@ class interval {
     value = interval_t(static_cast<large_float_t>(in.value.lower()),
 		       static_cast<large_float_t>(in.value.upper()));
   }
-  
-  large_float upper() const {return large_float(this->value.upper());}
-  large_float lower() const {return large_float(this->value.lower());}
-  
+
+  large_float width() {
+    return large_float(value.upper() - value.lower());
+  }
+
+  large_float lower() const {return static_cast<large_float>(this->value.lower()); }
+  large_float upper() const {return static_cast<large_float>(this->value.upper()); }
+    
   ~interval(){;}
 };
 
