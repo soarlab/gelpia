@@ -1,3 +1,16 @@
+UNAME := $(shell uname)
+BUNDLE := -shared -fpic
+
+
+ifeq ($(UNAME), Darwin)
+	BUNDLE := -bundle
+endif
+
+ifeq ($(UNAME), Linux)
+	SHARED := -fpic
+endif
+
+
 
 SWIG_F = -c++ -Wall -cppext cc -python -Iinclude
 
@@ -17,10 +30,10 @@ interface/large_float_wrap.cc: include/large_float.h interface/large_float.i
 	swig $(SWIG_F) interface/large_float.i
 
 obj/large_float_wrap.o: interface/large_float_wrap.cc
-	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/large_float_wrap.cc -o obj/large_float_wrap.o
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` $(SHARED) -c interface/large_float_wrap.cc -o obj/large_float_wrap.o
 
 bin/_large_float.so: obj/large_float_wrap.o
-	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/large_float_wrap.o -o bin/_large_float.so
+	$(CXX) $(CXXFLAGS) -lmpfr $(BUNDLE) `python3-config --ldflags` obj/large_float_wrap.o -o bin/_large_float.so
 	ln -f interface/large_float.py bin/large_float.py
 
 
@@ -30,10 +43,10 @@ interface/interval_wrap.cc: include/interval.h include/large_float.h interface/i
 	swig $(SWIG_F) interface/interval.i
 
 obj/interval_wrap.o: interface/interval_wrap.cc
-	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/interval_wrap.cc -o obj/interval_wrap.o
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` $(SHARED) -c interface/interval_wrap.cc -o obj/interval_wrap.o
 
 bin/_interval.so: obj/interval_wrap.o
-	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/interval_wrap.o -o bin/_interval.so
+	$(CXX) $(CXXFLAGS) -lmpfr $(BUNDLE) `python3-config --ldflags` obj/interval_wrap.o -o bin/_interval.so
 	ln -f interface/interval.py bin/interval.py
 
 
@@ -43,13 +56,13 @@ interface/box_wrap.cc: include/box.h include/interval.h include/large_float.h in
 	swig $(SWIG_F) interface/box.i
 
 obj/box_wrap.o: interface/box_wrap.cc
-	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/box_wrap.cc -o obj/box_wrap.o
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` $(SHARED) -c interface/box_wrap.cc -o obj/box_wrap.o
 
 obj/box.o: src/box.cc include/box.h
-	$(CXX) $(CXXFLAGS)  -c src/box.cc -o obj/box.o
+	$(CXX) $(CXXFLAGS) $(SHARED) -c src/box.cc -o obj/box.o
 
 bin/_box.so: obj/box.o obj/box_wrap.o
-	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/box_wrap.o obj/box.o -o bin/_box.so
+	$(CXX) $(CXXFLAGS) -lmpfr $(BUNDLE) `python3-config --ldflags` obj/box_wrap.o obj/box.o -o bin/_box.so
 	ln -f interface/box.py bin/box.py
 
 
@@ -59,13 +72,13 @@ interface/function_wrap.cc: include/box.h include/interval.h include/large_float
 	swig $(SWIG_F) interface/function.i
 
 obj/function_wrap.o: interface/function_wrap.cc
-	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c interface/function_wrap.cc -o obj/function_wrap.o
+	$(CXX) $(CXXFLAGS) `python3-config --cflags` $(SHARED) -c interface/function_wrap.cc -o obj/function_wrap.o
 
 obj/function.o: src/function.cc include/function.h
-	$(CXX) $(CXXFLAGS)  -c src/function.cc -o obj/function.o
+	$(CXX) $(CXXFLAGS) $(SHARED) -c src/function.cc -o obj/function.o
 
 bin/_function.so: obj/function.o obj/function_wrap.o obj/box.o
-	$(CXX) $(CXXFLAGS) -lmpfr -bundle `python3-config --ldflags` obj/function_wrap.o obj/function.o obj/box.o -o bin/_function.so
+	$(CXX) $(CXXFLAGS) -lmpfr $(BUNDLE) `python3-config --ldflags` obj/function_wrap.o obj/function.o obj/box.o -o bin/_function.so
 	ln -f interface/function.py bin/function.py
 
 
