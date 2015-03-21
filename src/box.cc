@@ -55,8 +55,9 @@ int box::split_index() const
   int longest_idx = 0;
   
   for(uint i = 0; i < value.size(); ++i) {
-    if((value[i].upper()-value[i].lower()) > longest) {
-      longest = value[i].upper()-value[i].lower();
+    auto len = value[i].upper() - value[i].lower();
+    if(len > longest) {
+      longest = len;
       longest_idx = i;
     }
   }
@@ -95,6 +96,24 @@ box box::midpoint() const
   }
   
   return result;
+}
+
+interval box::operator[](int i)
+{
+  return interval(value.at(i));
+}
+
+std::string &box::to_string()
+{
+  if(str_rep != "")
+    return str_rep;
+  str_rep = "<";
+  for(auto i : value) {
+    str_rep += interval(i).to_string();
+    str_rep += ", ";
+  }
+  str_rep += ">";
+  return str_rep;
 }
 
 

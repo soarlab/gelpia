@@ -9,7 +9,8 @@ typedef std::vector<interval_t> box_t;
 
 class box {
   box_t value;
-    
+  std::string str_rep;
+
  public:
   box();
   box(const box &in);
@@ -25,7 +26,11 @@ class box {
 
   box first(int index) const;
   box second(int index) const;
+
+  interval operator[] (int);
   
+  std::string &to_string();
+
   ~box();
 };
 
