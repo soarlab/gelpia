@@ -140,4 +140,27 @@ bin/globopt.py: test/globopt.py bin/_box.so
 	@ln -f test/globopt.py bin/globopt.py
 
 
+.PHONY: paperopt
+paperopt: bin/paperopt.py
+	./bin/paperopt.py
 
+bin/paperopt.py: test/paperopt.py bin/_box.so
+	@ln -f test/paperopt.py bin/paperopt.py
+
+
+
+.PHONY: non_pri_paperopt
+non_pri_paperopt: bin/non_pri_paperopt.py
+	./bin/non_pri_paperopt.py
+
+bin/non_pri_paperopt.py: test/non_pri_paperopt.py bin/_box.so
+	@ln -f test/non_pri_paperopt.py bin/non_pri_paperopt.py
+
+
+
+.PHONY: multiworker
+multiworker: bin/multiworker.py
+	./bin/multiworker.py
+
+bin/multiworker.py: test/multiworker.py bin/_box.so
+	@ln -f test/multiworker.py bin/multiworker.py
