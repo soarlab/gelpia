@@ -19,7 +19,7 @@ CXXFLAGS += -std=c++11 -Wall -Werror -g -Iinclude
 
 
 
-
+.PHONY: all
 all: bin/_large_float.so bin/_interval.so bin/_box.so bin/_function.so
 
 
@@ -106,7 +106,7 @@ test: large_float_test interval_test box_test
 
 
 .PHONY: large_float_test
-large_float_test: bin/large_float_test.py
+large_float_test: bin/large_float_test.py all
 	./bin/large_float_test.py
 
 bin/large_float_test.py: test/large_float_test.py bin/_large_float.so
@@ -115,7 +115,7 @@ bin/large_float_test.py: test/large_float_test.py bin/_large_float.so
 
 
 .PHONY: interval_test
-interval_test: bin/interval_test.py
+interval_test: bin/interval_test.py all
 	./bin/interval_test.py
 
 bin/interval_test.py: test/interval_test.py bin/_interval.so
@@ -124,7 +124,7 @@ bin/interval_test.py: test/interval_test.py bin/_interval.so
 
 
 .PHONY: box_test
-box_test: bin/box_test.py
+box_test: bin/box_test.py all
 	./bin/box_test.py
 
 bin/box_test.py: test/box_test.py bin/_box.so
@@ -132,35 +132,39 @@ bin/box_test.py: test/box_test.py bin/_box.so
 
 
 
+
+
+
 .PHONY: globopt
-globopt: bin/globopt.py
+globopt: bin/globopt.py all
 	./bin/globopt.py
 
-bin/globopt.py: test/globopt.py bin/_box.so
-	@ln -f test/globopt.py bin/globopt.py
+bin/globopt.py: src/globopt.py bin/_box.so
+	@ln -f src/globopt.py bin/globopt.py
+
 
 
 .PHONY: paperopt
-paperopt: bin/paperopt.py
+paperopt: bin/paperopt.py all
 	./bin/paperopt.py
 
-bin/paperopt.py: test/paperopt.py bin/_box.so
-	@ln -f test/paperopt.py bin/paperopt.py
+bin/paperopt.py: src/paperopt.py bin/_box.so
+	@ln -f src/paperopt.py bin/paperopt.py
 
 
 
-.PHONY: non_pri_paperopt
+.PHONY: non_pri_paperopt all
 non_pri_paperopt: bin/non_pri_paperopt.py
 	./bin/non_pri_paperopt.py
 
-bin/non_pri_paperopt.py: test/non_pri_paperopt.py bin/_box.so
-	@ln -f test/non_pri_paperopt.py bin/non_pri_paperopt.py
+bin/non_pri_paperopt.py: src/non_pri_paperopt.py
+	@ln -f src/non_pri_paperopt.py bin/non_pri_paperopt.py
 
 
 
 .PHONY: multiworker
-multiworker: bin/multiworker.py
+multiworker: bin/multiworker.py all
 	./bin/multiworker.py
 
-bin/multiworker.py: test/multiworker.py bin/_box.so
-	@ln -f test/multiworker.py bin/multiworker.py
+bin/multiworker.py: src/multiworker.py
+	@ln -f src/multiworker.py bin/multiworker.py
