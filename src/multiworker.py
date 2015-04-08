@@ -5,15 +5,18 @@ import large_float as LF
 import interval as I
 import function as F
 
-import multiprocessing as mp
+import queue as Q
+import multiprocessing as MP
 from time import sleep
 
-#@profile
-def globopt_worker(my_id, working_list, global_queue, f_best, f_best_lock):
+@profile
+def globopt_worker(my_id, working_list, global_queue, global_queue_lock, f_best, f_best_lock):
     while True:
         working_list[my_id] = 0
         try:
-            X = global_queue.get(block=True, timeout=3)
+            global_queue_lock.acquire()
+            priority, X = global_queue.get()
+            global_queue_lock.release()
         except:
             continue
 
@@ -32,30 +35,40 @@ def globopt_worker(my_id, working_list, global_queue, f_best, f_best_lock):
             X1 = X.first(index)
             e = func(X1.midpoint())
             if(e.upper() > f_best):
+                f_best_lock.acquire()
                 f_best = e.upper()
+                f_best_lock.relese()
+            global_queue_lock.acquire()
             global_queue.put((e.upper().neg(), X1))
-
+            global_queue_lock.release()
+            
             X2 = X.second(index)
             e = func(X2.midpoint())
             if(e.upper() > f_best):
+                f_best_lock.acquire()
                 f_best = e.upper()
+                f_best_lock.release()
+            global_queue_lock.acquire()
             global_queue.put((e.upper().neg(), X2))
-        
+            global_queue_lock.release()
 
 
 
-#@profile
+@profile
 def globopt(X_0, x_tol, f_tol, func):
-    global_queue = mp.Queue()
+    global_queue = Q.Queue()
     global_queue.put(X_0)
+    global_queue_lock = MP.Lock()
     
     f_best = LF.large_float("-inf");
-    f_best_lock = mp.Lock()
+    f_best_lock = MP.Lock()
 
     working_list = [1 for i in range(PROCS)]
     
-    process_list = [mp.Process(target=globopt_worker,
-                               args=(i, working_list, global_queue, f_best, f_best_lock,))
+    process_list = [MP.Process(target=globopt_worker,
+                               args=(i, working_list,
+                                     global_queue, global_queue_lock,
+                                     f_best, f_best_lock,))
                     for i in range(PROCS)]
     
     for proc in process_list:
