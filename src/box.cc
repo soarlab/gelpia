@@ -1,4 +1,3 @@
-
 #include "box.h"
 
 
@@ -6,7 +5,6 @@ box::box()
 {
   value = box_t();
 }
-
 
 box::box(const box &in)
 {
@@ -17,7 +15,32 @@ box::box(const box &in)
   }
 }
 
-#include <stdio.h>
+bool box::operator==(const box &c) const{
+  if (this->size() != c.size()) {
+    return false;
+  }
+
+  for (uint i=0; i<this->size(); i++) {
+    if ((*this)[i] != c[i]) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+bool box::operator!=(const box &c) const{
+  return !(*this == c);
+}
+
+int box::size() const { 
+  return value.size(); 
+}
+
+box_t box::get_value() const { 
+  return this->value; 
+}
+
 box::box(const box_t &in)
 {
   value = box_t();
@@ -27,13 +50,17 @@ box::box(const box_t &in)
   }
 }
 
-
 int box::append(const std::string &low, const std::string &high)
 {
   value.emplace_back(interval(low, high).get_value());
   return value.size();
 }
 
+int box::append(const interval &in)
+{
+  value.emplace_back(in.get_value());
+  return value.size();
+}
 
 large_float box::width() const
 {
@@ -48,8 +75,7 @@ large_float box::width() const
   return largest;
 }
 
-
-int box::split_index() const
+std::vector<box> box::split() const
 {
   large_float_t longest(0.0);
   int longest_idx = 0;
@@ -62,29 +88,15 @@ int box::split_index() const
     }
   }
 
-  return longest_idx;
-}
-
-
-box box::first(int index) const
-{
   box left(value);
-
-  large_float_t m = value[index].lower() + (value[index].upper() - value[index].lower())/2;
-  left.value[index].assign(left.value[index].lower(), m);
-  return left;
-}
-
-
-box box::second(int index) const
-{
   box right(value);
+  large_float_t m = value[longest_idx].lower() + (value[longest_idx].upper() - value[longest_idx].lower())/2;
+  left.value[longest_idx].assign(left.value[longest_idx].lower(), m);
+  right.value[longest_idx].assign(m, right.value[longest_idx].upper());
 
-  large_float_t m = value[index].lower() + (value[index].upper() - value[index].lower())/2;
-  right.value[index].assign(m, right.value[index].upper());
-  return right;
+  std::vector<box> retval = {left, right};
+  return retval;
 }
-
 
 box box::midpoint() const
 {
@@ -98,26 +110,20 @@ box box::midpoint() const
   return result;
 }
 
-interval box::operator[](int i)
+interval box::operator[](int i) const
 {
   return interval(value.at(i));
 }
 
 std::string &box::to_string()
 {
-  if(str_rep != "")
-    return str_rep;
   str_rep = "<";
-  for(auto i : value) {
-    str_rep += interval(i).to_string();
+  for(auto v : value) {
+    str_rep += interval(v).to_string();
     str_rep += ", ";
   }
   str_rep += ">";
   return str_rep;
 }
 
-
-box::~box()
-{
-  ;
-}
+box::~box() {;}
