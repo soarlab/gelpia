@@ -40,6 +40,7 @@ all:
 	@ln -f src/gelpia bin/gelpia
 	@ln -f src/ian_utils.py bin/ian_utils.py
 	@ln -f src/serial_solver.py bin/serial_solver.py
+	@ln -f src/priority_serial_solver.py bin/priority_serial_solver.py
 
 
 solver: bin/_gelpia_utils.so

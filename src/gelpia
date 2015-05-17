@@ -10,8 +10,10 @@ import ast as AST
 import re as RE
 import sys as SYS
 
-solvers = {"serial"        : "serial", 
-           "serial_solver" : "serial"}
+solvers = {"serial"                 : "serial", 
+           "serial_solver"          : "serial",
+           "priority_serial"        : "priority_serial",
+           "priority_serial_solver" : "priority_serial",}
 
 
 GU = None
@@ -20,7 +22,8 @@ def import_solver(solver):
     global SOLVER
     if solvers[solver] == "serial":
         import serial_solver as SOLVER
-
+    if solvers[solver] == "priority_serial":
+        import priority_serial_solver as SOLVER
 
 
 def parse_box(box_string):

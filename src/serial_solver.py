@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import gelpia_utils as GU
 
 import queue as Q
