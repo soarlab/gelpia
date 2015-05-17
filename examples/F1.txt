@@ -1,0 +1,4 @@
+--input-epsilon .01
+--output-epsilon .01
+--function "X[0] * (interval(\"1\",\"1\").get_value()-X[0]) * (interval(\"1\",\"1\").get_value()-X[1])"
+--input "[(-10,10), (-10,10)]"

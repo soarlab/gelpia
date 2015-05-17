@@ -2,8 +2,7 @@ import gelpia_utils as GU
 
 import queue as Q
 
-@profile
-def solve(X_0, x_tol, f_tol, func):
+def solve(X_0, x_tol, f_tol, func, ignore):
     local_queue = Q.Queue()
     local_queue.put(X_0)
 

@@ -13,7 +13,9 @@ import sys as SYS
 solvers = {"serial"                 : "serial", 
            "serial_solver"          : "serial",
            "priority_serial"        : "priority_serial",
-           "priority_serial_solver" : "priority_serial",}
+           "priority_serial_solver" : "priority_serial",
+           "naive_parallel"         : "naive_parallel",
+           "naive_parallel_solver"  : "naive_parallel"}
 
 
 GU = None
@@ -24,6 +26,8 @@ def import_solver(solver):
         import serial_solver as SOLVER
     if solvers[solver] == "priority_serial":
         import priority_serial_solver as SOLVER
+    if solvers[solver] == "naive_parallel":
+        import naive_parallel_solver as SOLVER
 
 
 def parse_box(box_string):
@@ -156,7 +160,7 @@ def main():
     IU.log(1, IU.cyan("Compiling"))
 
     compile_time, output = IU.time_func(IU.run,
-                                        "make", ["solver"],
+                                        "cd "+base_dir+" && make", ["solver"],
                                         "Unable to compile")
 
     import gelpia_utils as GU
@@ -168,7 +172,8 @@ def main():
     answer = SOLVER.solve(X_0,
                           GU.large_float(arg_dict["input_epsilon"]),
                           GU.large_float(arg_dict["output_epsilon"]),
-                          GU.function)
+                          GU.function,
+                          arg_dict["threads"])
     end = T.time()
 
     IU.log(0, IU.green("Compile time: ")+str(compile_time))
