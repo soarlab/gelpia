@@ -1,4 +1,4 @@
-%module function
+%module gelpia_utils
 %{
 #include "large_float.h"
 #include "interval.h"

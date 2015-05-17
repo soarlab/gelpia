@@ -6,6 +6,6 @@
 #include "interval.h"
 #include "box.h"
 
-extern interval function(const box &arg);
+extern interval function(const box & X_wrapped);
 
 #endif
