@@ -38,10 +38,9 @@
 
   %pythoncode %{
     def __setstate__(self, sState):
-    self.__init__()
+      self.__init__()
       self.__setstate_internal(sState)
-              %
-      }
+  %}
       
  }
 %enddef
