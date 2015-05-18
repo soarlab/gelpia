@@ -90,7 +90,7 @@ std::vector<box> box::split() const
 
   box left(value);
   box right(value);
-  large_float_t m = value[longest_idx].lower() + (value[longest_idx].upper() - value[longest_idx].lower())/2;
+  large_float_t m = (value[longest_idx].lower() + value[longest_idx].upper())/2;
   left.value[longest_idx].assign(left.value[longest_idx].lower(), m);
   right.value[longest_idx].assign(m, right.value[longest_idx].upper());
 
@@ -103,7 +103,7 @@ box box::midpoint() const
   box result(value);
   
   for (uint i = 0; i < value.size(); ++i) {
-    large_float_t m = value[i].lower() + (value[i].upper() - value[i].lower())/2;
+    large_float_t m = (value[i].lower() + value[i].upper())/2;
     result.value[i].assign(m, m);
   }
   

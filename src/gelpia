@@ -10,12 +10,12 @@ import ast as AST
 import re as RE
 import sys as SYS
 
-solvers = {"serial"                 : "serial", 
-           "serial_solver"          : "serial",
+solvers = {"serial"                 : "serial",
+           "s"                      : "serial", 
            "priority_serial"        : "priority_serial",
-           "priority_serial_solver" : "priority_serial",
+           "ps"                     : "priority_serial",
            "naive_parallel"         : "naive_parallel",
-           "naive_parallel_solver"  : "naive_parallel"}
+           "np"                     : "naive_parallel"}
 
 
 GU = None

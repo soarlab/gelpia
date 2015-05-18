@@ -3,9 +3,9 @@
 import unittest as UT
 import random as R
 import large_float as LF
+import multiprocessing as MP
 
-
-TESTS = 2000
+TESTS = 1
 
 
 class large_float_test(UT.TestCase):
@@ -110,8 +110,16 @@ class large_float_test(UT.TestCase):
                 self.assertEqual(a, b)
                 self.assertEqual(str(a), str(b))
                 
-
-
+    def test_large_float_pickle(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                a = LF.large_float(str(_a))
+                q = MP.Queue()
+                q.put(a)
+                b = q.get()
+                self.assertEqual(str(a), str(b))
+                self.assertEqual(a, b)
 
 if __name__ == "__main__":
     R.seed(42)
