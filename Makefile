@@ -164,12 +164,12 @@ bin/_gelpia_utils.so: $(GELPIA_UTILS_OBJ)
 #| Testing                                                                     |
 #+-----------------------------------------------------------------------------+
 .PHONY: test
-test: bin/large_float_test.py #bin/interval_test.py bin/box_test.py
+test: bin/large_float_test.py bin/interval_test.py bin/box_test.py
 	./bin/large_float_test.py
-	#@echo "\n\n\n\n\n\n\n\n\n\n"
-	#./bin/interval_test.py
-	#@echo "\n\n\n\n\n\n\n\n\n\n"
-	#./bin/box_test.py
+	@echo "\n\n\n\n\n\n\n\n\n\n"
+	./bin/interval_test.py
+	@echo "\n\n\n\n\n\n\n\n\n\n"
+	./bin/box_test.py
 
 bin/large_float_test.py: bin/_large_float.so
 	@ln -f test/large_float_test.py bin/large_float_test.py

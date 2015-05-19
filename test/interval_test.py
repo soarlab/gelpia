@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import multiprocessing as MP
 import unittest as UT
 import random as R
 import interval as I
@@ -13,7 +14,7 @@ def trunc_string(item):
     return s[0:12]
 
 
-class large_float_test(UT.TestCase):
+class interval_test(UT.TestCase):
     #+-------------------------------------------------------------------------+
     #| Test for included large_float                                           |
     #+-------------------------------------------------------------------------+
@@ -90,8 +91,8 @@ class large_float_test(UT.TestCase):
                 _b = -_a
                 a = I.large_float(str(_a))
                 b = I.large_float(str(_b))
-                self.assertEqual(str(a.neg()), str(b))
-                self.assertEqual(a.neg(), b)
+                self.assertEqual(str(-a), str(b))
+                self.assertEqual(-a, b)
 
     def test_large_float_assignment(self):
         for i in range(TESTS):
@@ -111,6 +112,17 @@ class large_float_test(UT.TestCase):
                 _a = R.uniform(-100, 100)
                 a = I.large_float(str(_a))
                 b = I.large_float(str(_a))
+                self.assertEqual(str(a), str(b))
+                self.assertEqual(a, b)
+
+    def test_large_float_pickle(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                a = I.large_float(str(_a))
+                q = MP.Queue()
+                q.put(a)
+                b = q.get()
                 self.assertEqual(str(a), str(b))
                 self.assertEqual(a, b)
 
@@ -180,6 +192,20 @@ class large_float_test(UT.TestCase):
                 c = I.interval(str(_a), str(_a))
                 self.assertEqual(str(b), str(c))
                 self.assertEqual(b, c)
+
+    def test_interval_pickle(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                c = I.interval(str(_a), str(_b))
+                q = MP.Queue()
+                q.put(c)
+                d = q.get()
+                self.assertEqual(str(c), str(d))
+                self.assertEqual(c, d)
 
 
 

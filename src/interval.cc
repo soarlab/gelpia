@@ -9,7 +9,11 @@ interval::interval(const std::string &low_string, const std::string &high_string
   assert(low <= high);
   value = interval_t(low, high);
 }
-  
+ 
+interval::interval(const large_float &low, const large_float &high) {
+  value = interval_t(low.get_value(), high.get_value());
+} 
+
 interval::interval(const interval &in) {
   value = interval_t(static_cast<large_float_t>(in.value.lower()),
 		     static_cast<large_float_t>(in.value.upper()));

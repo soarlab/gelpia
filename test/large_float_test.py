@@ -5,7 +5,7 @@ import random as R
 import large_float as LF
 import multiprocessing as MP
 
-TESTS = 1
+TESTS = 1000
 
 
 class large_float_test(UT.TestCase):
@@ -85,8 +85,8 @@ class large_float_test(UT.TestCase):
                 _b = -_a
                 a = LF.large_float(str(_a))
                 b = LF.large_float(str(_b))
-                self.assertEqual(str(a.neg()), str(b))
-                self.assertEqual(a.neg(), b)
+                self.assertEqual(str(-a), str(b))
+                self.assertEqual(-a, b)
 
     def test_large_float_assignment(self):
         for i in range(TESTS):

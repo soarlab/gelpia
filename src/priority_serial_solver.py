@@ -27,6 +27,6 @@ def solve(X_0, x_tol, f_tol, func, ignore):
                 if(e.upper() > f_best):
                     f_best = e.upper()
                 priority_fix += 1
-                local_queue.put((e.upper().neg(), priority_fix, b))
+                local_queue.put((-e.upper(), priority_fix, b))
 
     return f_best

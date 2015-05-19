@@ -20,7 +20,11 @@ bool large_float::operator>  (const large_float &c) const { return (this->value 
 bool large_float::operator>= (const large_float &c) const { return (this->value >= c.value); }
 bool large_float::operator!= (const large_float &c) const { return (this->value != c.value); }
 
-large_float large_float::neg() {
+large_float_t large_float::get_value() const{
+  return value;
+}
+
+large_float large_float::operator- () {
   large_float result;
   result.value = this->value*-1;
   return result;

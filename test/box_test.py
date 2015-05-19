@@ -12,7 +12,7 @@ def trunc_string(item):
     s = str(item)
     return s[0:12]
 
-class large_float_test(UT.TestCase):
+class box_test(UT.TestCase):
     #+-------------------------------------------------------------------------+
     #| Test for included large_float                                           |
     #+-------------------------------------------------------------------------+
@@ -88,8 +88,8 @@ class large_float_test(UT.TestCase):
                 _b = -_a
                 a = B.large_float(str(_a))
                 b = B.large_float(str(_b))
-                self.assertEqual(str(a.neg()), str(b))
-                self.assertEqual(a.neg(), b)
+                self.assertEqual(str(-a), str(b))
+                self.assertEqual(-a, b)
 
     def test_large_float_assignment(self):
         for i in range(TESTS):
