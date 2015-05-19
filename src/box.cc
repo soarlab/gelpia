@@ -20,7 +20,7 @@ bool box::operator==(const box &c) const{
     return false;
   }
 
-  for (uint i=0; i<this->size(); i++) {
+  for (size_t i=0; i < (size_t)this->size(); i++) {
     if ((*this)[i] != c[i]) {
       return false;
     }

@@ -13,6 +13,12 @@ ifeq ($(UNAME), Linux)
 	PIC := -fpic
 endif
 
+ifeq ($(CXX), clang++)
+	NO_DEP_REG = -Wno-depreciated-register
+endif
+
+PY3_CFLAGS := $(subst -Wstrict-prototypes,,$(shell python3-config --cflags))
+
 # Object files used to create the .so for each type
 LARGE_FLOAT_OBJ := obj/large_float.o obj/large_float_wrap.o
 INTERVAL_OBJ := obj/interval.o obj/interval_wrap.o $(LARGE_FLOAT_OBJ)
@@ -28,7 +34,7 @@ FUNCTION_INC := include/function.h $(BOX_INC)
 GELPIA_UTILS_INC := $(FUNCITON_INC)
 
 # Compile flags for the steps to create each .so
-2_FLAGS := $(CXXFLAGS) $(PIC) -c -Wno-deprecated-register `python3-config --cflags`
+2_FLAGS := $(CXXFLAGS) $(PIC) -c $(NO_DEP_REG) $(PY3_CFLAGS)
 3_FLAGS := $(CXXFLAGS) $(PIC) -c
 4_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr `python3-config --ldflags`
 
