@@ -69,7 +69,7 @@ obj/large_float.o: $(LARGE_FLOAT_INC) src/large_float.cc
 
 # 4. combine
 bin/_large_float.so: $(LARGE_FLOAT_OBJ)
-	$(CXX) $(4_FLAGS) -o bin/_large_float.so $(LARGE_FLOAT_OBJ)
+	$(CXX)  -o bin/_large_float.so $(LARGE_FLOAT_OBJ) $(4_FLAGS)
 
 
 
