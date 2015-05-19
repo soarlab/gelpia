@@ -1,3 +1,13 @@
 Global Extrema Locator Parallelization for Interval Arithmetic
 
-SWIG tutorial for python: http://www.swig.org/Doc1.3/Python.html
+Requirements: (probably incomplete)
+	swig     http://www.swig.org/
+	python3* https://www.python.org/
+	make     http://www.gnu.org/software/make/
+	boost**  http://www.boost.org/
+	mpfr     http://www.mpfr.org/
+
+	and a c++11 compiler g++ and clang++ have been tested
+
+* Note: in addition the modules argparse and line_profile are needed
+** Note: boost_serialization library is required

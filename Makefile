@@ -69,7 +69,7 @@ obj/large_float.o: $(LARGE_FLOAT_INC) src/large_float.cc
 
 # 4. combine
 bin/_large_float.so: $(LARGE_FLOAT_OBJ)
-	$(CXX)  -o bin/_large_float.so $(LARGE_FLOAT_OBJ) $(4_FLAGS)
+	$(CXX) -o bin/_large_float.so $(LARGE_FLOAT_OBJ) $(4_FLAGS)
 
 
 
@@ -91,7 +91,7 @@ obj/interval.o:  $(INTERVAL_INC) src/interval.cc
 
 # 4. combine
 bin/_interval.so: $(INTERVAL_OBJ)
-	$(CXX) $(4_FLAGS) -o bin/_interval.so $(INTERVAL_OBJ)
+	$(CXX) -o bin/_interval.so $(INTERVAL_OBJ) $(4_FLAGS) 
 
 
 
@@ -113,7 +113,7 @@ obj/box.o: $(BOX_INC) src/box.cc
 
 # 4. combine
 bin/_box.so: $(BOX_OBJ)
-	$(CXX) $(4_FLAGS) -o bin/_box.so $(BOX_OBJ)
+	$(CXX) -o bin/_box.so $(BOX_OBJ) $(4_FLAGS)
 
 
 
@@ -135,7 +135,7 @@ obj/function.o: $(FUNCTION_INC) generated/function.cc
 
 # 4. combine
 bin/_function.so: $(FUNCTION_OBJ)
-	$(CXX) $(4_FLAGS) -o bin/_function.so $(FUNCTION_OBJ)
+	$(CXX) -o bin/_function.so $(FUNCTION_OBJ) $(4_FLAGS)
 
 
 
@@ -155,7 +155,7 @@ obj/gelpia_utils_wrap.o: generated/gelpia_utils_wrap.cc
 
 # 4. combine
 bin/_gelpia_utils.so: $(GELPIA_UTILS_OBJ)
-	$(CXX) $(4_FLAGS) -o bin/_gelpia_utils.so $(GELPIA_UTILS_OBJ)
+	$(CXX) -o bin/_gelpia_utils.so $(GELPIA_UTILS_OBJ) $(4_FLAGS)
 
 
 
