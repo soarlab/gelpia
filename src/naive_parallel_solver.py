@@ -2,7 +2,7 @@ import gelpia_utils as GU
 
 import multiprocessing as MP
 from time import sleep
-
+import wrapper
 
 def globopt_worker(my_id,
                    global_queue, 
@@ -19,18 +19,18 @@ def globopt_worker(my_id,
         w = X.width()
         fw = fx.width()
         
-        if (fx.upper() < f_best_low
+        if (fx.upper() < f_best_low.value
             or w < x_tol
             or fw < f_tol):
-            if (f_best_high < f.upper()):
-                f_best_high = f.upper()
+            if (f_best_high.value < f.upper()):
+                f_best_high.value = f.upper()
         else:
             box_list = X.split()
             
             for b in box_list:
                 e = func(b.midpoint())
                 if(e.upper() > f_best):
-                    f_best_low = e.upper()
+                    f_best_low.value = e.upper()
                 global_queue.put(b)
         global_queue.task_done()
 
@@ -38,12 +38,9 @@ def globopt_worker(my_id,
 
 def solve(X_0, x_tol, f_tol, func, procs):
     global_queue = MP.JoinableQueue()
-    global_queue.put(X_0)
 
-    thnig =     global_queue.get(X_0)
-    return 0
-    f_best_low = GU.large_float("-inf");
-    f_best_high = GU.large_float("-inf");
+    f_best_low = MP.Value(GU.large_float, "-inf");
+    f_best_high = MP.Value(GU.large_float, "-inf");
     
     do_work = MP.Value('b', True)
 

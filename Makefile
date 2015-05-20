@@ -1,5 +1,4 @@
 UNAME := $(shell uname)
-PIC := -fPIC
 SWIGFLAGS := -c++ -Wall -python -Iinclude -outdir bin
 CXXFLAGS += -std=c++11 -Wall -Werror -Iinclude
 
@@ -17,26 +16,26 @@ ifeq ($(CXX), clang++)
 	NO_DEP_REG = -Wno-depreciated-register
 endif
 
+# take the c specific flag out of python cflags
 PY3_CFLAGS := $(subst -Wstrict-prototypes,,$(shell python3-config --cflags))
 
 # Object files used to create the .so for each type
-LARGE_FLOAT_OBJ := obj/large_float.o obj/large_float_wrap.o
-INTERVAL_OBJ := obj/interval.o obj/interval_wrap.o $(LARGE_FLOAT_OBJ)
-BOX_OBJ := obj/box.o obj/box_wrap.o $(INTERVAL_OBJ)
-FUNCTION_OBJ := obj/function.o obj/function_wrap.o $(BOX_OBJ)
-GELPIA_UTILS_OBJ := obj/gelpia_utils_wrap.o $(FUNCTION_OBJ)
+BASE_OBJ := obj/large_float.o obj/interval.o obj/box.o
+TESTABLE_UTILS_OBJ := obj/testable_utils_wrap.o $(BASE_OBJ)
+GELPIA_UTILS_OBJ := obj/gelpia_utils_wrap.o obj/function.o $(BASE_OBJ)
 
 # Included files for each type
 LARGE_FLOAT_INC := include/large_float.h
 INTERVAL_INC := include/interval.h $(LARGE_FLOAT_INC)
 BOX_INC := include/box.h $(INTERVAL_INC)
 FUNCTION_INC := include/function.h $(BOX_INC)
+TESTABLE_UTILS_INC := $(BOX_INC)
 GELPIA_UTILS_INC := $(FUNCITON_INC)
 
 # Compile flags for the steps to create each .so
-2_FLAGS := $(CXXFLAGS) $(PIC) -c $(NO_DEP_REG) $(PY3_CFLAGS)
-3_FLAGS := $(CXXFLAGS) $(PIC) -c
-4_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lboost_serialization `python3-config --ldflags`
+WRAP_FLAGS := $(CXXFLAGS) $(PIC) -c $(NO_DEP_REG) $(PY3_CFLAGS)
+COMPILE_FLAGS := $(CXXFLAGS) $(PIC) -c
+LINK_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lboost_serialization `python3-config --ldflags`
 
 
 
@@ -53,89 +52,19 @@ solver: bin/_gelpia_utils.so
 
 
 #+-----------------------------------------------------------------------------+
-#| Building large_float                                                        |
+#| Building each component                                                     |
 #+-----------------------------------------------------------------------------+
-# 1. run swig on large_float
-generated/large_float_wrap.cc: $(LARGE_FLOAT_INC) interface/large_float.i
-	swig $(SWIGFLAGS) -o generated/large_float_wrap.cc interface/large_float.i
-
-# 2. compile generated file
-obj/large_float_wrap.o: generated/large_float_wrap.cc
-	$(CXX) $(2_FLAGS) -o obj/large_float_wrap.o generated/large_float_wrap.cc
-
-# 3. compile source
 obj/large_float.o: $(LARGE_FLOAT_INC) src/large_float.cc
-	$(CXX) $(3_FLAGS) -o obj/large_float.o src/large_float.cc
+	$(CXX) $(COMPILE_FLAGS) -o obj/large_float.o src/large_float.cc
 
-# 4. combine
-bin/_large_float.so: $(LARGE_FLOAT_OBJ)
-	$(CXX) -o bin/_large_float.so $(LARGE_FLOAT_OBJ) $(4_FLAGS)
-
-
-
-
-#+-----------------------------------------------------------------------------+
-#| Building interval                                                           |
-#+-----------------------------------------------------------------------------+
-# 1. run swig on interval
-generated/interval_wrap.cc: $(INTERVAL_INC) interface/interval.i
-	swig $(SWIGFLAGS) -o generated/interval_wrap.cc interface/interval.i
-
-# 2. compile generated file
-obj/interval_wrap.o: generated/interval_wrap.cc
-	$(CXX) $(2_FLAGS) -o obj/interval_wrap.o generated/interval_wrap.cc
-
-# 3. compile source
 obj/interval.o:  $(INTERVAL_INC) src/interval.cc
-	$(CXX) $(3_FLAGS) -o obj/interval.o src/interval.cc
+	$(CXX) $(COMPILE_FLAGS) -o obj/interval.o src/interval.cc
 
-# 4. combine
-bin/_interval.so: $(INTERVAL_OBJ)
-	$(CXX) -o bin/_interval.so $(INTERVAL_OBJ) $(4_FLAGS) 
-
-
-
-
-#+-----------------------------------------------------------------------------+
-#| Building box                                                                |
-#+-----------------------------------------------------------------------------+
-# 1. run swig on box
-generated/box_wrap.cc: $(BOX_INC) interface/box.i
-	swig $(SWIGFLAGS) -o generated/box_wrap.cc interface/box.i
-
-# 2. compile generated file
-obj/box_wrap.o: generated/box_wrap.cc
-	$(CXX) $(2_FLAGS) -o obj/box_wrap.o generated/box_wrap.cc
-
-# 3. compile source
 obj/box.o: $(BOX_INC) src/box.cc
-	$(CXX) $(3_FLAGS) -o obj/box.o src/box.cc
+	$(CXX) $(COMPILE_FLAGS) -o obj/box.o src/box.cc
 
-# 4. combine
-bin/_box.so: $(BOX_OBJ)
-	$(CXX) -o bin/_box.so $(BOX_OBJ) $(4_FLAGS)
-
-
-
-
-#+-----------------------------------------------------------------------------+
-#| Building function                                                           |
-#+-----------------------------------------------------------------------------+
-# 1. run swig on gelpia_cpp_interface
-generated/function_wrap.cc: $(FUNCTION_INC) interface/function.i
-	swig $(SWIGFLAGS) -o generated/function_wrap.cc interface/function.i
-
-# 2. compile generated file
-obj/function_wrap.o: generated/function_wrap.cc
-	$(CXX) $(2_FLAGS) -o obj/function_wrap.o generated/function_wrap.cc
-
-# 3. compile source
 obj/function.o: $(FUNCTION_INC) generated/function.cc
-	$(CXX) $(3_FLAGS) -o obj/function.o generated/function.cc
-
-# 4. combine
-bin/_function.so: $(FUNCTION_OBJ)
-	$(CXX) -o bin/_function.so $(FUNCTION_OBJ) $(4_FLAGS)
+	$(CXX) $(COMPILE_FLAGS) -o obj/function.o generated/function.cc
 
 
 
@@ -143,19 +72,35 @@ bin/_function.so: $(FUNCTION_OBJ)
 #+-----------------------------------------------------------------------------+
 #| Building gelpia_utils                                                       |
 #+-----------------------------------------------------------------------------+
-# 1. run swig on gelpia_utils
+# run swig on gelpia_utils
 generated/gelpia_utils_wrap.cc: $(GELPIA_UTILS_INC) interface/gelpia_utils.i
 	swig $(SWIGFLAGS) -o generated/gelpia_utils_wrap.cc interface/gelpia_utils.i
 
-# 2. compile generated file
+# compile generated file
 obj/gelpia_utils_wrap.o: generated/gelpia_utils_wrap.cc
-	$(CXX) $(2_FLAGS) -o obj/gelpia_utils_wrap.o generated/gelpia_utils_wrap.cc
+	$(CXX) $(WRAP_FLAGS) -o obj/gelpia_utils_wrap.o generated/gelpia_utils_wrap.cc
 
-# 3. ommited since there is no cc source needed
-
-# 4. combine
+# combine
 bin/_gelpia_utils.so: $(GELPIA_UTILS_OBJ)
-	$(CXX) -o bin/_gelpia_utils.so $(GELPIA_UTILS_OBJ) $(4_FLAGS)
+	$(CXX) -o bin/_gelpia_utils.so $(GELPIA_UTILS_OBJ) $(LINK_FLAGS)
+
+
+
+
+#+-----------------------------------------------------------------------------+
+#| Building testable_utils                                                     |
+#+-----------------------------------------------------------------------------+
+# run swig on testable_utils
+generated/testable_utils_wrap.cc: $(TESTABLE_UTILS_INC) interface/testable_utils.i
+	swig $(SWIGFLAGS) -o generated/testable_utils_wrap.cc interface/testable_utils.i
+
+# compile generated file
+obj/testable_utils_wrap.o: generated/testable_utils_wrap.cc
+	$(CXX) $(WRAP_FLAGS) -o obj/testable_utils_wrap.o generated/testable_utils_wrap.cc
+
+# combine
+bin/_testable_utils.so: $(TESTABLE_UTILS_OBJ)
+	$(CXX) -o bin/_testable_utils.so $(TESTABLE_UTILS_OBJ) $(LINK_FLAGS)
 
 
 
@@ -164,27 +109,17 @@ bin/_gelpia_utils.so: $(GELPIA_UTILS_OBJ)
 #| Testing                                                                     |
 #+-----------------------------------------------------------------------------+
 .PHONY: test
-test: bin/large_float_test.py bin/interval_test.py bin/box_test.py
-	./bin/large_float_test.py
-	@echo "\n\n\n\n\n\n\n\n\n\n"
-	./bin/interval_test.py
-	@echo "\n\n\n\n\n\n\n\n\n\n"
-	./bin/box_test.py
+test: bin/testable_utils_test.py
+	./bin/testable_utils_test.py
 
-bin/large_float_test.py: bin/_large_float.so
-	@ln -f test/large_float_test.py bin/large_float_test.py
-
-bin/interval_test.py: bin/_interval.so
-	@ln -f test/interval_test.py bin/interval_test.py
-
-bin/box_test.py: bin/_box.so
-	@ln -f test/box_test.py bin/box_test.py
+bin/testable_utils_test.py: bin/_testable_utils.so
+	@ln -f test/testable_utils_test.py bin/testable_utils_test.py
 
 
 
 
 #+-----------------------------------------------------------------------------+
-#| Cleaning                                                            
+#| Cleaning                                                                    |
 #+-----------------------------------------------------------------------------+
 .PHONY: clean
 clean:

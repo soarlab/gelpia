@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import multiprocessing as MP
 import unittest as UT
 import random as R
-import box as B
+import testable_utils as TU
 
 
 TESTS = 500
@@ -12,7 +13,7 @@ def trunc_string(item):
     s = str(item)
     return s[0:12]
 
-class box_test(UT.TestCase):
+class testable_utils_test(UT.TestCase):
     #+-------------------------------------------------------------------------+
     #| Test for included large_float                                           |
     #+-------------------------------------------------------------------------+
@@ -23,16 +24,16 @@ class box_test(UT.TestCase):
                 _b = R.uniform(-100, 100)
                 while (_a >= _b):
                     _b = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
-                b = B.large_float(str(_b))
+                a = TU.large_float(str(_a))
+                b = TU.large_float(str(_b))
                 self.assertTrue(a < b)
 
     def test_large_float_equal(self):
         for i in range(TESTS):
             with self.subTest(i=i):
                 _a = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
-                b = B.large_float(str(_a))
+                a = TU.large_float(str(_a))
+                b = TU.large_float(str(_a))
                 self.assertEqual(str(a), str(b))
                 self.assertEqual(a, b)
 
@@ -43,8 +44,8 @@ class box_test(UT.TestCase):
                 _b = R.uniform(-100, 100)
                 while (_a > _b):
                     _b = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
-                b = B.large_float(str(_b))
+                a = TU.large_float(str(_a))
+                b = TU.large_float(str(_b))
                 self.assertTrue(a <= b)
 
     def test_large_float_greater_than(self):
@@ -54,8 +55,8 @@ class box_test(UT.TestCase):
                 _b = R.uniform(-100, 100)
                 while (_a < _b):
                     _b = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
-                b = B.large_float(str(_b))
+                a = TU.large_float(str(_a))
+                b = TU.large_float(str(_b))
                 self.assertTrue(a > b)
 
     def test_large_float_less_than_equal(self):
@@ -65,8 +66,8 @@ class box_test(UT.TestCase):
                 _b = R.uniform(-100, 100)
                 while (_a <= _b):
                     _b = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
-                b = B.large_float(str(_b))
+                a = TU.large_float(str(_a))
+                b = TU.large_float(str(_b))
                 self.assertTrue(a >= b)
 
     def test_large_float_not_equal(self):
@@ -76,8 +77,8 @@ class box_test(UT.TestCase):
                 _b = R.uniform(-100, 100)
                 while (_a == _b):
                     _b = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
-                b = B.large_float(str(_b))
+                a = TU.large_float(str(_a))
+                b = TU.large_float(str(_b))
                 self.assertNotEqual(str(a), str(b))
                 self.assertNotEqual(a, b)
 
@@ -86,8 +87,8 @@ class box_test(UT.TestCase):
             with self.subTest(i=i):
                 _a = R.uniform(-100, 100)
                 _b = -_a
-                a = B.large_float(str(_a))
-                b = B.large_float(str(_b))
+                a = TU.large_float(str(_a))
+                b = TU.large_float(str(_b))
                 self.assertEqual(str(-a), str(b))
                 self.assertEqual(-a, b)
 
@@ -95,25 +96,34 @@ class box_test(UT.TestCase):
         for i in range(TESTS):
             with self.subTest(i=i):
                 _a = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
+                a = TU.large_float(str(_a))
                 b = a
                 self.assertEqual(a, b)
                 self.assertEqual(str(a), str(b))
 
                 a = ""
-                self.assertEqual(str(b), str(B.large_float(str(_a))))
-                self.assertEqual(b, B.large_float(str(_a)))
+                self.assertEqual(str(b), str(TU.large_float(str(_a))))
+                self.assertEqual(b, TU.large_float(str(_a)))
 
     def test_large_float_string(self):
         for i in range(TESTS):
             with self.subTest(i=i):
                 _a = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
-                b = B.large_float(str(_a))
+                a = TU.large_float(str(_a))
+                b = TU.large_float(str(_a))
                 self.assertEqual(str(a), str(b))
                 self.assertEqual(a, b)
 
-
+    def test_large_float_pickle(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                a = TU.large_float(str(_a))
+                q = MP.JoinableQueue()
+                q.put(a)
+                b = q.get()
+                self.assertEqual(str(a), str(b))
+                self.assertEqual(a, b)
 
 
     #+-------------------------------------------------------------------------+
@@ -127,9 +137,9 @@ class box_test(UT.TestCase):
                 while (_a > _b):
                     _b = R.uniform(-100, 100)
                 width = abs(_a-_b)
-                c = B.interval(str(_a), str(_b))
+                c = TU.interval(str(_a), str(_b))
                 trunc_c = trunc_string(c.width())
-                trunc_width = trunc_string(B.large_float(str(width)))
+                trunc_width = trunc_string(TU.large_float(str(width)))
                 self.assertEqual(trunc_c, trunc_width)
 
     def test_interval_lower(self):
@@ -139,8 +149,8 @@ class box_test(UT.TestCase):
                 _b = R.uniform(-100, 100)
                 while (_a > _b):
                     _b = R.uniform(-100, 100)
-                a = B.large_float(str(_a))
-                c = B.interval(str(_a), str(_b))
+                a = TU.large_float(str(_a))
+                c = TU.interval(str(_a), str(_b))
                 self.assertEqual(str(c.lower()), str(a))
                 self.assertEqual(c.lower(), a)
 
@@ -151,8 +161,8 @@ class box_test(UT.TestCase):
                 _b = R.uniform(-100, 100)
                 while (_a > _b):
                     _b = R.uniform(-100, 100)
-                b = B.large_float(str(_b))
-                c = B.interval(str(_a), str(_b))
+                b = TU.large_float(str(_b))
+                c = TU.interval(str(_a), str(_b))
                 self.assertEqual(str(c.upper()), str(b))
                 self.assertEqual(c.upper(), b)
 
@@ -166,8 +176,8 @@ class box_test(UT.TestCase):
                 _c = R.uniform(-100, 100)
                 while (_b > _c):
                     _c = R.uniform(-100, 100)
-                d = B.interval(str(_a), str(_b))
-                e = B.interval(str(_b), str(_c))
+                d = TU.interval(str(_a), str(_b))
+                e = TU.interval(str(_b), str(_c))
                 self.assertEqual(str(d.upper()), str(e.lower()))
                 self.assertEqual(d.upper(), e.lower())
 
@@ -175,10 +185,24 @@ class box_test(UT.TestCase):
         for i in range(TESTS):
             with self.subTest(i=i):
                 _a = R.uniform(-100, 100)
-                b = B.interval(str(_a), str(_a))
-                c = B.interval(str(_a), str(_a))
+                b = TU.interval(str(_a), str(_a))
+                c = TU.interval(str(_a), str(_a))
                 self.assertEqual(str(b), str(c))
                 self.assertEqual(b, c)
+
+    def test_interval_pickle(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                c = TU.interval(str(_a), str(_b))
+                q = MP.JoinableQueue()
+                q.put(c)
+                d = q.get()
+                self.assertEqual(str(c), str(d))
+                self.assertEqual(c, d)
 
 
 
@@ -190,12 +214,12 @@ class box_test(UT.TestCase):
         for i in range(TESTS):
             with self.subTest(i=i):
                 _a = R.uniform(-100, 100)
-                _b = B.interval(str(_a), str(_a))
-                _c = B.interval(str(_a), str(_a))
-                d = B.box()
+                _b = TU.interval(str(_a), str(_a))
+                _c = TU.interval(str(_a), str(_a))
+                d = TU.box()
                 d.append(_b)
                 d.append(_c)
-                e = B.box()
+                e = TU.box()
                 e.append(_b)
                 e.append(_c)
                 self.assertEqual(str(d), str(e))
@@ -213,13 +237,13 @@ class box_test(UT.TestCase):
                 while (_c > _d):
                     _d = R.uniform(-100, 100)
 
-                e = B.box()
+                e = TU.box()
                 e.append(str(_a), str(_b))
                 e.append(str(_c), str(_d))
 
-                f = B.box()
-                f.append(B.interval(str(_a), str(_b)))
-                f.append(B.interval(str(_c), str(_d)))
+                f = TU.box()
+                f.append(TU.interval(str(_a), str(_b)))
+                f.append(TU.interval(str(_c), str(_d)))
 
                 self.assertEqual(str(e), str(f))
                 self.assertEqual(e, f)
@@ -236,12 +260,12 @@ class box_test(UT.TestCase):
                 while (_c > _d):
                     _d = R.uniform(-100, 100)
 
-                e = B.box()
+                e = TU.box()
                 e.append(str(_a), str(_b))
-                e.append(B.interval(str(_c), str(_d)))
+                e.append(TU.interval(str(_c), str(_d)))
 
-                f = B.box()
-                f.append(B.interval(str(_a), str(_b)))
+                f = TU.box()
+                f.append(TU.interval(str(_a), str(_b)))
                 f.append(str(_c), str(_d))
 
                 self.assertEqual(str(e), str(f))
@@ -255,10 +279,10 @@ class box_test(UT.TestCase):
                 while (_a > _b):
                     _b = R.uniform(-100, 100)
                 width = abs(_a-_b)
-                c = B.box()
-                c.append(B.interval(str(_a), str(_b)))
+                c = TU.box()
+                c.append(TU.interval(str(_a), str(_b)))
                 trunc_c = trunc_string(c.width())
-                trunc_width = trunc_string(B.large_float(str(width)))
+                trunc_width = trunc_string(TU.large_float(str(width)))
                 self.assertEqual(trunc_c, trunc_width) 
 
     def test_box_width_1(self):
@@ -279,11 +303,11 @@ class box_test(UT.TestCase):
                     while (_c > _d):
                         _d = R.uniform(-100, 100)
                 width = abs(_a-_b)
-                e = B.box()
-                e.append(B.interval(str(_a), str(_b)))
-                e.append(B.interval(str(_c), str(_d)))
+                e = TU.box()
+                e.append(TU.interval(str(_a), str(_b)))
+                e.append(TU.interval(str(_c), str(_d)))
                 trunc_e = trunc_string(e.width())
-                trunc_width = trunc_string(B.large_float(str(width)))
+                trunc_width = trunc_string(TU.large_float(str(width)))
                 self.assertEqual(trunc_e, trunc_width) 
 
     def test_box_width_2(self):
@@ -304,22 +328,22 @@ class box_test(UT.TestCase):
                     while (_c > _d):
                         _d = R.uniform(-100, 100)
                 width = abs(_c-_d)
-                e = B.box()
-                e.append(B.interval(str(_a), str(_b)))
-                e.append(B.interval(str(_c), str(_d)))
+                e = TU.box()
+                e.append(TU.interval(str(_a), str(_b)))
+                e.append(TU.interval(str(_c), str(_d)))
                 trunc_e = trunc_string(e.width())
-                trunc_width = trunc_string(B.large_float(str(width)))
+                trunc_width = trunc_string(TU.large_float(str(width)))
                 self.assertEqual(trunc_e, trunc_width) 
 
     def test_box_split(self):
         for i in range(TESTS):
             with self.subTest(i=i):
                 _a = R.uniform(0, 100)
-                b = B.box()
+                b = TU.box()
                 b.append(str(-_a), str(_a))
-                c = B.box()
+                c = TU.box()
                 c.append(str(-_a), "0")
-                d = B.box()
+                d = TU.box()
                 d.append("0", str(_a))
                 box_list = b.split()
                 self.assertEqual(str(box_list[0]), str(c))

@@ -1,6 +1,8 @@
-%module large_float
+%module testable_utils
 %{
 #include "large_float.h"
+#include "interval.h"
+#include "box.h"
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -9,13 +11,37 @@
 %}
 
 %include <std_string.i>
+%include <std_vector.i>
 %include "large_float.h"
+%include "interval.h"
+%ignore box::operator[];
+%include "box.h"
 
 %extend large_float {
   const char *__str__() {
     return (*$self).to_string().c_str();
   }
  }
+
+%extend interval {
+  const char *__str__() {
+    return (*$self).to_string().c_str();
+  }
+ }
+
+%extend box {
+  const char *__str__() {
+    return (*$self).to_string().c_str();
+  }
+
+  interval __getitem__(unsigned int i) {
+    return (*self)[i];
+  }
+ }
+
+namespace std {
+  %template(BoxVector) vector<box>;
+}
 
 %define %boost_picklable(cls...)
 %extend cls {
@@ -46,3 +72,5 @@
 %enddef
 
 %boost_picklable(large_float)
+%boost_picklable(interval)
+
