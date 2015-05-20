@@ -73,4 +73,5 @@ namespace std {
 
 %boost_picklable(large_float)
 %boost_picklable(interval)
+%boost_picklable(box)
 

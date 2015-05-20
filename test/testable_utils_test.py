@@ -352,7 +352,22 @@ class testable_utils_test(UT.TestCase):
                 self.assertEqual(str(box_list[1]), str(d))
                 self.assertEqual(box_list[1], d)
 
+    def test_box_string_pickle(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = TU.interval(str(_a), str(_a))
+                _c = TU.interval(str(_a), str(_a))
+                d = TU.box()
+                d.append(_b)
+                d.append(_c)
+                q = MP.JoinableQueue()
+                q.put(d)
+                e = q.get()
+                self.assertEqual(str(d), str(e))
+                self.assertEqual(d, e)
 
+                
 
 
 if __name__ == "__main__":

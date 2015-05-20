@@ -4,12 +4,36 @@
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include <boost/multiprecision/mpfr.hpp>
+#include <boost/serialization/serialization.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/split_member.hpp>
-
+#include <boost/serialization/split_free.hpp>
+#include <sstream>
 
 typedef boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<300> >  large_float_t;
+
+namespace boost {
+  namespace serialization {
+    template <typename Archive>
+      void save(Archive & ar, large_float_t const& r, const unsigned int version) {
+      std::string tmp = r.str();
+      ar << tmp;
+    }
+
+    template <typename Archive>
+      void load(Archive & ar, large_float_t & r, const unsigned version) {
+      std::string tmp;
+      ar >> tmp;
+      r = static_cast<large_float_t>(tmp.c_str());
+    }
+
+    template<class Archive>
+      inline void serialize(Archive & ar, large_float_t & t,
+			    const unsigned int file_version) {
+      split_free(ar, t, file_version);
+    }
+  }
+}
 
 
 class large_float {
@@ -19,19 +43,10 @@ class large_float {
   std::string str_rep;
 
   template <typename Archive>
-    void save(Archive & ar, const unsigned int version) const {
-    std::string tmp = value.str();
-    ar << tmp;
-  }
-
-  template <typename Archive>
-    void load(Archive & ar, const unsigned version) {
-    std::string tmp;
-    ar >> tmp;
-    value = static_cast<large_float_t>(tmp.c_str());
-  }
-
-  BOOST_SERIALIZATION_SPLIT_MEMBER();
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & value;
+    }
 
  public:
   // Constructors
