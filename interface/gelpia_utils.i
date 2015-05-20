@@ -8,7 +8,6 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/split_free.hpp>
 #include <sstream>
 %}
 
@@ -76,4 +75,5 @@ namespace std {
 
 %boost_picklable(large_float)
 %boost_picklable(interval)
+%boost_picklable(box)
 

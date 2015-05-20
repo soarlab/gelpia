@@ -13,7 +13,7 @@ ifeq ($(UNAME), Linux)
 endif
 
 ifeq ($(CXX), clang++)
-	NO_DEP_REG = -Wno-depreciated-register
+	NO_DEP_REG = -Wno-deprecated-register
 endif
 
 # take the c specific flag out of python cflags
@@ -40,7 +40,7 @@ LINK_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lboost_serialization `python3-config
 
 
 
-all: $(BOX_OBJ)
+all: $(BASE_OBJ)
 	@ln -f src/gelpia bin/gelpia
 	@ln -f src/ian_utils.py bin/ian_utils.py
 	@ln -f src/serial_solver.py bin/serial_solver.py
