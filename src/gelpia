@@ -146,7 +146,7 @@ def main():
 
     arg_dict = parse_args()
 
-    full_dir = P.dirname(SYS.argv[0])
+    full_dir = P.abspath(P.dirname(SYS.argv[0]))
     base_dir = P.split(full_dir)[0]
     bin_dir = P.join(base_dir, "bin/")
     src_dir = P.join(base_dir, "src/")
@@ -159,8 +159,8 @@ def main():
 
     IU.log(1, IU.cyan("Compiling"))
 
-    compile_time, output = IU.time_func(IU.run,
-                                        "cd "+base_dir+" && make", ["solver"],
+    OS.chdir(base_dir)
+    compile_time, output = IU.time_func(IU.run, "make", ["solver"],
                                         "Unable to compile")
 
     import gelpia_utils as GU
