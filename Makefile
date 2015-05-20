@@ -46,6 +46,7 @@ all: $(BASE_OBJ)
 	@ln -f src/serial_solver.py bin/serial_solver.py
 	@ln -f src/priority_serial_solver.py bin/priority_serial_solver.py
 	@ln -f src/naive_parallel_solver.py bin/naive_parallel_solver.py
+	@ln -f src/split_parallel_solver.py bin/split_parallel_solver.py
 
 
 solver: bin/_gelpia_utils.so

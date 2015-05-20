@@ -15,8 +15,9 @@ solvers = {"serial"                 : "serial",
            "priority_serial"        : "priority_serial",
            "ps"                     : "priority_serial",
            "naive_parallel"         : "naive_parallel",
-           "np"                     : "naive_parallel"}
-
+           "np"                     : "naive_parallel",
+	   "split_parallel"         : "split_parallel",
+	   "sp"                     : "split_parallel"}
 
 GU = None
 SOLVER = None
@@ -28,6 +29,8 @@ def import_solver(solver):
         import priority_serial_solver as SOLVER
     if solvers[solver] == "naive_parallel":
         import naive_parallel_solver as SOLVER
+    if solvers[solver] == "split_parallel":
+        import split_parallel_solver as SOLVER
 
 
 def parse_box(box_string):
