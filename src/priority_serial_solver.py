@@ -2,7 +2,7 @@ import gelpia_utils as GU
 
 import queue as Q
 
-def solve(X_0, x_tol, f_tol, func, ignore):
+def solve(X_0, x_tol, f_tol, func, procs_ignore, profiler):
     local_queue = Q.PriorityQueue()
     local_queue.put((0, 0, X_0))
     priority_fix = 0
