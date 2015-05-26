@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import ian_utils as IU
+import line_profiler as LP
 import argparse as AP
 import time as T
 import sys as SYS
@@ -70,6 +71,8 @@ def parse_args():
                                fromfile_prefix_chars='@')
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         type=int)
+    parser.add_argument("-p", "--profile", help="profile the solver",
+                        action="store_true")
     parser.add_argument("-t", "--threads", help="number of threads to use",
                         type=int, default=1)
     parser.add_argument("-ie", "--input-epsilon",
@@ -104,7 +107,8 @@ def parse_args():
             "input"          : args.input,
             "function"       : function,
             "solver"         : args.solver,
-            "threads"        : args.threads}
+            "threads"        : args.threads,
+            "profile"        : args.profile}
 
 
 
@@ -170,15 +174,28 @@ def main():
     import_solver(arg_dict["solver"])
 
     X_0, dimentions = parse_box(arg_dict["input"])
-    
-    start = T.time()
-    answer = SOLVER.solve(X_0,
-                          GU.large_float(arg_dict["input_epsilon"]),
-                          GU.large_float(arg_dict["output_epsilon"]),
-                          GU.function,
-                          arg_dict["threads"])
-    end = T.time()
 
+    profiler = None
+    if (arg_dict["profile"]):
+        profiler = LP.LineProfiler(SOLVER.solve)
+        profiler.enable()
+
+    try:
+        start = T.time()
+        IU.log(1, IU.cyan("Running"))
+        answer = SOLVER.solve(X_0,
+                              GU.large_float(arg_dict["input_epsilon"]),
+                              GU.large_float(arg_dict["output_epsilon"]),
+                              GU.function,
+                              arg_dict["threads"],
+                              profiler)
+    finally:
+        end = T.time()
+
+        if (arg_dict["profile"]):
+            profiler.disable()
+            profiler.print_stats()
+        
     IU.log(0, IU.green("Compile time: ")+str(compile_time))
     IU.log(0, IU.green("Solver time: ")+str(end-start))
     print(IU.green("Answer: ")+str(answer))

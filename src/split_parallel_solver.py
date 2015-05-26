@@ -1,9 +1,11 @@
 import gelpia_utils as GU
 
 import multiprocessing as MP
+import line_profiler as LP
 import queue as Q
 import ctypes as CT
 from time import sleep
+
 
 def globopt_worker(X_0, x_tol, f_tol, func, out_queue):
     local_queue = Q.PriorityQueue()
@@ -37,7 +39,19 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue):
 
 
 
-def solve(X_0, x_tol, f_tol, func, procs):
+def globopt_worker_wrap(X_0, x_tol, f_tol, func, out_queue, ns, my_id):
+    my_profiler = LP.LineProfiler(globopt_worker)
+    my_profiler.enable()
+    try:
+        globopt_worker(X_0, x_tol, f_tol, func, out_queue)
+    finally:
+        my_profiler.disable()
+        my_profiler.print_stats()
+
+
+        
+
+def solve(X_0, x_tol, f_tol, func, procs, profiler):
     boxes = Q.Queue()
     boxes.put(X_0)
     for i in range(procs-1):
@@ -49,11 +63,21 @@ def solve(X_0, x_tol, f_tol, func, procs):
 
     answer_queue= MP.Queue()
 
+    mgr = MP.Manager()
+    ns = mgr.Namespace()
+        
     process_list = list()
-    for i in range(procs):
-        process_list.append(MP.Process(target=globopt_worker,
-                                       args=(boxes.get(), x_tol, f_tol, func, 
-                                             answer_queue)))
+    if profiler:
+        for i in range(procs):
+            process_list.append(MP.Process(target=globopt_worker_wrap,
+                                           args=(boxes.get(), x_tol, f_tol, func, 
+                                                 answer_queue, ns, i)))
+    else:
+        for i in range(procs):
+            process_list.append(MP.Process(target=globopt_worker,
+                                           args=(boxes.get(), x_tol, f_tol, func, 
+                                                 answer_queue, ns, i)))
+            
     assert(boxes.empty())
 
     for proc in process_list:
@@ -67,6 +91,5 @@ def solve(X_0, x_tol, f_tol, func, procs):
         ans = answer_queue.get()
         if (ans > best):
             best = ans
-    
-    
+
     return best
