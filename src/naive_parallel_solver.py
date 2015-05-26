@@ -5,7 +5,7 @@ import line_profiler as LP
 from time import sleep
 
         
-def globopt_worker(func, global_queue, ns):
+def globopt_worker(x_tol, f_tol, func, global_queue, ns):
     while True:
         X = global_queue.get()
 
@@ -20,8 +20,8 @@ def globopt_worker(func, global_queue, ns):
         fw = f.width()
         
         if (f.upper() < ns.f_best_low
-            or w < ns.x_tol
-            or fw < ns.f_tol):
+            or w < x_tol
+            or fw < f_tol):
             if (ns.f_best_high < f.upper()):
                 ns.f_best_high = f.upper()
         else:
@@ -37,11 +37,11 @@ def globopt_worker(func, global_queue, ns):
 
 
 
-def globopt_worker_wrap(func, global_queue, ns):
+def globopt_worker_wrap(x_tol, f_tol, func, global_queue, ns):
     my_profiler = LP.LineProfiler(globopt_worker)
     my_profiler.enable()
     try:
-        globopt_worker(func, global_queue, ns)
+        globopt_worker(x_tol, f_tol, func, global_queue, ns)
     finally:
         my_profiler.disable()
         my_profiler.print_stats()
@@ -59,14 +59,13 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
     ns.f_best_high = GU.large_float("-inf")
     ns.x_tol = x_tol
     ns.f_tol = f_tol
-    
+
+    worker = globopt_worker
     if profiler:
-        process_list = [MP.Process(target=globopt_worker_wrap,
-                                   args=(func, global_queue, ns))
-                    for i in range(procs)]
-    else:
-        process_list = [MP.Process(target=globopt_worker,
-                                   args=(func, global_queue, ns))
+        worker = global_worker_wrap
+        
+    process_list = [MP.Process(target=worker,
+                               args=(x_tol, f_tol, func, global_queue, ns))
                     for i in range(procs)]
 
     for proc in process_list:
