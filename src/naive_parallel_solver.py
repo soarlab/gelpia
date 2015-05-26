@@ -62,7 +62,7 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
 
     worker = globopt_worker
     if profiler:
-        worker = global_worker_wrap
+        worker = globopt_worker_wrap
         
     process_list = [MP.Process(target=worker,
                                args=(x_tol, f_tol, func, global_queue, ns))

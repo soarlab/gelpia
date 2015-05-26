@@ -1,4 +1,5 @@
 import gelpia_utils as GU
+import ian_utils as IU
 
 import multiprocessing as MP
 import line_profiler as LP
@@ -16,8 +17,14 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe):
     
     while not local_queue.empty():
         try:
-            f_best = update_pipe.get_nowait()
-        except:
+            temp = update_pipe.get_nowait()
+            IU.log(3, "Might update f_best: (?> {} {})".format(temp, f_best))
+            if (temp > f_best):
+                IU.log(3, print("Updated f_best to: {}".format(temp)))
+                f_best = temp
+            else:
+                IU.log(3, "Not updated f_best: {}".format(f_best))
+        except Q.Empty:
             pass
         
         ignore_0, ignore_1, X = local_queue.get()
@@ -39,7 +46,7 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe):
                     f_best = e.upper()
                 priority_fix += 1
                 local_queue.put((-e.upper(), priority_fix, b))
-
+    print("Found possible answer: {}".format(f_best))
     out_queue.put(f_best)
 
 
@@ -70,7 +77,7 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
 
     answer_queue = MP.Queue()
 
-    pipe_list = [MP.Pipe() for i in range(procs)]
+    pipe_list = [MP.Queue() for i in range(procs)]
 
     worker = globopt_worker
     if profiler:
@@ -80,22 +87,22 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
     for i in range(procs):
         process_list.append(MP.Process(target=worker,
                                        args=(boxes.get(), x_tol, f_tol, func, 
-                                             answer_queue, pipe_list[i][1])))
+                                             answer_queue, pipe_list[i])))
             
     assert(boxes.empty())
-
 
     for proc in process_list:
         proc.start()
 
-    best = answer_queue.get()
-    for i in range(procs-1):
+    best = GU.large_float("-inf");
+    for i in range(procs):
         next_best = answer_queue.get()
         if next_best > best:
             best = next_best
             for pipe in pipe_list:
+                IU.log(3, "Sending update to workers: {}".format(best))
                 try:
-                    pipe[0].put_nowait(best)
+                    pipe.put_nowait(best)
                 except:
                     pass
 
