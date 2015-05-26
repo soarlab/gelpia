@@ -1,0 +1,32 @@
+Back end solvers for this tool are written in python.
+The function evalution is done in c++. To interface between the two a 
+`gelpia_utils` python module is made. This module has a simple interface.
+The established solvers can be used to se how this module can be used.
+
+Each solver is contained in its own file and must have a function called solve 
+with the signature `def solve(X_0, x_tol, f_tol, func, procs, profiler):`
+     -X_0 is the box to search
+     -x_tol is the function input width tolerance
+     -f_tol is the function output width tolerance
+     -func is the function under test
+     -procs is the number of processes to use (ignored for serial solvers)
+     -profiler is None if profiling has not been requested and a line_profiler
+     	       object if profiling is requested. The line_profiler does not play
+	       nice with multiprocessing, but can bes used as seen in 
+	       established parallel solvers
+
+To make a new solver usable:
+   1. Make a solver with the above requirement an place it in the src directory
+   2. In the makefile add, under `all`, a new ln command linking the src file 
+      to a file in the bin directory
+   3. Edit src/gelpia:
+      a. Add entries to the global `solvers` dictionary giving the name you want
+      	 the solver to have from the command line mapping to a name used
+	 internally. 
+      b. Add an if statement to the `import_solver` function to catch your 
+      	 internal name and then import your solver as `SOLVER`
+
+Then your new solver can be ran on a test file by running
+     `./bin/gelpia @examples/F1.txt -s <your_solver>`
+
+

@@ -20,7 +20,7 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe):
             temp = update_pipe.get_nowait()
             IU.log(3, "Might update f_best: (?> {} {})".format(temp, f_best))
             if (temp > f_best):
-                IU.log(3, print("Updated f_best to: {}".format(temp)))
+                IU.log(3, "Updated f_best to: {}".format(temp))
                 f_best = temp
             else:
                 IU.log(3, "Not updated f_best: {}".format(f_best))
@@ -46,7 +46,7 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe):
                     f_best = e.upper()
                 priority_fix += 1
                 local_queue.put((-e.upper(), priority_fix, b))
-    print("Found possible answer: {}".format(f_best))
+    IU.log(3, "Found possible answer: {}".format(f_best))
     out_queue.put(f_best)
 
 
