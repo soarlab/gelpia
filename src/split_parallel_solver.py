@@ -6,14 +6,20 @@ import queue as Q
 import ctypes as CT
 from time import sleep
 
+STDOUT_LOCK = MP.Lock()
 
-def globopt_worker(X_0, x_tol, f_tol, func, out_queue):
+def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe):
     local_queue = Q.PriorityQueue()
     local_queue.put((0, 0, X_0))
     priority_fix = 0
     f_best = GU.large_float("-inf");
     
     while not local_queue.empty():
+        try:
+            f_best = update_pipe.get_nowait()
+        except:
+            pass
+        
         ignore_0, ignore_1, X = local_queue.get()
 
         fx = func(X)
@@ -39,15 +45,16 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue):
 
 
 
-def globopt_worker_wrap(X_0, x_tol, f_tol, func, out_queue, ns, my_id):
+def globopt_worker_wrap(X_0, x_tol, f_tol, func, out_queue, update_pipe):
     my_profiler = LP.LineProfiler(globopt_worker)
     my_profiler.enable()
     try:
-        globopt_worker(X_0, x_tol, f_tol, func, out_queue)
+        globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe)
     finally:
         my_profiler.disable()
+        STDOUT_LOCK.acquire()
         my_profiler.print_stats()
-
+        STDOUT_LOCK.release()
 
         
 
@@ -61,35 +68,38 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
             boxes.put(b)
     assert(boxes.qsize() == procs)
 
-    answer_queue= MP.Queue()
+    answer_queue = MP.Queue()
 
-    mgr = MP.Manager()
-    ns = mgr.Namespace()
-        
-    process_list = list()
+    pipe_list = [MP.Pipe() for i in range(procs)]
+
+    worker = globopt_worker
     if profiler:
-        for i in range(procs):
-            process_list.append(MP.Process(target=globopt_worker_wrap,
-                                           args=(boxes.get(), x_tol, f_tol, func, 
-                                                 answer_queue, ns, i)))
-    else:
-        for i in range(procs):
-            process_list.append(MP.Process(target=globopt_worker,
-                                           args=(boxes.get(), x_tol, f_tol, func, 
-                                                 answer_queue, ns, i)))
+        worker = globopt_worker_wrap
+        
+    process_list = list()        
+    for i in range(procs):
+        process_list.append(MP.Process(target=worker,
+                                       args=(boxes.get(), x_tol, f_tol, func, 
+                                             answer_queue, pipe_list[i][1])))
             
     assert(boxes.empty())
+
 
     for proc in process_list:
         proc.start()
 
+    best = answer_queue.get()
+    for i in range(procs-1):
+        next_best = answer_queue.get()
+        if next_best > best:
+            best = next_best
+            for pipe in pipe_list:
+                try:
+                    pipe[0].put_nowait(best)
+                except:
+                    pass
+
     for proc in process_list:
         proc.join()
-        
-    best = answer_queue.get()
-    while not answer_queue.empty():
-        ans = answer_queue.get()
-        if (ans > best):
-            best = ans
 
     return best

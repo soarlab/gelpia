@@ -7,7 +7,10 @@ import sys as SYS
 import time as T
 
 # optional color printing
-DO_COLOR = True
+if SYS.stdout.isatty():
+    DO_COLOR = True
+else:
+    DO_COLOR = False
 
 def use_color_printing():
     global DO_COLOR
