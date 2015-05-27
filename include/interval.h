@@ -12,8 +12,15 @@
 
 #include "large_float.h"
 
+using boost::numeric::interval_lib::policies;
+using boost::numeric::interval_lib::save_state;
+using boost::numeric::interval_lib::rounded_transc_exact;
+using boost::numeric::interval_lib::rounded_math;
+using boost::numeric::interval_lib::checking_strict;
 
-typedef boost::numeric::interval<large_float_t> interval_t;
+typedef boost::numeric::interval<large_float_t,
+  policies<save_state<rounded_transc_exact<large_float_t, rounded_math<large_float_t> > >,
+  checking_strict<large_float_t> > > interval_t;
 
 namespace boost {
   namespace serialization {

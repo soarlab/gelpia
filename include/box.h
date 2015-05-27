@@ -44,7 +44,7 @@ class box {
   std::vector<box> split() const;
   box midpoint() const;
   int size() const;
-  box_t get_value() const;
+  const box_t & get_value() const;
   interval operator[] (int) const;
   std::string& to_string();
   ~box();

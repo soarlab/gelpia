@@ -34,18 +34,23 @@ def import_solver(solver):
         import split_parallel_solver as SOLVER
 
 
-def parse_box(box_string):
+def parse_box2(box_string):
+    # Put numbers in strings
     num_re = r"((?:-?\d+\.\d+)|(?:-?\d+\.)|(?:-?\.\d+)|(?:-?\d+))"
     box_string = RE.sub(num_re, 
                         lambda m: '"{}"'.format(m.group(1)), 
                         box_string[0])
     python_box = AST.literal_eval(box_string)
-    
-    try:
-        dimentions = len(python_box)
-        box = GU.box()
 
-        for pair in python_box:
+    variables = dict()
+    index = 0
+    box = []
+    try:
+        dimensions = len(python_box)
+        for pair in python_box.keys():
+            variables[pair] = index
+            index += 1
+            pair = python_box[pair]
             if (len(pair) != 2):
                 IU.error("Interval must be a N by 2 list.")
                 IU.error("item <{}> is of length {}".format(pair, len(pair)))
@@ -54,9 +59,9 @@ def parse_box(box_string):
                 not isinstance(pair[1], str)):
                 IU.error("Improve this error 0")
                 SYS.exit()
-            box.append(pair[0], pair[1])
+            box.append(pair)
         
-        return (box, dimentions)
+        return (box, dimensions, variables)
 
     except:
         IU.error("Improve this error 1")
@@ -64,6 +69,7 @@ def parse_box(box_string):
         SYS.exit()
 
 
+    
 
 
 def parse_args():
@@ -124,8 +130,9 @@ def create_function_body(function):
     preamble.append('extern interval')
     preamble.append('function(const box & X_wrapped)')
     preamble.append('{')
-    preamble.append('box_t X = X_wrapped.get_value();')
-    preamble.append('    return interval({});'.format(function))
+    preamble.append('const box_t & X = X_wrapped.get_value();')
+    preamble.append(function)
+#    preamble.append('    return interval({});'.format(function))
     preamble.append('}')
     preamble.append('')
 
@@ -143,11 +150,18 @@ def write_function_source(filename, function):
 
 
 
-def reformat_function(function):
-    return function
+def reformat_function(function, variables):
+    import rewriter.rewrite
+    
+    return rewriter.rewrite.rewrite(function,variables)
 
 
-
+def make_X_0(box_list):
+    box = GU.box()
+    for i in range(len(box_list)):
+        box.append(box_list[i][0], box_list[i][1])
+    return box
+    
 def main():
     global GU
 
@@ -159,8 +173,10 @@ def main():
     src_dir = P.join(base_dir, "src/")
     include_dir = P.join(base_dir, "include/")
     generated_dir = P.join(base_dir, "generated/")
+
+    start_box, dimensions, variables = parse_box2(arg_dict["input"])
     
-    function = reformat_function(arg_dict["function"])
+    function = reformat_function(arg_dict["function"], variables)
 
     write_function_source(P.join(generated_dir, "function.cc"), function)
 
@@ -169,11 +185,10 @@ def main():
     OS.chdir(base_dir)
     compile_time, output = IU.time_func(IU.run, "make", ["solver"],
                                         "Unable to compile")
-
     import gelpia_utils as GU
-    import_solver(arg_dict["solver"])
 
-    X_0, dimentions = parse_box(arg_dict["input"])
+    import_solver(arg_dict["solver"])
+    X_0 = make_X_0(start_box)
 
     profiler = None
     if (arg_dict["profile"]):

@@ -47,7 +47,7 @@ all: $(BASE_OBJ)
 	@ln -f src/priority_serial_solver.py bin/priority_serial_solver.py
 	@ln -f src/naive_parallel_solver.py bin/naive_parallel_solver.py
 	@ln -f src/split_parallel_solver.py bin/split_parallel_solver.py
-
+	@cp -R src/rewriter bin/rewriter
 
 solver: bin/_gelpia_utils.so
 
@@ -127,3 +127,5 @@ clean:
 	$(RM) -r bin/*
 	$(RM) obj/*
 	$(RM) generated/*
+	$(RM) parser.out
+	$(RM) parsetab.py

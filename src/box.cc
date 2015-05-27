@@ -37,7 +37,7 @@ int box::size() const {
   return value.size(); 
 }
 
-box_t box::get_value() const { 
+const box_t & box::get_value() const { 
   return this->value; 
 }
 
