@@ -153,7 +153,7 @@ def collect_vars(exp):
         if exp[0] == 'Name':
           exp[1] = '_' + exp[1]
           result.add(exp[1])
-        if exp[1] == 'Neg':
+        if exp[0] == 'Neg':
             result = result | collect_vars(exp[1])
     if len(exp) == 3:
         if exp[0] == 'Call':
