@@ -40,13 +40,14 @@ LINK_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lboost_serialization `python3-config
 
 
 
-all: $(BASE_OBJ)
+all: $(BASE_OBJ) obj/gelpia_utils_wrap.o
 	@ln -f src/gelpia bin/gelpia
 	@ln -f src/ian_utils.py bin/ian_utils.py
 	@ln -f src/serial_solver.py bin/serial_solver.py
 	@ln -f src/priority_serial_solver.py bin/priority_serial_solver.py
 	@ln -f src/naive_parallel_solver.py bin/naive_parallel_solver.py
 	@ln -f src/split_parallel_solver.py bin/split_parallel_solver.py
+	@ln -f src/feeder_parallel_solver.py bin/feeder_parallel_solver.py
 	@cp -R src/rewriter bin/rewriter
 
 solver: bin/_gelpia_utils.so

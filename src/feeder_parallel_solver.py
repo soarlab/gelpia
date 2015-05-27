@@ -9,7 +9,7 @@ from time import sleep
 
 STDOUT_LOCK = MP.Lock()
 
-def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe):
+def globopt_subworker(X_0, x_tol, f_tol, func, update_pipe):
     local_queue = Q.PriorityQueue()
     local_queue.put((0, 0, X_0))
     priority_fix = 0
@@ -48,16 +48,27 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe):
                 priority_fix += 1
                 local_queue.put((-e.upper(), priority_fix, b))
     IU.log(3, "Found possible answer: {}".format(f_best))
-    out_queue.put(f_best)
+    return f_best
+
+
+def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe,
+                   new_work_queue, my_id):
+    while X_0:
+        local_best = globopt_subworker(X_0, x_tol, f_tol, func, update_pipe)
+        out_queue.put((my_id, local_best))
+        X_0 = new_work_queue.get()
+
+        
 
 
 
-
-def globopt_worker_wrap(X_0, x_tol, f_tol, func, out_queue, update_pipe):
-    my_profiler = LP.LineProfiler(globopt_worker)
+def globopt_worker_wrap(X_0, x_tol, f_tol, func, out_queue, update_pipe,
+                        new_work_queue, my_id):
+    my_profiler = LP.LineProfiler(globopt_worker, globopt_subworker)
     my_profiler.enable()
     try:
-        globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe)
+        globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_pipe,
+                       new_work_queue, my_id)
     finally:
         my_profiler.disable()
         STDOUT_LOCK.acquire()
@@ -69,17 +80,17 @@ def globopt_worker_wrap(X_0, x_tol, f_tol, func, out_queue, update_pipe):
 def solve(X_0, x_tol, f_tol, func, procs, profiler):
     boxes = Q.Queue()
     boxes.put(X_0)
-    for i in range(procs-1):
+    for i in range(procs*4):
         new_box = boxes.get()
         box_list = new_box.split()
         for b in box_list:
             boxes.put(b)
-    assert(boxes.qsize() == procs)
 
     answer_queue = MP.Queue()
 
     pipe_list = [MP.Queue() for i in range(procs)]
-
+    new_work_queues = [MP.Queue() for i in range(procs)]
+    
     worker = globopt_worker
     if profiler:
         worker = globopt_worker_wrap
@@ -88,24 +99,30 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
     for i in range(procs):
         process_list.append(MP.Process(target=worker,
                                        args=(boxes.get(), x_tol, f_tol, func, 
-                                             answer_queue, pipe_list[i])))
-            
-    assert(boxes.empty())
+                                             answer_queue, pipe_list[i],
+                                             new_work_queues[i], i)))
 
     for proc in process_list:
         proc.start()
 
     best = GU.large_float("-inf");
-    for i in range(procs):
-        next_best = answer_queue.get()
+    done_count = 0
+    while done_count < procs:
+        proc_num, next_best = answer_queue.get()
         if next_best > best:
             best = next_best
             for pipe in pipe_list:
                 IU.log(3, "Sending update to workers: {}".format(best))
                 try:
-                    pipe.put_nowait(best)
+                    pipe.put(best)
                 except:
                     pass
+        if boxes.empty():
+            IU.log(3, "Killing Process {}".format(proc_num))
+            new_work_queues[proc_num].put(None)
+            done_count += 1
+        else:
+            new_work_queues[proc_num].put(boxes.get())
 
     for proc in process_list:
         proc.join()
