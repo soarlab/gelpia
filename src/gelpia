@@ -42,11 +42,11 @@ def import_solver(solver):
 def parse_box2(box_string):
     # Put numbers in strings
     num_re = r"((?:-?\d+\.\d+)|(?:-?\d+\.)|(?:-?\.\d+)|(?:-?\d+))"
-    box_string = RE.sub(num_re, 
-                        lambda m: '"{}"'.format(m.group(1)), 
+    interval_re = r"\((" + num_re + r"),\s*(" + num_re + ")\)"
+    box_string = RE.sub(interval_re, 
+                        lambda m: '("{}", "{}")'.format(m.group(1), m.group(3)), 
                         box_string[0])
     python_box = AST.literal_eval(box_string)
-
     variables = dict()
     index = 0
     box = []

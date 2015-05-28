@@ -1,0 +1,4 @@
+--input-epsilon .000001
+--output-epsilon .000001
+--function "(x-1)/(x * x - 1)"
+--input "{'x' : (1.00001, 2.0)}"
