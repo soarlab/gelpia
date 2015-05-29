@@ -9,5 +9,6 @@ Requirements: (probably incomplete)
 
 	and a c++11 compiler g++ and clang++ have been tested
 
-* Note: in addition the modules argparse and line_profile are needed
+* Note: in addition the modules argparse, line_profile and 
+        ply are needed
 ** Note: boost_serialization library is required
