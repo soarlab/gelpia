@@ -31,7 +31,7 @@ bool interval::operator!=(const interval &c) const {
   return !(*this == c);
 }
 
-large_float interval::width() {
+large_float interval::width() const {
   return large_float(value.upper() - value.lower());
 }
 
@@ -43,12 +43,14 @@ large_float interval::upper() const {
   return static_cast<large_float>(this->value.upper());
 }
   
-std::string& interval::to_string() {
-  str_rep = "[";
-  str_rep += boost::lexical_cast<std::string>(value.lower());
-  str_rep += ", ";
-  str_rep += boost::lexical_cast<std::string>(value.upper());
-  str_rep += "]";
+std::string& interval::to_string() const {
+  if(str_rep == "") {
+    str_rep = "[";
+    str_rep += boost::lexical_cast<std::string>(value.lower());
+    str_rep += ", ";
+    str_rep += boost::lexical_cast<std::string>(value.upper());
+    str_rep += "]";
+  }
   return str_rep;
 }
 
@@ -56,4 +58,5 @@ interval_t interval::get_value() const {
   return value; 
 }
 
+// Needed for SWIG
 interval::~interval() {;}

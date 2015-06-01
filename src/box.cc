@@ -45,7 +45,7 @@ box::box(const box_t &in)
 {
   value = box_t();
 
-  for (interval_t item : in) {
+  for (const interval_t & item : in) {
     value.emplace_back(interval_t(item.lower(), item.upper()));
   }
 }
@@ -115,15 +115,19 @@ interval box::operator[](int i) const
   return interval(value.at(i));
 }
 
-std::string &box::to_string()
+const std::string &box::to_string() const
 {
-  str_rep = "<";
-  for(auto v : value) {
-    str_rep += interval(v).to_string();
-    str_rep += ", ";
+  // Lazily create the string
+  if(str_rep == "") {
+    str_rep = "<";
+    for(const auto & v : value) {
+      str_rep += interval(v).to_string();
+      str_rep += ", ";
+    }
+    str_rep += ">";
   }
-  str_rep += ">";
   return str_rep;
 }
 
+// Needed for SWIG
 box::~box() {;}

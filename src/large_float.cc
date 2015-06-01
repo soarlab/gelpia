@@ -9,7 +9,7 @@ large_float::large_float(const large_float &in) {
   value = static_cast<large_float_t>(in.value);
 }
 
-large_float::large_float(large_float_t in) {
+large_float::large_float(const large_float_t &in) {
   value = in;
 }
 
@@ -31,8 +31,11 @@ large_float large_float::operator- () {
 }
 
 std::string &large_float::to_string() {
-  str_rep = value.str();
+  // Lazy initialization of the internal string
+  if(str_rep == "")
+    str_rep = value.str();
   return str_rep;
 }
 
+// Needed for SWIG
 large_float::~large_float() {;}

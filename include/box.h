@@ -21,8 +21,8 @@ class box {
  private:
   friend class boost::serialization::access;
   box_t value;
-  std::string str_rep;
-
+  mutable std::string str_rep;
+  // For Python pickling
   template <typename Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
@@ -46,7 +46,7 @@ class box {
   int size() const;
   const box_t & get_value() const;
   interval operator[] (int) const;
-  std::string& to_string();
+  const std::string& to_string() const;
   ~box();
 };
 
