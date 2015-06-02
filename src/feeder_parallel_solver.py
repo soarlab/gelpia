@@ -4,6 +4,12 @@ import ian_utils as IU
 import multiprocessing as MP
 import line_profiler as LP
 import queue as Q
+import random as R
+
+colors = [IU.red, IU.green, IU.yellow, IU.blue, IU.magenta, IU.cyan]
+def worker_log(level, my_id, message):
+    colorize = colors[my_id % len(colors)]
+    IU.log(level, colorize("Worker {} - ".format(my_id)) + message)
 
 def globopt_subworker(X_0, x_tol, f_tol, func, update_queue, best_high, my_id):
     """ Per process prioritized serial branch and bound solver """
@@ -15,8 +21,8 @@ def globopt_subworker(X_0, x_tol, f_tol, func, update_queue, best_high, my_id):
 
     best_low = GU.large_float("-inf")
     best_high_input = X_0
-    
-    IU.log(3, "Worker {} - Starting work on interval: {}".format(my_id, X_0))
+
+    worker_log(3, my_id, "Starting work on interval: {}".format(X_0))
     while (not local_queue.empty()):
         # Attempt to update best_high from other solvers
         if (not update_queue.empty()):
@@ -26,12 +32,8 @@ def globopt_subworker(X_0, x_tol, f_tol, func, update_queue, best_high, my_id):
                 temp = update_queue.get()
             # Once we have the newest see if we can update
             if (temp > best_high):
-                IU.log(3, "Worker {} - Updated best_high to: {}".format(my_id,
-                                                                        temp))
+                worker_log(3, my_id, "Updated best_high to: {}".format(temp))
                 best_high = temp
-            else:
-                IU.log(3, "Worker {} - Not updated best_high: {}".format(my_id,
-                                                                      best_high))
 
         # Calculate f(x) and widths of the input and output
         x = local_queue.get()[2]
@@ -64,7 +66,7 @@ def globopt_subworker(X_0, x_tol, f_tol, func, update_queue, best_high, my_id):
             priority_fix += 1
             local_queue.put((-estimate.upper(), priority_fix, box))
 
-    IU.log(3, "Found possible answer: {}".format(best_high))
+    worker_log(3, my_id, "Found possible answer: {}".format(best_high))
     return (best_high, best_high_input)
 
 
@@ -107,15 +109,23 @@ def globopt_worker_profiling_wrap(X_0, x_tol, f_tol, func, out_queue,
 
 def solve(X_0, x_tol, f_tol, func, procs, profiler):
     """ Higher utilization version of the split parallel solver """
-    # split input into procs pieces
+    # split input into many pieces
     boxes = Q.Queue()
     boxes.put(X_0)
-    for i in range(procs-1):
+    for i in range(procs*X_0.size()*50):
         new_box = boxes.get()
         box_list = new_box.split()
         for box in box_list:
             boxes.put(box)
 
+    # randomize pieces
+    pieces = list()
+    for i in range(procs*X_0.size()*50+1):
+        pieces.append(boxes.get())
+    R.shuffle(pieces)
+    for p in pieces:
+        boxes.put(p)
+    
     # All answers found by solvers are put in here
     answer_queue = MP.Queue()
 
@@ -149,8 +159,9 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
             best = next_best
             best_input = next_best_input
             IU.log(3, "Sending update to workers: {}".format(best))
-            for q in update_queue_list:
-                q.put(best)
+            for i in range(procs):
+                if (i != proc_num):
+                    update_queue_list[i].put(best)
 
         if (not boxes.empty()):
             # Give the finished worker more work
