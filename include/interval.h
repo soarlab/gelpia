@@ -18,10 +18,14 @@ using boost::numeric::interval_lib::rounded_transc_exact;
 using boost::numeric::interval_lib::rounded_math;
 using boost::numeric::interval_lib::checking_strict;
 
+// Needed for transcendental function support.
+// Todo: Switch to MPFI or another interval library since the sine/cosine
+// functions return very wide intervals which is not useful for our purpose.
 typedef boost::numeric::interval<large_float_t,
   policies<save_state<rounded_transc_exact<large_float_t, rounded_math<large_float_t> > >,
   checking_strict<large_float_t> > > interval_t;
 
+// Enable Python pickling
 namespace boost {
   namespace serialization {
     template <typename Archive>
@@ -53,7 +57,7 @@ class interval {
  private:
   friend class boost::serialization::access;
   interval_t value;
-  std::string str_rep;
+  mutable std::string str_rep;
 
   template <typename Archive>
     void serialize(Archive & ar, const unsigned int version)
@@ -74,10 +78,10 @@ class interval {
   bool operator!=(const interval &c) const;
 
   // Misc
-  large_float width();
+  large_float width() const;
   large_float lower() const;
   large_float upper() const;
-  std::string& to_string();
+  std::string& to_string() const;
   interval_t get_value() const;
   ~interval();
 };

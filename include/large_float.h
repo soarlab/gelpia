@@ -12,6 +12,7 @@
 
 typedef boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<300> >  large_float_t;
 
+// Needed for Python pickling
 namespace boost {
   namespace serialization {
     template <typename Archive>
@@ -40,6 +41,7 @@ class large_float {
  private:
   friend class boost::serialization::access;
   large_float_t value;
+  // Lazily initialized value for the string representation of the large_float
   std::string str_rep;
 
   template <typename Archive>
@@ -52,7 +54,7 @@ class large_float {
   // Constructors
   large_float(const std::string &number);
   large_float(const large_float &in);
-  large_float(large_float_t in);
+  large_float(const large_float_t &in);
   large_float() {}
 
   // Operators
