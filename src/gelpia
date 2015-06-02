@@ -11,8 +11,9 @@ import ast as AST
 import re as RE
 import sys as SYS
 
+# Mapping from command line names of solvers to internal names used for importing
 solvers = {"serial"                 : "serial",
-           "s"                      : "serial", 
+           "s"                      : "serial",
            "priority_serial"        : "priority_serial",
            "ps"                     : "priority_serial",
            "naive_parallel"         : "naive_parallel",
@@ -22,10 +23,15 @@ solvers = {"serial"                 : "serial",
            "feeder_parallel"        : "feeder_parallel",
            "fp"                     : "feeder_parallel"}
 
-GU = None
-SOLVER = None
+GU = None # global module name that wil be imported later
+SOLVER = None # global module name that wil be imported later
+
 def import_solver(solver):
-    global SOLVER
+    """ Takes in a name which must be a key in the global `solvers` and imports
+    that solver as the global name SOLVER """
+    global SOLVER # so we can change the global
+
+    # This is a workaround since you cant `import solvers[solver] as SOLVER`
     if solvers[solver] == "serial":
         import serial_solver as SOLVER
     if solvers[solver] == "priority_serial":
@@ -36,15 +42,16 @@ def import_solver(solver):
         import split_parallel_solver as SOLVER
     if solvers[solver] == "feeder_parallel":
         import feeder_parallel_solver as SOLVER
-        
+
 
 
 def parse_box2(box_string):
+    #mark please comment this function
     # Put numbers in strings
     num_re = r"((?:-?\d+\.\d+)|(?:-?\d+\.)|(?:-?\.\d+)|(?:-?\d+))"
     interval_re = r"\((" + num_re + r"),\s*(" + num_re + ")\)"
-    box_string = RE.sub(interval_re, 
-                        lambda m: '("{}", "{}")'.format(m.group(1), m.group(3)), 
+    box_string = RE.sub(interval_re,
+                        lambda m: '("{}", "{}")'.format(m.group(1), m.group(3)),
                         box_string[0])
     python_box = AST.literal_eval(box_string)
     variables = dict()
@@ -60,12 +67,12 @@ def parse_box2(box_string):
                 IU.error("Interval must be a N by 2 list.")
                 IU.error("item <{}> is of length {}".format(pair, len(pair)))
                 SYS.exit()
-            if (not isinstance(pair[0], str) or 
+            if (not isinstance(pair[0], str) or
                 not isinstance(pair[1], str)):
                 IU.error("Improve this error 0")
                 SYS.exit()
             box.append(pair)
-        
+
         return (box, dimensions, variables)
 
     except:
@@ -74,17 +81,26 @@ def parse_box2(box_string):
         SYS.exit()
 
 
-    
+
 
 
 def parse_args():
-    parser = IU.IanArgumentParser(description="Temporary description",
-                               fromfile_prefix_chars='@')
+    """ Command line argumetn parser. Returns a dict from arg name to value"""
+
+    # Using the Ian argument parser since it has nicer from file characteristics
+    parser = IU.IanArgumentParser(description="Global function optimizer based "
+                                  "on branch and bound for noncontinuous "
+                                  "functions.",
+                                  fromfile_prefix_chars='@')
+    # Verbosity level
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         type=int)
-    parser.add_argument("-p", "--profile", help="profile the solver",
+    # All flags have descriptions
+    parser.add_argument("-p", "--profile",
+                        help="profile the solver",
                         action="store_true")
-    parser.add_argument("-t", "--threads", help="number of threads to use",
+    parser.add_argument("-t", "--threads",
+                        help="number of threads to use",
                         type=int, default=1)
     parser.add_argument("-ie", "--input-epsilon",
                         help="cuttoff for function input size",
@@ -94,24 +110,24 @@ def parse_args():
                         type=float, default=.001)
     parser.add_argument("-s", "--solver",
                         help="solver to use",
-                        choices = solvers.keys(),
-                        type=str, default="serial")
+                        choices = solvers.keys(), type=str, default="serial")
     parser.add_argument("-i", "--input",
-                        nargs='+', required=True,
                         help="Search space",
-                        type=str)
+                        type=str, nargs='+', required=True,)
     parser.add_argument("-f", "--function",
-                        nargs='+', required=True,
                         help="the c++ interval arithmatic function to evaluate",
-                        type=str)
+                        type=str, nargs='+', required=True,)
 
-    args = parser.parse_args() 
+    # actually parse
+    args = parser.parse_args()
 
+    # set verbosity level
     if args.verbose:
         IU.set_log_level(args.verbose)
-        
-    function = ' '.join(args.function)
 
+    # grab function (this is required since the function may have spaces in it)
+    # `input` is handled differently
+    function = ' '.join(args.function)
 
     return {"input_epsilon"  : str(args.input_epsilon),
             "output_epsilon" : str(args.output_epsilon),
@@ -125,6 +141,7 @@ def parse_args():
 
 
 def create_function_body(function):
+    #mark please comment this function
     preamble = IU.comment_block(["This is an autogenerated file",
                                  "all changes will be overwritten"], 80)
     preamble.append('#include "large_float.h"')
@@ -144,83 +161,94 @@ def create_function_body(function):
     return preamble
 
 
-
-
 def write_function_source(filename, function):
+    """ Writes the given function to the given file as a c++ function """
     body = create_function_body(function)
-
     with open(filename, 'w') as f:
         f.write('\n'.join(body))
 
 
-
-
 def reformat_function(function, variables):
+    """ Takes a math formatted function with variables and translates it to
+    c++ """
     import rewriter.rewrite
-    
     return rewriter.rewrite.rewrite(function,variables)
 
 
 def make_X_0(box_list):
+    """ Makes a GU.box from the given python structure"""
     box = GU.box()
     for i in range(len(box_list)):
         box.append(box_list[i][0], box_list[i][1])
     return box
-    
+
+
+
+
 def main():
-    global GU
+    global GU # so we can change the global
 
     arg_dict = parse_args()
 
-    full_dir = P.abspath(P.dirname(SYS.argv[0]))
-    base_dir = P.split(full_dir)[0]
-    bin_dir = P.join(base_dir, "bin/")
+    # Directory names used in this script
+    full_dir = P.abspath(P.dirname(SYS.argv[0])) # Directory for this script
+    base_dir = P.split(full_dir)[0] # One directory up
+    bin_dir = P.join(base_dir, "bin/") # Directories within that directroy
     src_dir = P.join(base_dir, "src/")
     include_dir = P.join(base_dir, "include/")
     generated_dir = P.join(base_dir, "generated/")
 
+    # Grab input interval variables, use them for the fucntion translation,
+    # and write them out to a c++ file
     start_box, dimensions, variables = parse_box2(arg_dict["input"])
-    
     function = reformat_function(arg_dict["function"], variables)
-
     write_function_source(P.join(generated_dir, "function.cc"), function)
 
+    # Use the makefile to compile everything required
+    # (If source files have been changed outside of our knowledge we want them
+    # to be compiled)
     IU.log(1, IU.cyan("Compiling"))
-
     OS.chdir(base_dir)
     compile_time, output = IU.time_func(IU.run, "make", ["solver"],
                                         "Unable to compile")
-    import gelpia_utils as GU
 
+    # Import generated module, solver module, and create c++ box
+    import gelpia_utils as GU
     import_solver(arg_dict["solver"])
     X_0 = make_X_0(start_box)
 
+    # Set profiler if requested
     profiler = None
     if (arg_dict["profile"]):
         profiler = LP.LineProfiler(SOLVER.solve)
         profiler.enable()
 
+    # Use try so that we can print profiling information if canceled early
+    maximum = "incomplete search"
+    input_for_maximum = "incomplete search"
     try:
         start = T.time()
         IU.log(1, IU.cyan("Running"))
-        answer = SOLVER.solve(X_0,
-                              GU.large_float(arg_dict["input_epsilon"]),
-                              GU.large_float(arg_dict["output_epsilon"]),
-                              GU.function,
-                              arg_dict["threads"],
-                              profiler)
+        tup = SOLVER.solve(X_0,
+                           GU.large_float(arg_dict["input_epsilon"]),
+                           GU.large_float(arg_dict["output_epsilon"]),
+                           GU.function,
+                           arg_dict["threads"],
+                           profiler)
+        maximum, input_for_maximum = tup
     finally:
         end = T.time()
 
         if (arg_dict["profile"]):
             profiler.disable()
             profiler.print_stats()
-        
+
     IU.log(0, IU.green("Compile time: ")+str(compile_time))
     IU.log(0, IU.green("Solver time: ")+str(end-start))
-    print(IU.green("Answer: ")+str(answer))
+    print(IU.green("Maximum: ")+str(maximum))
+    print(IU.green("Input for maximum: ")+str(input_for_maximum))
 
 
-    
+
 if __name__ == "__main__":
     main()

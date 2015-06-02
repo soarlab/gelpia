@@ -2,68 +2,86 @@ import gelpia_utils as GU
 
 import multiprocessing as MP
 import line_profiler as LP
-from time import sleep
 
-        
 def globopt_worker(x_tol, f_tol, func, global_queue, ns):
+    """ Per process solver using shared stated """
     while True:
-        X = global_queue.get()
+        x = global_queue.get()
 
-        try:
-            X == None
+        # look for poison pill
+        if (not x):
             return
-        except:
-            pass
-        
-        f = func(X)
-        w = X.width()
-        fw = f.width()
-        
-        if (f.upper() < ns.f_best_low
-            or w < x_tol
-            or fw < f_tol):
-            if (ns.f_best_high < f.upper()):
-                ns.f_best_high = f.upper()
-        else:
-            box_list = X.split()
-            
-            for b in box_list:
-                e = func(b.midpoint())
-                if(ns.f_best_low < e.upper()):
-                    ns.f_best_low = e.upper()
-                global_queue.put(b)
+
+        # Calculate f(x) and widths of the input and output
+        x_width = x.width()
+        f_of_x = func(x)
+        f_of_x_width = f_of_x.width()
+
+        # Cut off search paths which cannot lead to better answers.
+        # Either f(x) has an upper value which is too low, or the intervals are
+        # beyond reqested tolerances
+        if (f_of_x.upper() < ns.best_low or
+            x_width < x_tol or
+            f_of_x_width < f_tol):
+            # Check to see if we have hit the second case and need to update
+            # our best answer
+            if (ns.best_high < f_of_x.upper()):
+                ns.best_high = f_of_x.upper()
+                ns.best_high_input = x
+            # Indicate that the work has been done
+            global_queue.task_done()
+            continue
+
+        # If we cannot rule out this search path, then split and put the new
+        # work onto the queue
+        box_list = x.split()
+        for box in box_list:
+            estimate = func(box.midpoint())
+            # See if we can update our water mark for ruling out search paths
+            if(ns.best_low < estimate.upper()):
+                ns.best_low = estimate.upper()
+            global_queue.put(box)
+
+        # Indicate that the work has been done
         global_queue.task_done()
 
 
 
-
-def globopt_worker_wrap(x_tol, f_tol, func, global_queue, ns):
+STDOUT_LOCK = MP.Lock()
+def globopt_worker_profiling_wrap(x_tol, f_tol, func, global_queue, ns):
+    """ Wraps the worker with a profiler """
+    # Each worker has its own profiler
     my_profiler = LP.LineProfiler(globopt_worker)
     my_profiler.enable()
+
+    # Use a try statement so that profiling is printed on a control-C
     try:
         globopt_worker(x_tol, f_tol, func, global_queue, ns)
     finally:
         my_profiler.disable()
+        # Avoid interleaving output
+        STDOUT_LOCK.acquire()
         my_profiler.print_stats()
+        STDOUT_LOCK.release()
 
 
 
-    
 def solve(X_0, x_tol, f_tol, func, procs, profiler):
+    """ Naive parallel branch and bound solver """
     global_queue = MP.JoinableQueue()
     global_queue.put(X_0)
-    
+
+    # Namespace is used to have shared state
+    # Namespaces are very costly
     mgr = MP.Manager()
     ns = mgr.Namespace()
-    ns.f_best_low = GU.large_float("-inf")
-    ns.f_best_high = GU.large_float("-inf")
-    ns.x_tol = x_tol
-    ns.f_tol = f_tol
+    ns.best_low = GU.large_float("-inf")
+    ns.best_high = GU.large_float("-inf")
+    ns.best_high_input = X_0
 
-    worker = globopt_worker
-    if profiler:
-        worker = globopt_worker_wrap
-        
+    # Should the performance profiler be used?
+    worker = globopt_worker_profiling_wrap if profiler else globopt_worker
+
     process_list = [MP.Process(target=worker,
                                args=(x_tol, f_tol, func, global_queue, ns))
                     for i in range(procs)]
@@ -71,12 +89,15 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
     for proc in process_list:
         proc.start()
 
+    # Join will finish when all work is done
     global_queue.join()
 
+    # Give all workers a poison pill
     for proc in process_list:
         global_queue.put(None)
 
+    # Wait for all workers to exit
     for proc in process_list:
         proc.join()
-    
-    return ns.f_best_high
+
+    return (ns.best_high, ns.best_high_input)
