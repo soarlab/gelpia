@@ -19,6 +19,10 @@ endif
 # take the c specific flag out of python cflags
 PY3_CFLAGS := $(subst -Wstrict-prototypes,,$(shell python3-config --cflags))
 
+ifeq ($(CXX), g++)
+	PY3_CFLAGS := $(subst -fstack-protector-strong,,$(PY3_CFLAGS))
+endif
+
 # Object files used to create the .so for each type
 BASE_OBJ := obj/large_float.o obj/interval.o obj/box.o
 TESTABLE_UTILS_OBJ := obj/testable_utils_wrap.o $(BASE_OBJ)
