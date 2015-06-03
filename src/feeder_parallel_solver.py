@@ -11,7 +11,8 @@ def worker_log(level, my_id, message):
     colorize = colors[my_id % len(colors)]
     IU.log(level, colorize("Worker {} - ".format(my_id)) + message)
 
-def globopt_subworker(X_0, x_tol, f_tol, func, update_queue, best_high, my_id):
+def globopt_subworker(X_0, x_tol, f_tol, func, update_queue, update_flag, 
+                      best_high, best_low, my_id):
     """ Per process prioritized serial branch and bound solver """
     local_queue = Q.PriorityQueue()
     # Since the priority queue needs completely orderable objects we use a
@@ -19,21 +20,21 @@ def globopt_subworker(X_0, x_tol, f_tol, func, update_queue, best_high, my_id):
     priority_fix = 0
     local_queue.put((0, priority_fix, X_0))
 
-    best_low = GU.large_float("-inf")
     best_high_input = X_0
 
     worker_log(3, my_id, "Starting work on interval: {}".format(X_0))
     while (not local_queue.empty()):
         # Attempt to update best_high from other solvers
-        if (not update_queue.empty()):
+        if (update_flag.value):
+            update_flag.value = False
             temp = update_queue.get()
             # We are only interested in the latest value, ignore others
             while (not update_queue.empty()):
                 temp = update_queue.get()
             # Once we have the newest see if we can update
-            if (temp > best_high):
-                worker_log(3, my_id, "Updated best_high to: {}".format(temp))
-                best_high = temp
+            if (temp > best_low):
+                worker_log(3, my_id, "Updated best_low to: {}".format(temp))
+                best_low = temp
 
         # Calculate f(x) and widths of the input and output
         x = local_queue.get()[2]
@@ -67,20 +68,21 @@ def globopt_subworker(X_0, x_tol, f_tol, func, update_queue, best_high, my_id):
             local_queue.put((-estimate.upper(), priority_fix, box))
 
     worker_log(3, my_id, "Found possible answer: {}".format(best_high))
-    return (best_high, best_high_input)
+    return (best_low, best_high, best_high_input)
 
 
 
 
-def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue,
+def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue, update_flag,
                    new_work_queue, my_id):
     """ Per process work consumer """
-    local_best = GU.large_float("-inf")
+    best_low = GU.large_float("-inf")
+    best_high = GU.large_float("-inf")
     while X_0:
-        local_best, local_best_input = globopt_subworker(X_0, x_tol, f_tol,
-                                                         func, update_queue,
-                                                         local_best, my_id)
-        out_queue.put((my_id, local_best, local_best_input))
+        tup = globopt_subworker(X_0, x_tol, f_tol, func, update_queue,
+                                update_flag, best_low, best_high, my_id)
+        best_low, best_high, best_high_input = tup
+        out_queue.put((my_id, best_low, best_high, best_high_input))
         X_0 = new_work_queue.get()
 
         
@@ -88,7 +90,8 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue,
 
 STDOUT_LOCK = MP.Lock()
 def globopt_worker_profiling_wrap(X_0, x_tol, f_tol, func, out_queue,
-                                  update_queue, new_work_queue, my_id):
+                                  update_queue, update_flag, new_work_queue, 
+                                  my_id):
     """ Wraps the worker with a profiler """
     # Each worker has its own profiler
     my_profiler = LP.LineProfiler(globopt_worker, globopt_subworker)
@@ -96,8 +99,8 @@ def globopt_worker_profiling_wrap(X_0, x_tol, f_tol, func, out_queue,
 
     # Use a try statement so that profiling is printed on a control-C
     try:
-        globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue,
-                       new_work_queue, my_id)
+        globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue, 
+                       update_flag, new_work_queue, my_id)
     finally:
         my_profiler.disable()
         # Avoid interleaving output
@@ -112,7 +115,8 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
     # split input into many pieces
     boxes = Q.Queue()
     boxes.put(X_0)
-    for i in range(procs*X_0.size()*50):
+    piece_count = X_0.size()*50
+    for i in range(piece_count):
         new_box = boxes.get()
         box_list = new_box.split()
         for box in box_list:
@@ -120,8 +124,9 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
 
     # randomize pieces
     pieces = list()
-    for i in range(procs*X_0.size()*50+1):
+    for i in range(piece_count):
         pieces.append(boxes.get())
+    R.seed(42)
     R.shuffle(pieces)
     for p in pieces:
         boxes.put(p)
@@ -131,6 +136,7 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
 
     # Updates to best_high are sent through this list
     update_queue_list = [MP.Queue() for i in range(procs)]
+    update_flag_list = [MP.Value('b', False) for i in range(procs)]
 
     # Work is fed to workser throught these queues
     new_work_queues = [MP.Queue() for i in range(procs)]
@@ -143,25 +149,36 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
                                        args=(boxes.get(), x_tol, f_tol, func, 
                                              answer_queue,
                                              update_queue_list[i],
+                                             update_flag_list[i],
                                              new_work_queues[i], i))
+                                             
                     for i in range(procs)]
 
     for proc in process_list:
         proc.start()
 
     # Get answers from finished solvers, send updates if needed
-    best = GU.large_float("-inf")
+    best_low = GU.large_float("-inf")
+    best_high = GU.large_float("-inf")
     best_input = X_0
     done_count = 0
     while (done_count < procs):
-        proc_num, next_best, next_best_input = answer_queue.get()
-        if (next_best > best):
-            best = next_best
-            best_input = next_best_input
-            IU.log(3, "Sending update to workers: {}".format(best))
+        tup =answer_queue.get()
+        proc_num, next_best_low, next_best_high, next_best_input = tup
+
+        # Update anser
+        if (next_best_high > best_high):
+            best_high = next_best_high
+            best_high_input = next_best_input
+
+        # Update water mark
+        if (next_best_low > best_low):
+            best_low = next_best_low
+            IU.log(3, "Sending update to workers: {}".format(best_low))
             for i in range(procs):
                 if (i != proc_num):
-                    update_queue_list[i].put(best)
+                    update_queue_list[i].put(best_low)
+                    update_flag_list[i].value = True
 
         if (not boxes.empty()):
             # Give the finished worker more work
@@ -176,4 +193,4 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
     for proc in process_list:
         proc.join()
 
-    return (best, best_input)
+    return (best_high, best_high_input)
