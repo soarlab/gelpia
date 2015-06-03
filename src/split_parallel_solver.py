@@ -5,7 +5,13 @@ import multiprocessing as MP
 import line_profiler as LP
 import queue as Q
 
-def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue, my_id):
+colors = [IU.red, IU.green, IU.yellow, IU.blue, IU.magenta, IU.cyan]
+def worker_log(level, my_id, message):
+    colorize = colors[my_id % len(colors)]
+    IU.log(level, colorize("Worker {} - ".format(my_id)) + message)
+
+def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue, update_flag,
+                   my_id):
     """ Per process solver using no shared state """
     local_queue = Q.PriorityQueue()
     # Since the priority queue needs completely orderable objects we use a
@@ -17,22 +23,20 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue, my_id):
     best_high = GU.large_float("-inf")
     best_high_input = X_0
 
-    IU.log(3, "Worker {} - Starting work on interval: {}".format(my_id, X_0))
+    worker_log(3, my_id, "Starting work on interval: {}".format(X_0))
     while (not local_queue.empty()):
-        # Attempt to update best_high from other solvers
-        if (not update_queue.empty()):
+        # Attempt to update best_low from other solvers
+        if (update_flag.value):
+            update_flag.value = False
+            worker_log(3, my_id, "Possible update to best_low")
             temp = update_queue.get()
             # We are only interested in the latest value, ignore others
             while (not update_queue.empty()):
                 temp = update_queue.get()
             # Once we have the newest see if we can update
-            if (temp > best_high):
-                IU.log(3, "Worker {} - Updated best_high to: {}".format(my_id,
-                                                                        temp))
-                best_high = temp
-            else:
-                IU.log(3, "Worker {} - Not updated best_high: {}".format(my_id,
-                                                                      best_high))
+            if (temp > best_low):
+                worker_log(3, my_id, "Updated best_low to: {}".format(temp))
+                best_low = temp
 
         # Calculate f(x) and widths of the input and output
         x = local_queue.get()[2]
@@ -65,14 +69,14 @@ def globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue, my_id):
             priority_fix += 1
             local_queue.put((-estimate.upper(), priority_fix, box))
 
-    IU.log(3, "Found possible answer: {}".format(best_high))
-    out_queue.put((best_high, best_high_input))
+    worker_log(3, my_id, "Found possible answer: {}".format(best_high))
+    out_queue.put((best_low, best_high, best_high_input))
 
 
 
 STDOUT_LOCK = MP.Lock()
 def globopt_worker_profiling_wrap(X_0, x_tol, f_tol, func, out_queue, update_queue,
-                                 my_id):
+                                 update_flag, my_id):
     """ Wraps the worker with a profiler """
     # Each worker has its own profiler
     my_profiler = LP.LineProfiler(globopt_worker)
@@ -80,7 +84,8 @@ def globopt_worker_profiling_wrap(X_0, x_tol, f_tol, func, out_queue, update_que
 
     # Use a try statement so that profiling is printed on a control-C
     try:
-        globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue, my_id)
+        globopt_worker(X_0, x_tol, f_tol, func, out_queue, update_queue, 
+                       update_flag, my_id)
     finally:
         my_profiler.disable()
         # Avoid interleaving output
@@ -107,32 +112,42 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
 
     # Updates to best_high are sent through this list
     update_queue_list = [MP.Queue() for i in range(procs)]
+    update_flag_list = [MP.Value('b', False) for i in range(procs)]
 
     # Should the performance profiler be used?
     worker = globopt_worker_profiling_wrap if profiler else globopt_worker
 
     process_list = [MP.Process(target=worker,
                                args=(boxes.get(), x_tol, f_tol, func,
-                                     answer_queue, update_queue_list[i], i))
+                                     answer_queue, update_queue_list[i], 
+                                     update_flag_list[i], i))
                     for i in range(procs)]
 
     for proc in process_list:
         proc.start()
 
     # Get answers from finished solvers, send updates if needed
-    best = GU.large_float("-inf")
+    best_low = GU.large_float("-inf")
+    best_high = GU.large_float("-inf")
     best_input = X_0
     for i in range(procs):
-        next_best, next_best_input = answer_queue.get()
-        if (next_best > best):
-            best = next_best
-            best_input = next_best_input
-            IU.log(3, "Sending update to workers: {}".format(best))
-            for q in update_queue_list:
-                q.put(best)
+        next_best_low, next_best_high, next_best_high_input = answer_queue.get()
+        # Update anser
+        if (next_best_high > best_high):
+            best_high = next_best_high
+            best_high_input = next_best_high_input
+            IU.log(3, "New best_high: {}".format(best_high))
+
+        # Update water mark
+        if (next_best_low > best_low):
+            best_low = next_best_low
+            IU.log(3, "Sending update to workers: {}".format(best_low))
+            for j in range(procs):
+                update_queue_list[j].put(best_low)
+                update_flag_list[j].value = True
 
     # Wait for all workers to exit
     for proc in process_list:
         proc.join()
 
-    return (best, best_input)
+    return (best_high, best_high_input)
