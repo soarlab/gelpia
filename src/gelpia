@@ -246,7 +246,12 @@ def main():
     IU.log(0, IU.green("Compile time: ")+str(compile_time))
     IU.log(0, IU.green("Solver time: ")+str(end-start))
     print(IU.green("Maximum: ")+str(maximum))
-    print(IU.green("Input for maximum: ")+str(input_for_maximum))
+    print(IU.green("Input for maximum: "))
+    intervals = []
+    for v in variables.keys():
+        intervals.append(v + ": " + str(input_for_maximum[variables[v]]))
+    intervals.sort()
+    print("\n".join(intervals))
 
 
 
