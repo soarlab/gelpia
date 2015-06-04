@@ -21,7 +21,11 @@ solvers = {"serial"                 : "serial",
 	   "split_parallel"         : "split_parallel",
 	   "sp"                     : "split_parallel",
            "feeder_parallel"        : "feeder_parallel",
-           "fp"                     : "feeder_parallel"}
+           "fp"                     : "feeder_parallel",
+           "map_parallel"           : "map_parallel",
+           "mp"                     : "map_parallel",
+           "map_serial"             : "map_serial",
+           "ms"                     : "map_serial"}
 
 GU = None # global module name that wil be imported later
 SOLVER = None # global module name that wil be imported later
@@ -34,14 +38,22 @@ def import_solver(solver):
     # This is a workaround since you cant `import solvers[solver] as SOLVER`
     if solvers[solver] == "serial":
         import serial_solver as SOLVER
-    if solvers[solver] == "priority_serial":
+    elif solvers[solver] == "priority_serial":
         import priority_serial_solver as SOLVER
-    if solvers[solver] == "naive_parallel":
+    elif solvers[solver] == "naive_parallel":
         import naive_parallel_solver as SOLVER
-    if solvers[solver] == "split_parallel":
+    elif solvers[solver] == "split_parallel":
         import split_parallel_solver as SOLVER
-    if solvers[solver] == "feeder_parallel":
+    elif solvers[solver] == "feeder_parallel":
         import feeder_parallel_solver as SOLVER
+    elif solvers[solver] == "map_serial":
+        import map_serial_solver as SOLVER
+    elif solvers[solver] == "map_parallel":
+        import map_parallel_solver as SOLVER
+    else:
+        IU.error("Solver not fully integrated")
+        SYS.exit(-1)
+
 
 
 
