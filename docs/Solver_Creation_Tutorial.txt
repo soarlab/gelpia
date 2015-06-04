@@ -17,9 +17,7 @@ with the signature `def solve(X_0, x_tol, f_tol, func, procs, profiler):`
 
 To make a new solver usable:
    1. Make a solver with the above requirement an place it in the src directory
-   2. In the makefile add, under `all`, a new ln command linking the src file 
-      to a file in the bin directory
-   3. Edit src/gelpia:
+   2. Edit src/gelpia:
       a. Add entries to the global `solvers` dictionary giving the name you want
       	 the solver to have from the command line mapping to a name used
 	 internally. 
