@@ -9,7 +9,8 @@ tokens = (
     "DIV",
     "NUM",
     "LPAREN",
-    "RPAREN"
+    "RPAREN",
+    "COMMA",
 )
 
 t_VAR   = (r'([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*')
@@ -17,6 +18,8 @@ t_PLUS  = (r'\+')
 t_MINUS = (r'-')
 t_TIMES = (r'\*')
 t_DIV   = (r'/')
+t_COMMA = (r",")
+
 
 rint    = r'([1-9]\d*|0)'
 rexp    = r'((e|E)(\+|-)?\d+)'
@@ -87,12 +90,22 @@ def p_group(t):
     t[0] = t[2]
 
 def p_func(t):
-    '''func : VAR LPAREN expression RPAREN'''
-    t[0] = ['Call', t[1], t[3]]
+    '''func : VAR LPAREN args RPAREN'''
+    t[0] = ['Call', t[1]] + [t[3]]
+
+
+def p_args(t):
+  '''args : args COMMA expression
+          | expression'''
+  if t[1][0] == 'Args':
+    t[0] = t[1] + [t[3]]
+  else:
+    t[0] = ['Args', t[1]]
 
 def p_error(t):
     print("Syntax error at '{}'".format(t.value))
 
+# Generate the parser
 parser = ply.yacc.yacc()
 
 tmp_count = 0;
@@ -172,23 +185,36 @@ def decl_vars(variables):
 
 def expressify(exp, val_trans = lambda x: 'interval("' + x + '", "' + x + '").get_value()',
                func_trans = lambda x: x):
+    print(exp)
     if len(exp) == 2:
         if exp[0] == 'Name':
             return exp[1]
         if exp[0] == 'Value':
             return '(' + val_trans(exp[1]) + ')'
         if exp[0] == 'Neg':
-            return '(-' + expressify(exp[1]) + ')'
+            return '(-' + expressify(exp[1], val_trans, func_trans) + ')'
     if len(exp) == 3:
         if exp[0] == 'Call':
-            return '(' + func_trans(exp[1]) + '(' + expressify(exp[2]) + '))'
-        else:
-            return '(' + expressify(exp[1]) + exp[0] + expressify(exp[2]) + ')'
+             return func_trans(exp);
+#            return '(' + func_trans(exp[1]) + '(' + expressify(exp[2:]) + '))'
+        else: # Binary operations
+            return '(' + expressify(exp[1], val_trans, func_trans) + exp[0] + expressify(exp[2], val_trans, func_trans) + ')'
           
 def process(exp):
-    return 'return interval( ' + expressify(exp) + ');\n'
+    return 'return interval(' + expressify(exp, func_trans = gelpia_functions) + ');\n'
 
 def get_body(s, variables):
     exp = parser.parse(s)
     v = collect_vars(exp)
     return (decl_vars(variables) + process(exp))
+
+def gelpia_functions(expression):
+  if expression[1] == 'interval':
+    args = expression[2]
+    assert(len(args) == 3) # ['Call', 'interval', ['Args', NUM, NUM]]
+    assert(args[1][0] == 'Value')
+    assert(args[2][0] == 'Value')
+    return '(interval("' + args[1][1] + '", "' + args[2][1] + '").get_value())'
+  else:
+    return '(' + expression[1] + "(" + expressify(expression[2][1]) + ')' + ')'
+  
