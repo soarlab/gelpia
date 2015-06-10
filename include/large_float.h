@@ -10,7 +10,10 @@
 #include <boost/serialization/split_free.hpp>
 #include <sstream>
 
-typedef boost::multiprecision::number<boost::multiprecision::mpfr_float_backend<300> >  large_float_t;
+using boost::multiprecision::number;
+using boost::multiprecision::mpfr_float_backend;
+
+typedef number<mpfr_float_backend<300> >  large_float_t;
 
 // Needed for Python pickling
 namespace boost {

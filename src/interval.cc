@@ -2,6 +2,9 @@
 #include "interval.h"
 
 
+namespace bm = boost::multiprecision;
+
+
 interval::interval(const std::string &low_string, const std::string &high_string) {
   large_float_t low, high;
   low = static_cast<large_float_t>(low_string);
@@ -15,8 +18,8 @@ interval::interval(const large_float &low, const large_float &high) {
 } 
 
 interval::interval(const interval &in) {
-  value = interval_t(static_cast<large_float_t>(in.value.lower()),
-		     static_cast<large_float_t>(in.value.upper()));
+  value = interval_t(bm::lower(in.value),
+		     bm::upper(in.value));
 }
 
 interval::interval(const interval_t &in) {
@@ -24,7 +27,7 @@ interval::interval(const interval_t &in) {
 }  
 
 bool interval::operator==(const interval &c) const {
-  return (c.lower() == this->lower()) && (c.upper() == this->upper());
+  return (bm::lower(c.value) == bm::lower(this->value)) && (bm::upper(c.value) == bm::upper(this->value));
 }
 
 bool interval::operator!=(const interval &c) const {
@@ -32,23 +35,23 @@ bool interval::operator!=(const interval &c) const {
 }
 
 large_float interval::width() const {
-  return large_float(value.upper() - value.lower());
+  return large_float(bm::width(this->value));
 }
 
 large_float interval::lower() const {
-  return static_cast<large_float>(this->value.lower());
+  return large_float(bm::lower(this->value));
 }
 
 large_float interval::upper() const {
-  return static_cast<large_float>(this->value.upper());
+  return large_float(bm::upper(this->value));
 }
   
 std::string& interval::to_string() const {
   if(str_rep == "") {
     str_rep = "[";
-    str_rep += boost::lexical_cast<std::string>(value.lower());
+    str_rep += boost::lexical_cast<std::string>(bm::lower(value));
     str_rep += ", ";
-    str_rep += boost::lexical_cast<std::string>(value.upper());
+    str_rep += boost::lexical_cast<std::string>(bm::upper(value));
     str_rep += "]";
   }
   return str_rep;

@@ -1,5 +1,6 @@
 #include "box.h"
 
+namespace bm = boost::multiprecision;
 
 box::box()
 {
@@ -11,7 +12,7 @@ box::box(const box &in)
   value = box_t();
   
   for (interval_t item : in.value) {
-    value.emplace_back(interval_t(item.lower(), item.upper()));
+    value.emplace_back(interval_t(bm::lower(item), bm::upper(item)));
   }
 }
 
@@ -46,7 +47,7 @@ box::box(const box_t &in)
   value = box_t();
 
   for (const interval_t & item : in) {
-    value.emplace_back(interval_t(item.lower(), item.upper()));
+    value.emplace_back(interval_t(bm::lower(item), bm::upper(item)));
   }
 }
 
@@ -66,9 +67,9 @@ large_float box::width() const
 {
   large_float_t largest(0.0);
 
-  for (interval_t item : this->value) {
-    if (largest < item.upper()-item.lower()) {
-      largest = item.upper()-item.lower();
+  for (const interval_t & item : this->value) {
+    if (largest < bm::width(item)) {
+      largest = bm::width(item);
     }
   }
   
@@ -81,7 +82,7 @@ std::vector<box> box::split() const
   int longest_idx = 0;
   
   for(uint i = 0; i < value.size(); ++i) {
-    auto len = value[i].upper() - value[i].lower();
+    auto len = bm::width(value[i]);
     if(len > longest) {
       longest = len;
       longest_idx = i;
@@ -90,9 +91,9 @@ std::vector<box> box::split() const
 
   box left(value);
   box right(value);
-  large_float_t m = (value[longest_idx].lower() + value[longest_idx].upper())/2;
-  left.value[longest_idx].assign(left.value[longest_idx].lower(), m);
-  right.value[longest_idx].assign(m, right.value[longest_idx].upper());
+  large_float_t m = bm::median(value[longest_idx]);
+  left.value[longest_idx] = interval_t(bm::lower(left.value[longest_idx]), m);
+  right.value[longest_idx] = interval_t(m, bm::upper(right.value[longest_idx]));
 
   std::vector<box> retval = {left, right};
   return retval;
@@ -103,8 +104,8 @@ box box::midpoint() const
   box result(value);
   
   for (uint i = 0; i < value.size(); ++i) {
-    large_float_t m = (value[i].lower() + value[i].upper())/2;
-    result.value[i].assign(m, m);
+    large_float_t m = bm::median(value[i]);
+    result.value[i] = interval_t(m, m);
   }
   
   return result;

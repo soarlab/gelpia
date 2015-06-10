@@ -39,7 +39,7 @@ GELPIA_UTILS_INC := $(FUNCITON_INC)
 # Compile flags for the steps to create each .so
 WRAP_FLAGS := $(CXXFLAGS) $(PIC) -c $(NO_DEP_REG) $(PY3_CFLAGS)
 COMPILE_FLAGS := $(CXXFLAGS) $(PIC) -c
-LINK_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lboost_serialization `python3-config --ldflags`
+LINK_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lmpfi -lboost_serialization `python3-config --ldflags`
 
 
 

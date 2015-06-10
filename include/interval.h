@@ -4,6 +4,7 @@
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include <boost/numeric/interval.hpp>
+#include <boost/multiprecision/mpfi.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -12,18 +13,23 @@
 
 #include "large_float.h"
 
-using boost::numeric::interval_lib::policies;
+/*using boost::numeric::interval_lib::policies;
 using boost::numeric::interval_lib::save_state;
 using boost::numeric::interval_lib::rounded_transc_exact;
 using boost::numeric::interval_lib::rounded_math;
-using boost::numeric::interval_lib::checking_strict;
+using boost::numeric::interval_lib::checking_strict;*/
+
+using boost::multiprecision::mpfi_float_backend;
+using boost::multiprecision::number;
 
 // Needed for transcendental function support.
 // Todo: Switch to MPFI or another interval library since the sine/cosine
 // functions return very wide intervals which is not useful for our purpose.
-typedef boost::numeric::interval<large_float_t,
-  policies<save_state<rounded_transc_exact<large_float_t, rounded_math<large_float_t> > >,
-  checking_strict<large_float_t> > > interval_t;
+//typedef boost::numeric::interval<large_float_t,
+//  policies<save_state<rounded_transc_exact<large_float_t, rounded_math<large_float_t> > >,
+//  checking_strict<large_float_t> > > interval_t;
+
+typedef number<mpfi_float_backend<300> > interval_t;
 
 // Enable Python pickling
 namespace boost {
@@ -31,8 +37,8 @@ namespace boost {
     template <typename Archive>
       void save(Archive & ar, interval_t const& in, const unsigned int version) {
       large_float_t l,u;
-      l = in.lower();
-      u = in.upper();
+      l = lower(in);
+      u = upper(in);
       ar << l;
       ar << u;
     }
