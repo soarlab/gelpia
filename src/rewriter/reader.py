@@ -170,7 +170,8 @@ def collect_vars(exp):
             result = result | collect_vars(exp[1])
     if len(exp) == 3:
         if exp[0] == 'Call':
-            result = result | collect_vars(exp[2])
+          for v in exp[2][1:]:
+            result = result | collect_vars(v)
         else:
             result = result | collect_vars(exp[1]) | collect_vars(exp[2])
     return result
@@ -185,7 +186,6 @@ def decl_vars(variables):
 
 def expressify(exp, val_trans = lambda x: 'interval("' + x + '", "' + x + '").get_value()',
                func_trans = lambda x: x):
-    print(exp)
     if len(exp) == 2:
         if exp[0] == 'Name':
             return exp[1]
