@@ -1,0 +1,4 @@
+--input-epsilon .01
+--output-epsilon .01
+--function "sin(x)*sin(y)"
+--input "{'x' : (0,0.5), 'y' : (0,0.25)}"
