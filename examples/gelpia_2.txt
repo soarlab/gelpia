@@ -1,0 +1,6 @@
+--input-epsilon 0.010000
+--output-epsilon 0.010000
+--threads 5
+--solver ps
+--function "(abs(interval(3.15904629388796989828e-06, 3.15904629388796989828e-06)))"
+--input "{}"
