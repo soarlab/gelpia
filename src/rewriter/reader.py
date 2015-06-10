@@ -195,7 +195,7 @@ def expressify(exp, val_trans = lambda x: 'interval("' + x + '", "' + x + '").ge
             return '(-' + expressify(exp[1], val_trans, func_trans) + ')'
     if len(exp) == 3:
         if exp[0] == 'Call':
-             return func_trans(exp);
+             return func_trans(exp, val_trans, func_trans);
 #            return '(' + func_trans(exp[1]) + '(' + expressify(exp[2:]) + '))'
         else: # Binary operations
             return '(' + expressify(exp[1], val_trans, func_trans) + exp[0] + expressify(exp[2], val_trans, func_trans) + ')'
@@ -208,7 +208,7 @@ def get_body(s, variables):
     v = collect_vars(exp)
     return (decl_vars(variables) + process(exp))
 
-def gelpia_functions(expression):
+def gelpia_functions(expression, val_trans, func_trans):
   if expression[1] == 'interval':
     args = expression[2]
     assert(len(args) == 3) # ['Call', 'interval', ['Args', NUM, NUM]]
@@ -216,5 +216,6 @@ def gelpia_functions(expression):
     assert(args[2][0] == 'Value')
     return '(interval("' + args[1][1] + '", "' + args[2][1] + '").get_value())'
   else:
-    return '(' + expression[1] + "(" + expressify(expression[2][1]) + ')' + ')'
+    return ('(' + expression[1] + 
+            "(" + expressify(expression[2][1], val_trans, func_trans) + ')' + ')')
   
