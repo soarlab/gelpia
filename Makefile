@@ -47,7 +47,7 @@ LINK_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lboost_serialization `python3-config
 all: $(BASE_OBJ) obj/gelpia_utils_wrap.o
 	@cd src && ls *.py | xargs -Isol ln -f sol ../bin/sol
 	@ln -f src/gelpia bin/gelpia
-	@cp -R src/rewriter bin/rewriter
+	@cp -rf src/rewriter bin/rewriter
 
 solver: bin/_gelpia_utils.so
 

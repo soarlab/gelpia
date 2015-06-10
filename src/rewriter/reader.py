@@ -215,6 +215,10 @@ def gelpia_functions(expression, val_trans, func_trans):
     assert(args[1][0] == 'Value')
     assert(args[2][0] == 'Value')
     return '(interval("' + args[1][1] + '", "' + args[2][1] + '").get_value())'
+  elif expression[1] == 'pow':
+    args = expression[2]
+    assert(len(args) == 3) #['Args', var, power_int]
+    return '(pow(' + expressify(args[1], val_trans, func_trans) + ", " + args[2][1] + '))'
   else:
     return ('(' + expression[1] + 
             "(" + expressify(expression[2][1], val_trans, func_trans) + ')' + ')')
