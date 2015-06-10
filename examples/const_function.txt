@@ -1,0 +1,4 @@
+--input-epsilon .01
+--output-epsilon .01
+--function "0.1"
+--input "{}"

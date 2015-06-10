@@ -1,0 +1,4 @@
+--input-epsilon .01
+--output-epsilon .01
+--function "x * interval(0.0999, 0.10001)"
+--input "{'x' : (-10,10)}"
