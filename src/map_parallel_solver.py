@@ -63,7 +63,8 @@ def solve(X_0, _x_tol, _f_tol, _func, procs, profiler):
     func = _func
 
     if (profiler):
-        profiler.add_function(globopt_worker)
+        print("Warning: This solver does not completely support profiling")
+        #profiler.add_function(Worker.__call__)
 
     pool = MPP.Pool(procs)
 
