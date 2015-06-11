@@ -61,5 +61,10 @@ interval_t interval::get_value() const {
   return value; 
 }
 
+
+interval p2(const interval & x)
+{
+  return x;
+}
 // Needed for SWIG
 interval::~interval() {;}

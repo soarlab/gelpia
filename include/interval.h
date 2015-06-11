@@ -92,4 +92,6 @@ class interval {
   ~interval();
 };
 
+interval p2(const interval & x);
+
 #endif
