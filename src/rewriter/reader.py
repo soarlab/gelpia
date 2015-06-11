@@ -176,18 +176,54 @@ def collect_vars(exp):
             result = result | collect_vars(exp[1]) | collect_vars(exp[2])
     return result
 
+def lift_constants(exp, i_list, constants):
+  if exp[0] == 'Value':
+    if not (exp[1], exp[1]) in constants.keys():
+      constants[(exp[1], exp[1])] = 'c' + str(i_list[0])
+      i_list[0] += 1
+    
+    replacement = constants[(exp[1], exp[1])]
+    exp[:] = ['InternalName', replacement]
+  elif exp[0] == 'Call' and exp[1] == 'interval':
+    args = exp[2]
+    if not (args[1][1], args[2][1]) in constants.keys():
+      constants[(args[1][1], args[2][1])] = 'c' + str(i_list[0])
+      i_list[0] += 1
+
+    replacement = constants[(args[1][1], args[2][1])]
+    exp[:] = ['InternalName', replacement]
+  else:
+    if len(exp) == 2:
+      if exp[0] == 'Neg':
+        lift_constants(exp[1], i_list, constants)
+    else:
+      if exp[0] == 'Call':
+        lift_constants(exp[2][1], i_list, constants)
+      else:
+        lift_constants(exp[1], i_list, constants)
+        lift_constants(exp[2], i_list, constants)
+
+def lift_constants_wrap(exp):
+  constants = dict()
+  i_list = [0]
+  lift_constants(exp, i_list, constants)
+  return constants
+        
+      
 def decl_vars(variables):
     i = 0
-    result = ''
+    result = '// Variables from expression\n'
     for v in variables.keys():
         result += 'const interval_t & _' + v + ' =  X[' + str(variables[v]) + '];\n'
         i += 1
-    return result
+    return result + '\n'
 
 def expressify(exp, val_trans = lambda x: 'interval("' + x + '", "' + x + '").get_value()',
                func_trans = lambda x: x):
     if len(exp) == 2:
         if exp[0] == 'Name':
+            return exp[1]
+        if exp[0] == 'InternalName':
             return exp[1]
         if exp[0] == 'Value':
             return '(' + val_trans(exp[1]) + ')'
@@ -196,17 +232,28 @@ def expressify(exp, val_trans = lambda x: 'interval("' + x + '", "' + x + '").ge
     if len(exp) == 3:
         if exp[0] == 'Call':
              return func_trans(exp, val_trans, func_trans);
-#            return '(' + func_trans(exp[1]) + '(' + expressify(exp[2:]) + '))'
         else: # Binary operations
             return '(' + expressify(exp[1], val_trans, func_trans) + exp[0] + expressify(exp[2], val_trans, func_trans) + ')'
           
 def process(exp):
     return 'return interval(' + expressify(exp, func_trans = gelpia_functions) + ');\n'
 
+def decl_constants(constants):
+  result = "// Constants from expression\n"
+  for interval in constants.keys():
+    name = constants[interval]
+    result += '''static const large_float_t {0}_l("{1}");
+static const large_float_t {0}_u("{2}");
+static const interval_t {0}({0}_l, {0}_u);\n\n'''.format(name, interval[0], interval[1])
+                                           
+  return result
+                                                                         
+
 def get_body(s, variables):
     exp = parser.parse(s)
+    constants = lift_constants_wrap(exp)
     v = collect_vars(exp)
-    return (decl_vars(variables) + process(exp))
+    return (decl_vars(variables) + decl_constants(constants) + process(exp))
 
 def gelpia_functions(expression, val_trans, func_trans):
   if expression[1] == 'interval':
