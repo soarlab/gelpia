@@ -1,6 +1,7 @@
 import ply.lex
 import ply.yacc
 
+# Lexer start
 tokens = (
     "VAR",
     "PLUS",
@@ -41,14 +42,18 @@ def t_error(t):
   print(t);
 
 lexer = ply.lex.lex()
+# Lexer end
 
+# Parser begin
 def p_expression(t):
     '''expression : expression PLUS term
                   | expression MINUS term
                   | term'''
-    if len(t) == 4:
+    if len(t) == 4: 
+        # Returns [operator, lhs, rhs]
         t[0] = [t[2], t[1], t[3]]
-    else:
+    else: 
+        # Passthrough
         t[0] = t[1]
 
 
@@ -57,16 +62,20 @@ def p_term(t):
             | term DIV uop
             | uop'''
     if len(t) == 4:
+        # Returns [operator, lhs, rhs]
         t[0] = [t[2], t[1], t[3]]
     else:
+        # Passthrough
         t[0] = t[1]
 
-def p_uop(t):
+def p_uop(t):    
     '''uop : MINUS base
            | base'''
     if len(t) == 3:
+        # Unary negation
         t[0] = ['Neg', t[2]]
     else:
+        # Passthrough
         t[0] = t[1]
 
 
@@ -75,22 +84,27 @@ def p_base(t):
             | number
             | group
             | func'''
+    # Passthrough
     t[0] = t[1]
 
 def p_name(t):
     '''name : VAR'''
+    # Variable is ['Name', var_name]
     t[0] = ['Name', t[1]]
     
 def p_number(t):
     '''number : NUM'''
+    # Number is ['Value', number]
     t[0] = ['Value', t[1]]
 
 def p_group(t):
     '''group : LPAREN expression RPAREN'''
+    # Passes through a grouped expression
     t[0] = t[2]
 
 def p_func(t):
     '''func : VAR LPAREN args RPAREN'''
+    # Function call is ['Call', function_name, [list_of_args]]
     t[0] = ['Call', t[1]] + [t[3]]
 
 
@@ -98,8 +112,10 @@ def p_args(t):
   '''args : args COMMA expression
           | expression'''
   if t[1][0] == 'Args':
+    # Args is a list of expressions with the first argument as 'Args'
     t[0] = t[1] + [t[3]]
   else:
+    # An expression being passed through as an argument
     t[0] = ['Args', t[1]]
 
 def p_error(t):
@@ -108,83 +124,43 @@ def p_error(t):
 # Generate the parser
 parser = ply.yacc.yacc()
 
-tmp_count = 0;
-
-def tmp_name():
-    global tmp_count
-    tmp_count += 1
-    return ('Name', '_tmp_{}'.format(str(tmp_count)))
-
-def collect_nums(exp):
-    nums = set()
-    if not isinstance(exp, list):
-        return nums
-    elif exp[0] == 'Value':
-        new_name = tmp_name();
-        nums.add((new_name, exp[1]))
-        exp[0] = new_name[0]
-        exp[1] = new_name[1]
-
-    for sl in exp:
-        nums = nums | collect_nums(sl)
-    return nums
-
-def process_ops(exp, func_transform = lambda x: x):
-    result = ''
-    new_exp = exp
-    if len(exp) == 1: #
-        pass
-    elif len(exp) == 3:
-        if exp[0] != 'Call':
-            left, new_left = process_ops(exp[1])
-            exp[1] = new_left
-            right, new_right = process_ops(exp[2])
-            exp[2] = new_right
-            new_exp = tmp_name()
-            result = left + right + 'const mpz_class ' + new_exp[1] + '(' + str(exp[1][1]) + str(exp[0]) + str(exp[2][1]) + ');\n'
-        else:
-            inner, new_inner = process_ops(exp[2])
-            exp[2] = new_inner
-            new_exp = tmp_name()
-            result = inner + 'type ' + new_exp[1] + ' = ' + func_transform(exp[1]) + '(' + str(exp[2][1]) + ');\n'
-    return result, new_exp;
-    
-#def process(exp):
-#    nums = collect_nums(exp)
-#    result = ''
-#    for x in nums:
-#        result += 'const mpz_class ' + x[0][1] + '("'+x[1] + '");\n'
-
-#    op_list, exp_result = process_ops(exp)
-#    result += op_list
-#    result += 'return ' + exp_result[1] + ';\n';
-#    return result
+# Parser end
 
 def collect_vars(exp):
+    '''Examines expression recursively to return a set of all variables found
+       inside. Additionally prepends a '_' to protect user variables from 
+       automatically generated variables.'''
     result = set()
     if len(exp) == 2:
         if exp[0] == 'Name':
-          exp[1] = '_' + exp[1]
+          exp[1] = '_' + exp[1] # Prepend an '_'
           result.add(exp[1])
-        if exp[0] == 'Neg':
+        if exp[0] == 'Neg': # Examine the negated expression
             result = result | collect_vars(exp[1])
     if len(exp) == 3:
         if exp[0] == 'Call':
-          for v in exp[2][1:]:
+          for v in exp[2][1:]: # Examine the arguments list
             result = result | collect_vars(v)
-        else:
+        else: # Otherwise the expression is a binary operation and we need
+              # to collect both sides.
             result = result | collect_vars(exp[1]) | collect_vars(exp[2])
     return result
 
 def lift_constants(exp, i_list, constants):
-  if exp[0] == 'Value':
+  ''' Examines the expression to extract the constants found within. Currently
+      a constant is a Value or a function call to interval. These are mapped to
+      a renamed internal variable.
+      i_list holds an integer to create a unique variable substitution.
+      constants is a dictionary mapping intervals to the replacement variable
+      name.'''
+  if exp[0] == 'Value': # Replace a value constant
     if not (exp[1], exp[1]) in constants.keys():
       constants[(exp[1], exp[1])] = 'c' + str(i_list[0])
       i_list[0] += 1
     
     replacement = constants[(exp[1], exp[1])]
     exp[:] = ['InternalName', replacement]
-  elif exp[0] == 'Call' and exp[1] == 'interval':
+  elif exp[0] == 'Call' and exp[1] == 'interval': # Replace an interval constant
     args = exp[2]
     if not (args[1][1], args[2][1]) in constants.keys():
       constants[(args[1][1], args[2][1])] = 'c' + str(i_list[0])
@@ -192,7 +168,7 @@ def lift_constants(exp, i_list, constants):
 
     replacement = constants[(args[1][1], args[2][1])]
     exp[:] = ['InternalName', replacement]
-  else:
+  else: # Otherwise dig deeper into the expression to find constants
     if len(exp) == 2:
       if exp[0] == 'Neg':
         lift_constants(exp[1], i_list, constants)
@@ -204,22 +180,29 @@ def lift_constants(exp, i_list, constants):
         lift_constants(exp[2], i_list, constants)
 
 def lift_constants_wrap(exp):
+  '''Returns a dictionary of constants found in expression which maps intervals
+     to the replacement variable name.'''
   constants = dict()
   i_list = [0]
   lift_constants(exp, i_list, constants)
   return constants
-        
+ 
+def decl_constants(constants, const_trans):
+  result = "// Constants from expression\n"
+  for interval in constants.keys():
+    name = constants[interval]
+    result += const_trans(name, interval[0], interval[1])
+  return result
       
-def decl_vars(variables):
-    i = 0
+def decl_vars(variables, var_transform):
+    '''Returns a string of the c++ declarations of variables'''
     result = '// Variables from expression\n'
     for v in variables.keys():
-        result += 'const interval_t & _' + v + ' =  X[' + str(variables[v]) + '];\n'
-        i += 1
+        result += var_transform(v, variables[v]) + '\n'
+
     return result + '\n'
 
-def expressify(exp, val_trans = lambda x: 'interval("' + x + '", "' + x + '").get_value()',
-               func_trans = lambda x: x):
+def expressify(exp, val_trans, func_trans):
     if len(exp) == 2:
         if exp[0] == 'Name':
             return exp[1]
@@ -235,27 +218,22 @@ def expressify(exp, val_trans = lambda x: 'interval("' + x + '", "' + x + '").ge
         else: # Binary operations
             return '(' + expressify(exp[1], val_trans, func_trans) + exp[0] + expressify(exp[2], val_trans, func_trans) + ')'
           
-def process(exp):
-    return 'return interval(' + expressify(exp, func_trans = gelpia_functions) + ');\n'
+def process(exp, const_trans, func_trans):
+    return 'return interval(' + expressify(exp, const_trans, func_trans) + ');\n'
 
-def decl_constants(constants):
-  result = "// Constants from expression\n"
-  for interval in constants.keys():
-    name = constants[interval]
-    result += '''static const large_float_t {0}_l("{1}");
-static const large_float_t {0}_u("{2}");
-static const interval_t {0}({0}_l, {0}_u);\n\n'''.format(name, interval[0], interval[1])
-                                           
-  return result
-                                                                         
 
-def get_body(s, variables):
+def get_body(s, variables, var_trans, const_trans, func_trans):
     exp = parser.parse(s)
     constants = lift_constants_wrap(exp)
     v = collect_vars(exp)
-    return (decl_vars(variables) + decl_constants(constants) + process(exp))
+    return (decl_vars(variables, var_trans) + 
+            decl_constants(constants, const_trans) + 
+            process(exp, const_trans, func_trans))
 
-def gelpia_functions(expression, val_trans, func_trans):
+def mpfi_get_body(s, variables):
+  return get_body(s, variables, mpfi_var_trans, mpfi_const_trans, mpfi_func_trans)
+
+def mpfi_func_trans(expression, val_trans, func_trans):
   if expression[1] == 'interval':
     args = expression[2]
     assert(len(args) == 3) # ['Call', 'interval', ['Args', NUM, NUM]]
@@ -270,3 +248,10 @@ def gelpia_functions(expression, val_trans, func_trans):
     return ('(' + expression[1] + 
             "(" + expressify(expression[2][1], val_trans, func_trans) + ')' + ')')
   
+def mpfi_const_trans(name, inf, sup):
+  return '''static const large_float_t {0}_l("{1}");
+static const large_float_t {0}_u("{2}");
+static const interval_t {0}({0}_l, {0}_u);\n\n'''.format(name, inf, sup)
+
+def mpfi_var_trans(name, value):
+  return 'const interval_t & _' + name + ' =  X[' + str(value) + '];'
