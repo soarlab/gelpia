@@ -218,20 +218,24 @@ def expressify(exp, val_trans, func_trans):
         else: # Binary operations
             return '(' + expressify(exp[1], val_trans, func_trans) + exp[0] + expressify(exp[2], val_trans, func_trans) + ')'
           
-def process(exp, const_trans, func_trans):
-    return 'return interval(' + expressify(exp, const_trans, func_trans) + ');\n'
+def process(exp, val_trans, func_trans):
+    return 'return interval(' + expressify(exp, val_trans, func_trans) + ');\n'
 
 
-def get_body(s, variables, var_trans, const_trans, func_trans):
+def get_body(s, variables, val_trans, var_trans, const_trans, func_trans, lift_constants):
     exp = parser.parse(s)
-    constants = lift_constants_wrap(exp)
+    if lift_constants:
+      constants = lift_constants_wrap(exp)
+    else:
+      constants = dict()
     v = collect_vars(exp)
     return (decl_vars(variables, var_trans) + 
             decl_constants(constants, const_trans) + 
-            process(exp, const_trans, func_trans))
+            process(exp, val_trans, func_trans))
 
-def mpfi_get_body(s, variables):
-  return get_body(s, variables, mpfi_var_trans, mpfi_const_trans, mpfi_func_trans)
+def mpfi_get_body(s, variables, lift_constants = True):
+  return get_body(s, variables, mpfi_val_trans, mpfi_var_trans, 
+                  mpfi_const_trans, mpfi_func_trans, lift_constants)
 
 def mpfi_func_trans(expression, val_trans, func_trans):
   if expression[1] == 'interval':
@@ -247,6 +251,9 @@ def mpfi_func_trans(expression, val_trans, func_trans):
   else:
     return ('(' + expression[1] + 
             "(" + expressify(expression[2][1], val_trans, func_trans) + ')' + ')')
+
+def mpfi_val_trans(value):
+  return 'interval({}).get_value()'.format(value)
   
 def mpfi_const_trans(name, inf, sup):
   return '''static const large_float_t {0}_l("{1}");
