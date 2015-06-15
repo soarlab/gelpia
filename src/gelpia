@@ -186,8 +186,8 @@ def write_function_source(filename, function, variables):
 def reformat_function(function, variables):
     """ Takes a math formatted function with variables and translates it to
     c++ """
-    import rewriter.rewrite
-    return rewriter.rewrite.rewrite(function,variables)
+    import rewriter.reader
+    return rewriter.reader.get_body(function,variables)
 
 
 def make_X_0(box_list):
