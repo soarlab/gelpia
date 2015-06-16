@@ -1,6 +1,7 @@
 UNAME := $(shell uname)
-SWIGFLAGS := -c++ -Wall -python -Iinclude -outdir bin
-CXXFLAGS += -std=c++11 -Wall -Werror -Iinclude
+SWIGFLAGS := -c++ -python -Iinclude -outdir bin -w315
+CXXFLAGS += -std=c++11 -Iinclude -w 
+
 
 ifeq ($(UNAME), Darwin)
 	BUNDLE := -bundle
@@ -24,7 +25,8 @@ ifeq ($(CXX), g++)
 endif
 
 # Object files used to create the .so for each type
-BASE_OBJ := obj/large_float.o obj/interval.o obj/box.o
+BASE_OBJ := obj/large_float.o obj/interval.o obj/box.o 
+BASE_OBJ := $(BASE_OBJ) obj/fast_interval.o obj/fast_box.o
 TESTABLE_UTILS_OBJ := obj/testable_utils_wrap.o $(BASE_OBJ)
 GELPIA_UTILS_OBJ := obj/gelpia_utils_wrap.o obj/function.o $(BASE_OBJ)
 
@@ -36,10 +38,13 @@ FUNCTION_INC := include/function.h $(BOX_INC)
 TESTABLE_UTILS_INC := $(BOX_INC)
 GELPIA_UTILS_INC := $(FUNCITON_INC)
 
+FAST_INTERVAL_INC := include/fast_interval.h
+FAST_BOX_INC := include/fast_box.h $(INTERVAL_INC)
+
 # Compile flags for the steps to create each .so
 WRAP_FLAGS := $(CXXFLAGS) $(PIC) -c $(NO_DEP_REG) $(PY3_CFLAGS)
 COMPILE_FLAGS := $(CXXFLAGS) $(PIC) -c
-LINK_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lmpfi -lboost_serialization `python3-config --ldflags`
+LINK_FLAGS := $(CXXFLAGS) $(BUNDLE) -lmpfr -lmpfi -lboost_serialization -lprim `python3-config --ldflags`
 
 
 
@@ -66,6 +71,14 @@ obj/box.o: $(BOX_INC) src/box.cc
 
 obj/function.o: $(FUNCTION_INC) generated/function.cc
 	$(CXX) $(COMPILE_FLAGS) -o obj/function.o generated/function.cc
+
+
+
+obj/fast_interval.o:  $(FAST_INTERVAL_INC) src/fast_interval.cc
+	$(CXX) $(COMPILE_FLAGS) -frounding-math -o obj/fast_interval.o src/fast_interval.cc
+
+obj/fast_box.o:  $(FAST_BOX_INC) src/fast_box.cc
+	$(CXX) $(COMPILE_FLAGS) -frounding-math -o obj/fast_box.o src/fast_box.cc
 
 
 
@@ -111,7 +124,7 @@ bin/_testable_utils.so: $(TESTABLE_UTILS_OBJ)
 #+-----------------------------------------------------------------------------+
 .PHONY: test
 test: bin/testable_utils_test.py
-	./bin/testable_utils_test.py
+	./bin/testable_utils_test.py -v
 
 bin/testable_utils_test.py: bin/_testable_utils.so
 	@ln -f test/testable_utils_test.py bin/testable_utils_test.py
@@ -129,3 +142,5 @@ clean:
 	$(RM) generated/*
 	$(RM) parser.out
 	$(RM) parsetab.py
+	$(RM) -r */__pycache__/
+	$(RM) -r */*/__pycache__/

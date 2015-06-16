@@ -367,6 +367,259 @@ class testable_utils_test(UT.TestCase):
                 self.assertEqual(str(d), str(e))
                 self.assertEqual(d, e)
 
+
+
+
+
+
+
+
+
+
+
+
+
+    #+-------------------------------------------------------------------------+
+    #| Test for included fast_interval                                              |
+    #+-------------------------------------------------------------------------+
+    def test_fast_interval_width(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                width = abs(_a-_b)
+                c = TU.fast_interval(str(_a), str(_b))
+                trunc_c = trunc_string(c.width())
+                trunc_width = trunc_string(width)
+                self.assertEqual(trunc_c, trunc_width)
+
+    def test_fast_interval_lower(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                a = _a
+                c = TU.fast_interval(str(_a), str(_b))
+                self.assertEqual(str(c.lower()), str(a))
+                self.assertEqual(c.lower(), a)
+
+    def test_fast_interval_upper(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                b = _b
+                c = TU.fast_interval(str(_a), str(_b))
+                self.assertEqual(str(c.upper()), str(b))
+                self.assertEqual(c.upper(), b)
+
+    def test_fast_interval_upper_and_lower(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                _c = R.uniform(-100, 100)
+                while (_b > _c):
+                    _c = R.uniform(-100, 100)
+                d = TU.fast_interval(str(_a), str(_b))
+                e = TU.fast_interval(str(_b), str(_c))
+                self.assertEqual(str(d.upper()), str(e.lower()))
+                self.assertEqual(d.upper(), e.lower())
+
+    def test_fast_interval_string_same(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                b = TU.fast_interval(str(_a), str(_a))
+                c = TU.fast_interval(str(_a), str(_a))
+                self.assertEqual(str(b), str(c))
+                self.assertEqual(b, c)
+
+    def test_fast_interval_pickle(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                c = TU.fast_interval(_a, _b)
+                q = MP.JoinableQueue()
+                q.put(c)
+                d = q.get()
+                self.assertEqual(str(c), str(d))
+                self.assertEqual(c, d)
+
+
+
+
+    #+-------------------------------------------------------------------------+
+    #| Test for fast_box                                                            |
+    #+-------------------------------------------------------------------------+
+    def test_fast_box_string_same(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = TU.fast_interval(str(_a), str(_a))
+                _c = TU.fast_interval(str(_a), str(_a))
+                d = TU.fast_box()
+                d.append(_b)
+                d.append(_c)
+                e = TU.fast_box()
+                e.append(_b)
+                e.append(_c)
+                self.assertEqual(str(d), str(e))
+                self.assertEqual(d, e)
+
+    def test_fast_box_append_0(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                _c = R.uniform(-100, 100)
+                _d = R.uniform(-100, 100)
+                while (_c > _d):
+                    _d = R.uniform(-100, 100)
+
+                e = TU.fast_box()
+                e.append(str(_a), str(_b))
+                e.append(str(_c), str(_d))
+
+                f = TU.fast_box()
+                f.append(TU.fast_interval(str(_a), str(_b)))
+                f.append(TU.fast_interval(str(_c), str(_d)))
+
+                self.assertEqual(str(e), str(f))
+                self.assertEqual(e, f)
+
+    def test_fast_box_append_1(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                _c = R.uniform(-100, 100)
+                _d = R.uniform(-100, 100)
+                while (_c > _d):
+                    _d = R.uniform(-100, 100)
+
+                e = TU.fast_box()
+                e.append(str(_a), str(_b))
+                e.append(TU.fast_interval(str(_c), str(_d)))
+
+                f = TU.fast_box()
+                f.append(TU.fast_interval(str(_a), str(_b)))
+                f.append(str(_c), str(_d))
+
+                self.assertEqual(str(e), str(f))
+                self.assertEqual(e, f)
+
+    def test_fast_box_width_0(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+                width = abs(_a-_b)
+                c = TU.fast_box()
+                c.append(TU.fast_interval(str(_a), str(_b)))
+                trunc_c = trunc_string(c.width())
+                trunc_width = trunc_string(width)
+                self.assertEqual(trunc_c, trunc_width) 
+
+    def test_fast_box_width_1(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+
+                _c = R.uniform(-100, 100)
+                _d = R.uniform(-100, 100)
+                while (_c > _d):
+                    _d = R.uniform(-100, 100)
+                while (abs(_a-_b) <= abs(_c-_d)):
+                    _c = R.uniform(-100, 100)
+                    _d = R.uniform(-100, 100)
+                    while (_c > _d):
+                        _d = R.uniform(-100, 100)
+                width = abs(_a-_b)
+                e = TU.fast_box()
+                e.append(TU.fast_interval(str(_a), str(_b)))
+                e.append(TU.fast_interval(str(_c), str(_d)))
+                trunc_e = trunc_string(e.width())
+                trunc_width = trunc_string(width)
+                self.assertEqual(trunc_e, trunc_width) 
+
+    def test_fast_box_width_2(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = R.uniform(-100, 100)
+                while (_a > _b):
+                    _b = R.uniform(-100, 100)
+
+                _c = R.uniform(-100, 100)
+                _d = R.uniform(-100, 100)
+                while (_c > _d):
+                    _d = R.uniform(-100, 100)
+                while (abs(_a-_b) >= abs(_c-_d)):
+                    _c = R.uniform(-100, 100)
+                    _d = R.uniform(-100, 100)
+                    while (_c > _d):
+                        _d = R.uniform(-100, 100)
+                width = abs(_c-_d)
+                e = TU.fast_box()
+                e.append(TU.fast_interval(str(_a), str(_b)))
+                e.append(TU.fast_interval(str(_c), str(_d)))
+                trunc_e = trunc_string(e.width())
+                trunc_width = trunc_string(width)
+                self.assertEqual(trunc_e, trunc_width) 
+
+    def test_fast_box_split(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(0, 100)
+                b = TU.fast_box()
+                b.append(str(-_a), str(_a))
+                c = TU.fast_box()
+                c.append(str(-_a), "0")
+                d = TU.fast_box()
+                d.append("0", str(_a))
+                fast_box_list = b.split()
+                self.assertEqual(str(fast_box_list[0]), str(c))
+                self.assertEqual(fast_box_list[0], c)
+
+                self.assertEqual(str(fast_box_list[1]), str(d))
+                self.assertEqual(fast_box_list[1], d)
+
+    def test_fast_box_string_pickle(self):
+        for i in range(TESTS):
+            with self.subTest(i=i):
+                _a = R.uniform(-100, 100)
+                _b = TU.fast_interval(str(_a), str(_a))
+                _c = TU.fast_interval(str(_a), str(_a))
+                d = TU.fast_box()
+                d.append(_b)
+                d.append(_c)
+                q = MP.JoinableQueue()
+                q.put(d)
+                e = q.get()
+                self.assertEqual(str(d), str(e))
+                self.assertEqual(d, e)
+
                 
 
 
