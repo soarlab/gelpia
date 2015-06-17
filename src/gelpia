@@ -162,14 +162,24 @@ def create_function_body(function, variables):
     preamble.append('#include "interval.h"')
     preamble.append('#include "box.h"')
     preamble.append('#include "function.h"')
+    preamble.append('#include "fast_interval.h"')
+    preamble.append('#include "fast_box.h"')    
     preamble.append('')
     preamble.append('extern interval')
     preamble.append('function(const box & X_wrapped)')
     preamble.append('{')
     if len(variables) != 0:
         preamble.append('const box_t & X = X_wrapped.get_value();')
-    preamble.append(function)
+    preamble.append(function[0])
 #    preamble.append('    return interval({});'.format(function))
+    preamble.append('}')
+    preamble.append('\n')
+    preamble.append('extern fast_interval')
+    preamble.append('fast_function(const fast_box & X_wrapped)')
+    preamble.append('{')
+    if len(variables) != 0:
+        preamble.append('const fast_box_t & X = X_wrapped.get_value();')
+    preamble.append(function[1])
     preamble.append('}')
     preamble.append('')
 
@@ -187,7 +197,8 @@ def reformat_function(function, variables):
     """ Takes a math formatted function with variables and translates it to
     c++ """
     import rewriter.reader
-    return rewriter.reader.mpfi_get_body(function,variables)
+    return (rewriter.reader.mpfi_get_body(function, variables, True),
+            rewriter.reader.filib_get_body(function, variables, True))
 
 
 def make_X_0(box_list):

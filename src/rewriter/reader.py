@@ -218,11 +218,14 @@ def expressify(exp, val_trans, func_trans):
         else: # Binary operations
             return '(' + expressify(exp[1], val_trans, func_trans) + exp[0] + expressify(exp[2], val_trans, func_trans) + ')'
           
-def process(exp, val_trans, func_trans):
+def mpfi_process(exp, val_trans, func_trans):
     return 'return interval(' + expressify(exp, val_trans, func_trans) + ');\n'
 
+def filib_process(exp, val_trans, func_trans):
+    return 'return fast_interval(' + expressify(exp, val_trans, func_trans) + ');\n'
 
-def get_body(s, variables, val_trans, var_trans, const_trans, func_trans, lift_constants):
+
+def get_body(s, variables, val_trans, var_trans, const_trans, func_trans, lift_constants, process):
     exp = parser.parse(s)
     if lift_constants:
       constants = lift_constants_wrap(exp)
@@ -232,10 +235,10 @@ def get_body(s, variables, val_trans, var_trans, const_trans, func_trans, lift_c
     return (decl_vars(variables, var_trans) + 
             decl_constants(constants, const_trans) + 
             process(exp, val_trans, func_trans))
-
+ 
 def mpfi_get_body(s, variables, lift_constants = True):
-  return get_body(s, variables, mpfi_val_trans, mpfi_var_trans, 
-                  mpfi_const_trans, mpfi_func_trans, lift_constants)
+ return get_body(s, variables, mpfi_val_trans, mpfi_var_trans, 
+                  mpfi_const_trans, mpfi_func_trans, lift_constants, mpfi_process)
 
 def mpfi_func_trans(expression, val_trans, func_trans):
   if expression[1] == 'interval':
@@ -262,3 +265,32 @@ static const interval_t {0}({0}_l, {0}_u);\n\n'''.format(name, inf, sup)
 
 def mpfi_var_trans(name, value):
   return 'const interval_t & _' + name + ' =  X[' + str(value) + '];'
+
+def filib_get_body(s, variables, lift_constants = True):
+  return get_body(s, variables, filib_val_trans, filib_var_trans, 
+                  filib_const_trans, filib_func_trans, lift_constants, filib_process)
+
+def filib_func_trans(expression, val_trans, func_trans):
+  if expression[1] == 'interval':
+    args = expression[2]
+    assert(len(args) == 3) # ['Call', 'interval', ['Args', NUM, NUM]]
+    assert(args[1][0] == 'Value')
+    assert(args[2][0] == 'Value')
+    return '(fast_interval(' + args[1][1] + ', ' + args[2][1] + ').get_value())'
+  elif expression[1] == 'pow':
+    args = expression[2]
+    assert(len(args) == 3) #['Args', var, power_int]
+    return '(pow(' + expressify(args[1], val_trans, func_trans) + ", " + args[2][1] + '))'
+  else:
+    return ('(' + expression[1] + 
+            "(" + expressify(expression[2][1], val_trans, func_trans) + ')' + ')')
+
+def filib_val_trans(value):
+  return 'fast_interval({}).get_value()'.format(value)
+
+def filib_const_trans(name, inf, sup):
+  return '''static const fast_interval_t {0}({1}, {2});\n\n'''.format(name, inf, sup)
+
+def filib_var_trans(name, value):
+  return 'const fast_interval_t & _' + name + ' =  X[' + str(value) + '];'
+
