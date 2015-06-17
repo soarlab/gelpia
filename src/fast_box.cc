@@ -15,6 +15,18 @@ fast_box::fast_box(const fast_box &in)
   }
 }
 
+fast_box::fast_box(const box &in)
+{
+
+  value = fast_box_t();
+  
+  for(const auto & item : in.get_value())
+  {
+    value.emplace_back(fast_interval_t(static_cast<double>(lower(item)),
+				       static_cast<double>(upper(item))));
+				       
+  }  
+}
 
 bool fast_box::operator==(const fast_box &c) const{
   if (this->size() != c.size()) {

@@ -16,6 +16,7 @@ solvers = {"serial"                 : "serial",
            "s"                      : "serial",
            "priority_serial"        : "priority_serial",
            "ps"                     : "priority_serial",
+           "fps"                    : "fast_priority_serial",
            "naive_parallel"         : "naive_parallel",
            "np"                     : "naive_parallel",
 	   "split_parallel"         : "split_parallel",
@@ -40,6 +41,8 @@ def import_solver(solver):
         import serial_solver as SOLVER
     elif solvers[solver] == "priority_serial":
         import priority_serial_solver as SOLVER
+    elif solvers[solver] == "fast_priority_serial":
+        import fast_priority_serial_solver as SOLVER
     elif solvers[solver] == "naive_parallel":
         import naive_parallel_solver as SOLVER
     elif solvers[solver] == "split_parallel":

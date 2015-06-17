@@ -9,6 +9,7 @@
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/vector.hpp>
 #include <sstream>
+#include "box.h"
 
 #include "fast_interval.h"
 
@@ -31,6 +32,7 @@ class fast_box {
   fast_box();
   fast_box(const fast_box &in);
   fast_box(const fast_box_t &in);
+  fast_box(const box &in);
 
   // Operators
   bool operator==(const fast_box &c) const;
