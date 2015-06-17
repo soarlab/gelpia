@@ -115,12 +115,14 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
     # split input into many pieces
     boxes = Q.Queue()
     boxes.put(X_0)
-    piece_count = max(X_0.size()*2, procs*2)
-    for i in range(piece_count):
-        new_box = boxes.get()
-        box_list = new_box.split()
-        for box in box_list:
-            boxes.put(box)
+    piece_count = 1
+    if (X_0.size() > 1):
+        piece_count = max(X_0.size()*2, procs*2)
+        for i in range(piece_count):
+            new_box = boxes.get()
+            box_list = new_box.split()
+            for box in box_list:
+                boxes.put(box)
 
     # randomize pieces
     pieces = list()

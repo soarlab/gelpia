@@ -101,12 +101,15 @@ def solve(X_0, x_tol, f_tol, func, procs, profiler):
     # split input into procs pieces
     boxes = Q.Queue()
     boxes.put(X_0)
+    if (X_0.size() == 0):
+        procs = 1
+
     for i in range(procs-1):
         new_box = boxes.get()
         box_list = new_box.split()
         for box in box_list:
             boxes.put(box)
-
+    
     # All answers found by solvers are put in here
     answer_queue = MP.Queue()
 
