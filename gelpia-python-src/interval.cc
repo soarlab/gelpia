@@ -1,6 +1,8 @@
 #include <assert.h>
 #include "interval.h"
 
+// Instantiate the interval template
+template interval_t;
 
 namespace bm = boost::multiprecision;
 

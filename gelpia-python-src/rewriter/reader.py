@@ -225,13 +225,123 @@ def filib_process(exp, val_trans, func_trans):
     return 'return fast_interval(' + expressify(exp, val_trans, func_trans) + ');\n'
 
 
+def deriv_exp(exp, var):
+  if exp[0] == '+':
+    return ['+', deriv_exp(exp[1], var), deriv_exp(exp[2], var)]
+  if exp[0] == '-':
+    return ['-', deriv_exp(exp[1], var), deriv_exp(exp[2], var)]
+  if exp[0] == 'Neg':
+    return ['Neg', deriv_exp(exp[1], var)]
+  if exp[0] == '*':
+    f = exp[1]
+    g = exp[2]
+    df = deriv_exp(f, var)
+    dg = deriv_exp(g, var)
+    return ['+',
+            ['*', f, dg],
+            ['*', df, g]]
+  if exp[0] == '/':
+    f = exp[1]
+    g = exp[2]
+    df = deriv_exp(f, var)
+    dg = deriv_exp(g, var)
+    return ['/', 
+            ['-', 
+             ['*', df, g],
+             ['*', f, dg]],
+            ['Call', 'pow', ['Args', g, ['Value', '2']]]]
+
+  if exp[0] == 'Call':
+    if exp[1] == 'pow':
+      return ['*',
+              ['*',
+               exp[2][2],
+               ['Call', 'pow', ['Args', exp[2][1], ['Value', str(int(exp[2][2][1]) - 1)]]]],
+              deriv_exp(exp[2][1], var)]
+    if exp[1] == 'sin':
+      return ['*',
+              ['Call', 'cos', ['Args', exp[2][1]]],
+              deriv_exp(exp[2][1], var)]
+    if exp[1] == 'cos':
+      return ['*',
+              ['Neg',
+              ['Call', 'sin', ['Args', exp[2][1]]]],
+              deriv_exp(exp[2][1], var)]
+  if exp[0] == 'InternalName' or exp[0] == 'Value':
+    return ['Value', '0']
+  if exp[0] == 'Name':
+    if exp[1] == '_' + var:
+      return ['Value', '1']
+    else:
+      return ['Value', '0']
+  print('missed', exp)
+  return exp
+
+def simplify(exp):
+  result = exp, False
+  if exp[0] == '+' and exp[1][0] == 'Value' and exp[1][1] == '0':
+    result = exp[2], True
+  elif exp[0] == '+' and exp[2][0] == 'Value' and exp[2][1] == '0':
+    result = exp[1], True
+
+  elif (exp[0] == '*' and 
+      exp[1][0] == 'Value' and 
+      exp[1][1] == '1'):
+    result =  exp[2], True
+  elif (exp[0] == '*' and 
+      exp[2][0] == 'Value' and 
+      exp[2][1] == '1'):
+    result = exp[1], True
+  elif exp[0] == '*' and exp[1][0] == 'Value' and exp[1][1] == '0':
+    result =  ['Value', '0'], True
+  elif exp[0] == '*' and exp[2][0] == 'Value' and exp[2][1] == '0':
+    result = ['Value', '0'], True
+
+  elif exp[0] == '-' and exp[2][0] == 'Value' and exp[2][1] == '0':
+    result = exp[1], True
+  elif exp[0] == '-' and exp[1][0] == 'Value' and exp[1][1] == '0':
+    result = ['Neg', exp[2]], True
+
+  elif exp[0] == '/' and exp[2][0] == 'Value' and exp[2][1] == '1':
+    result = exp[1], True
+  elif exp[0] == '/' and exp[1][0] == 'Value' and exp[1][1] == '0':
+    result = ['Value', '0'], True
+
+  elif exp[0] in ('+', '*', '-', '/'):
+    left, lchange = simplify(exp[1])
+    right, rchange = simplify(exp[2])
+    result = [exp[0], left, right], lchange or rchange
+
+  elif exp[0] == 'Call':
+    arg_simp, ch = simplify(exp[2][1])
+    new_exp = ['Call', exp[1], ['Args', arg_simp] + exp[2][2:]]
+    result = new_exp, ch
+
+  return result
+    
+def simplify_wrap(exp):
+  changed = True
+  result = exp
+  while changed:
+    result, changed = simplify(result)
+  return result
+
 def get_body(s, variables, val_trans, var_trans, const_trans, func_trans, lift_constants, process):
     exp = parser.parse(s)
+    import rewriter.post_order
+    print(rewriter.post_order.postorder(exp))
     if lift_constants:
       constants = lift_constants_wrap(exp)
     else:
       constants = dict()
+      
     v = collect_vars(exp)
+    for v in variables.keys():
+      print(v + ':')
+      df = deriv_exp(exp, v)
+      from pprint import pprint
+      pprint(simplify_wrap(df))
+
     return (decl_vars(variables, var_trans) + 
             decl_constants(constants, const_trans) + 
             process(exp, val_trans, func_trans))

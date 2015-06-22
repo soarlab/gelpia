@@ -40,8 +40,8 @@ def solve(X_0, x_tol, f_tol, func, procs_ignore, profiler_ignore):
         for box in box_list:
             estimate = func(box.midpoint())
             # See if we can update our water mark for ruling out search paths
-            if (best_low < estimate.upper()):
-                best_low = estimate.upper()
+            if (best_low < estimate.lower()):
+                best_low = estimate.lower()
             # prioritize the intervals with largest estimates
             priority_fix += 1
             local_queue.put((-estimate.upper(), priority_fix, box))

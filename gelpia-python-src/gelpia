@@ -240,7 +240,8 @@ def main():
     OS.chdir(base_dir)
     compile_time, output = IU.time_func(IU.run, "make", ["solver"],
                                         "Unable to compile")
-
+					
+    print(output)
     # Import generated module, solver module, and create c++ box
     import gelpia_utils as GU
     import_solver(arg_dict["solver"])

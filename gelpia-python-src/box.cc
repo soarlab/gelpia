@@ -2,6 +2,9 @@
 
 namespace bm = boost::multiprecision;
 
+// Instantiate the box template
+template box_t;
+
 box::box()
 {
   value = box_t();

@@ -134,6 +134,18 @@ fn min(args: &[f64]) -> f64 {
     min
 }
 
+fn abs(i: Interval) -> Interval {
+    if i.inf >= 0.0 { // Interval is already positive
+        i
+    }
+    else if i.sup <= 0.0 { // Interval is completely negative
+        Interval::new(-i.sup, -i.inf)
+    }
+    else { // Otherwise interval spans 0.
+        Interval::new(0.0, max(&[-i.inf, i.sup]))
+    }
+}
+
 fn max(args: &[f64]) -> f64 {
     let mut max = std::f64::NEG_INFINITY;
     for &arg in args {
@@ -190,7 +202,7 @@ fn func(_x: &Vec<Interval>) -> Interval {
     let a = _x[3];
     let b = _x[4];
     let c = _x[5];
-    (-y * z - x * a + y * b + z * c - b * c + x * (-x + y + z - a + b + c))
+    pow(abs(-y * z - x * a + y * b + z * c - b * c + x * (-x + y + z - a + b + c)), 2)
 }
 
 fn width(i: &Interval) -> f64 {
@@ -250,15 +262,13 @@ fn ibba(x_0: &Vec<Interval>, e_x: f64, e_f: f64) -> (f64, Vec<Interval>) {
     
     let mut q = BinaryHeap::new();
     let mut i: u32 = 0;
-    
+
     q.push(Quple{p: std::f64::INFINITY, pf: i, data: x_0.clone()});
     while q.len() != 0 {
         let v = q.pop();
         let ref x =
             match v {
-                // The division was valid
                 Some(y) => y.data,
-                // The division was invalid
                 None    => panic!("wtf")
             };
 

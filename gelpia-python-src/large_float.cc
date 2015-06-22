@@ -1,6 +1,7 @@
 #include "large_float.h"
 
-
+// Instantiate the template
+template large_float_t;
 large_float::large_float(const std::string &number) {
   value = static_cast<large_float_t>(number);
 }
