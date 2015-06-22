@@ -144,27 +144,41 @@ fn max(args: &[f64]) -> f64 {
     max
 }
 
-fn pow(a: Interval, b: u32) -> Interval {
+fn pow_d(a: f64, b: u32) -> f64 {
     if b == 0 {
-        Interval{inf: 1.0, sup: 1.0}
+        1.0
     }
     else if b == 1 {
         a
     }
     else {
         let mut result;
-        let half_pow = pow(a, b/2);
-        if (b % 2) == 1 {
-            result = half_pow*half_pow*a;
+        let half_pow = pow_d(a, b/2);
+        if b%2 == 1 {
+            result = half_pow * half_pow*a;
         }
-        else { // Power is even. Optimized so that the infimum
-               // of the interval is never negative.
+        else {
             result = half_pow*half_pow;
-            let linf = result.inf; 
-            result = Interval::new(max(&[linf, 0.0]),
-                                   result.sup);
         }
         result
+    }
+}
+
+fn pow(a: Interval, b: u32) -> Interval {
+    if b % 2 == 1 {
+        Interval::new(pow_d(a.inf, b), pow_d(a.sup, b))
+    }
+    else {
+        if a.inf >= 0.0 {
+            Interval::new(pow_d(a.inf, b), pow_d(a.sup, b))                
+        }
+        else if a.sup < 0.0 {
+            Interval::new(pow_d(a.sup, b), pow_d(a.inf, b))
+        }
+        else {
+            Interval::new(0.0, max(&[pow_d(a.inf, b),
+                                     pow_d(a.sup, b)]))
+        }
     }
 }
 
