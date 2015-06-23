@@ -1,29 +1,20 @@
+/* 
+  Basic interval implementation and other common functions/data structures
+*/
+
 use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::cmp::{PartialOrd, Ordering, PartialEq, Ord};
 use std::f64::{NEG_INFINITY, INFINITY};
 
-#[derive(Debug, Copy, Clone)]
-pub struct Interval {
-    pub inf: f64,
-    pub sup: f64,
-}
+pub type Box = Vec<Interval>;
 
-impl Interval {
-    pub fn new(inf: f64,
-               sup: f64) -> Interval{
-        if inf > sup {
-            panic!("Improper interval");
-        }
-        Interval{inf: inf, sup: sup}
-    }
-}
-
+// Data structure for insertion of a box into a priority queue
 pub struct Quple {
     pub p: f64,
     pub pf: u32,
-    pub data: Vec<Interval>,
+    pub data: Box,
 }
-
+// Allow ordering of Quples
 impl PartialEq for Quple {
     fn eq(&self, other: &Quple) -> bool {
         self.pf == other.pf
@@ -62,7 +53,26 @@ impl Ord for Quple {
         }
     }
 }
+// End Quple ordering.
 
+// Interval implementation
+#[derive(Debug, Copy, Clone)]
+pub struct Interval {
+    pub inf: f64,
+    pub sup: f64,
+}
+
+impl Interval {
+    pub fn new(inf: f64,
+               sup: f64) -> Interval{
+        if inf > sup {
+            panic!("Improper interval");
+        }
+        Interval{inf: inf, sup: sup}
+    }
+}
+
+// Overloads for arithmetic operators. From wikipedia
 impl Add for Interval {
     type Output = Interval;
     
@@ -124,16 +134,7 @@ impl Neg for Interval {
     }
 }
 
-pub fn min(args: &[f64]) -> f64 {
-    let mut min = INFINITY;
-    for &arg in args {
-        if arg < min {
-            min = arg;
-        }
-    }
-    min
-}
-
+// Returns the absolute value of an interval
 pub fn abs(i: Interval) -> Interval {
     if i.inf >= 0.0 { // Interval is already positive
         i
@@ -146,17 +147,8 @@ pub fn abs(i: Interval) -> Interval {
     }
 }
 
-pub fn max(args: &[f64]) -> f64 {
-    let mut max = NEG_INFINITY;
-    for &arg in args {
-        if arg > max {
-            max = arg;
-        }
-    }
-    max
-}
-
-pub fn pow_d(a: f64, b: u32) -> f64 {
+// Power of an f64, e.g., a^b
+fn pow_d(a: f64, b: u32) -> f64 {
     if b == 0 {
         1.0
     }
@@ -176,6 +168,7 @@ pub fn pow_d(a: f64, b: u32) -> f64 {
     }
 }
 
+// Power of an interval with bounding optimizations
 pub fn pow(a: Interval, b: u32) -> Interval {
     if b % 2 == 1 {
         Interval::new(pow_d(a.inf, b), pow_d(a.sup, b))
@@ -194,6 +187,29 @@ pub fn pow(a: Interval, b: u32) -> Interval {
     }
 }
 
+// Returns the minimum of a slice of f64
+pub fn min(args: &[f64]) -> f64 {
+    let mut min = INFINITY;
+    for &arg in args {
+        if arg < min {
+            min = arg;
+        }
+    }
+    min
+}
+
+// Returns the maximum of a slice of f64
+pub fn max(args: &[f64]) -> f64 {
+    let mut max = NEG_INFINITY;
+    for &arg in args {
+        if arg > max {
+            max = arg;
+        }
+    }
+    max
+}
+
+// Width of an interval. 
 pub fn width(i: &Interval) -> f64 {
     let w = i.sup - i.inf;
     if w < 0.0 {
@@ -204,7 +220,8 @@ pub fn width(i: &Interval) -> f64 {
     }
 }
 
-pub fn width_box(x: &Vec<Interval>) -> f64 {
+// Rerturns the width of the widest interval in the box
+pub fn width_box(x: &Box) -> f64 {
     let mut result = NEG_INFINITY;
     for i in x {
         let w = width(i);
@@ -215,7 +232,8 @@ pub fn width_box(x: &Vec<Interval>) -> f64 {
     result
 }
 
-pub fn split(x: &Vec<Interval>) -> Vec<Vec<Interval>> {
+// Splits a box in pieces, currently this is at the median of the widest box.
+pub fn split(x: &Box) -> Vec<Box> {
     let mut widest = NEG_INFINITY;
     let mut idx = -1;
     for i in (0..x.len()) {
@@ -234,7 +252,8 @@ pub fn split(x: &Vec<Interval>) -> Vec<Vec<Interval>> {
     result
 }
 
-pub fn midpoint(x: &Vec<Interval>) -> Vec<Interval> {
+// Returns the median of the Box. E.g., a box of the midpoints of x.
+pub fn midpoint(x: &Box) -> Box {
     let mut result = Vec::new();
     for i in x {
         let mid = (i.inf + i.sup)/2.0;

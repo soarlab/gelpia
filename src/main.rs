@@ -1,10 +1,13 @@
-//use std::ops::{Add, Sub, Mul, Div, Neg};
-//use std::cmp::{PartialOrd, Ordering, PartialEq, Ord};
+/*
+  Implements the basic IBBA maximization algorithm with a priority queue.
+*/
+
 use std::collections::BinaryHeap;
 
 mod gu;
 
-use gu::{Interval, width, width_box, Quple, split, midpoint, pow, abs};
+use gu::{Interval, width, width_box, 
+         Quple, split, midpoint, pow, abs};
 
 
 // Answer: ~500.488
