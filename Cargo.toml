@@ -2,3 +2,37 @@
 name = "gelpia"
 version = "0.0.0"
 authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>"]
+build = "build.rs"
+
+[[bin]]
+name = "cooperative"
+path = "src/bin/cooperative.rs"
+
+[[bin]]
+name = "serial"
+path = "src/main.rs"
+
+[[bin]]
+name = "test_gaol"
+path = "src/bin/test_gaol.rs"
+
+[dependencies.gu]
+path = "src/gu"
+
+[dependencies.gr]
+path = "src/gaol"
+
+[dependencies]
+threadpool = "0.1"
+rand = "0.3"
+
+[dependencies.ga]
+path = "src/ga"
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1

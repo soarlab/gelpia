@@ -1,3 +1,7 @@
 Global Extrema Locator Parallelization for Interval Arithmetic
 
-TO BE COMPLETED AT A LATER DATE...
+Currently known to build on Ubuntu 14.04
+
+Requires:
+rust 1.0
+gaol (4.2.0) currently compiled with CRLibm option

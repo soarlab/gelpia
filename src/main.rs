@@ -4,75 +4,71 @@
 
 use std::collections::BinaryHeap;
 
-mod gu;
+extern crate gu;
+use gu::{Quple, INF, NINF, Flt};
 
-use gu::{Interval, width, width_box, 
-         Quple, split, midpoint, pow, abs};
+extern crate gr;
+use gr::{GI, upper_gaol, lower_gaol, func, width_gaol, width_box, split_box,
+         midbox_gaol};
 
-
-// Answer: ~500.488
-fn func(_x: &Vec<Interval>) -> Interval {
-    let x = _x[0];
-    let y = _x[1];
-    let z = _x[2];
-    let a = _x[3];
-    let b = _x[4];
-    let c = _x[5];
-    pow(abs(-y * z - x * a + y * b + z * c - b * c + x * (-x + y + z - a + b + c)), 2)
-}
-
-fn ibba(x_0: &Vec<Interval>, e_x: f64, e_f: f64) -> (f64, Vec<Interval>) {
-    let mut f_best_high = std::f64::NEG_INFINITY;
-    let mut f_best_low  = std::f64::NEG_INFINITY;
+fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
+    let mut f_best_high = NINF;
+    let mut f_best_low  = NINF;
     let mut best_x = x_0.clone();
-    
     let mut q = BinaryHeap::new();
     let mut i: u32 = 0;
 
-    q.push(Quple{p: std::f64::INFINITY, pf: i, data: x_0.clone()});
+    q.push(Quple{p: INF, pf: i, data: x_0.clone()});
     while q.len() != 0 {
         let v = q.pop();
         let ref x =
             match v {
-                Some(y) => y.data,
+                Some(y) 
+                    => 
+                    y.data,
                 None    => panic!("wtf")
             };
 
         let xw = width_box(x);
         let fx = func(x);
-        let fw = width(&fx);
+        let fw = width_gaol(&fx);
 
-        if fx.sup < f_best_low ||
+        if upper_gaol(&fx) < f_best_low ||
             xw < e_x ||
-            fw < e_f {
-                if f_best_high < fx.sup {
-                    f_best_high = fx.sup;
+            fw < e_f //|| (!contains_zero && !on_boundary)
+        {
+                if f_best_high < upper_gaol(&fx) {
+                    f_best_high = upper_gaol(&fx);
                     best_x = x.clone();
                 }
                 continue;
             }
         else {
-            let x_s = split(x);
+            let x_s = split_box(&x);
             for sx in x_s {
-                let mid = midpoint(&sx);
-                let est = func(&mid);
-                if f_best_low < est.inf  {
-                    f_best_low = est.inf;
+                let est = func(&midbox_gaol(&sx));
+                if f_best_low < lower_gaol(&est)  {
+                    f_best_low = lower_gaol(&est);
                 }
                 i += 1;
-                q.push(Quple{p:est.sup,
+                q.push(Quple{p: upper_gaol(&est),
                              pf: i,
                              data: sx});
             }
         }
     }
+    println!("{:?}", i);
     (f_best_high, best_x)
 }
 
 fn main() {
-    let bound = Interval::new(-10.0, 10.0);
-    let x_0 = vec![bound, bound, bound,
-                   bound, bound, bound];
-    let (max, interval) = ibba(&x_0, 0.001, 0.001);
-    println!("{:?}, {:?}", max, interval)
+    let x_0 = vec![GI::new("-1", "1.0"),
+                   GI::new("1.0e-5", "1.0"),
+                   GI::new("1.0e-5", "1.0")];
+    let (max, interval) = ibba(&x_0, 0.0001, 0.0001);
+    println!("{:?}", max);
+    for x in interval {
+        println!("{}", x.to_string());
+    }
+        
 }

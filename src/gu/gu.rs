@@ -6,13 +6,37 @@ use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::cmp::{PartialOrd, Ordering, PartialEq, Ord};
 use std::f64::{NEG_INFINITY, INFINITY};
 
-pub type Box = Vec<Interval>;
+extern crate gr;
+use gr::GI;
 
+pub type Box = Vec<Interval>;
+pub type Flt = f64;
+
+pub static INF:  Flt = INFINITY;
+pub static NINF: Flt = NEG_INFINITY;
+
+//derive(Debug, Copy, Clone)]
+//b struct Parameters {                                                         |
+//   population: usize,                                                          |
+//   selection: usize,                                                           |
+//   elitism: usize,                                                             |
+//   mutation: Flt,                                                              |
+//   crossover: Flt,
+//
+#[derive(Debug, Copy, Clone)]
+pub struct Parameters {
+    pub population:usize,
+    pub selection: usize,
+    pub elitism:   usize,
+    pub mutation:    Flt,
+    pub crossover:   Flt,
+}
 // Data structure for insertion of a box into a priority queue
+#[derive(Clone)]
 pub struct Quple {
-    pub p: f64,
+    pub p: Flt,
     pub pf: u32,
-    pub data: Box,
+    pub data: Vec<GI>,
 }
 // Allow ordering of Quples
 impl PartialEq for Quple {
@@ -25,31 +49,31 @@ impl Eq for Quple { }
 
 impl PartialOrd for Quple {
     fn partial_cmp(&self, other: &Quple) -> Option<Ordering> {
-        if self.p > other.p {
-            Some(Ordering::Greater)
+        if self.p < other.p {
+            Some(Ordering::Less)
         }
-        else if self.pf > other.pf {
+        else if self.pf < other.pf {
             Some(Ordering::Greater)
         }
         else {
-            Some(Ordering::Less)
+            Some(Ordering::Greater)
         }
     }
 }
 
 impl Ord for Quple {
     fn cmp(&self, other: &Quple) -> Ordering {
-        if self.p > other.p {
-            Ordering::Greater
+        if self.p < other.p {
+            Ordering::Less
         }
-        else if self.pf > other.pf {
+        else if self.pf < other.pf {
             Ordering::Greater
         }
         else if self.pf == other.pf {
             Ordering::Equal
         }
         else {
-            Ordering::Less
+            Ordering::Greater
         }
     }
 }
@@ -58,17 +82,21 @@ impl Ord for Quple {
 // Interval implementation
 #[derive(Debug, Copy, Clone)]
 pub struct Interval {
-    pub inf: f64,
-    pub sup: f64,
+    pub inf: Flt,
+    pub sup: Flt,
 }
 
 impl Interval {
-    pub fn new(inf: f64,
-               sup: f64) -> Interval{
+    pub fn new(inf: Flt,
+               sup: Flt) -> Interval{
         if inf > sup {
             panic!("Improper interval");
         }
         Interval{inf: inf, sup: sup}
+    }
+    
+    pub fn contains(&self, x: Flt) -> bool {
+        (x >= self.inf) || (x <= self.sup)
     }
 }
 
@@ -147,8 +175,8 @@ pub fn abs(i: Interval) -> Interval {
     }
 }
 
-// Power of an f64, e.g., a^b
-fn pow_d(a: f64, b: u32) -> f64 {
+// Power of an Flt, e.g., a^b
+fn pow_d(a: Flt, b: u32) -> Flt {
     if b == 0 {
         1.0
     }
@@ -187,8 +215,8 @@ pub fn pow(a: Interval, b: u32) -> Interval {
     }
 }
 
-// Returns the minimum of a slice of f64
-pub fn min(args: &[f64]) -> f64 {
+// Returns the minimum of a slice of Flt
+pub fn min(args: &[Flt]) -> Flt {
     let mut min = INFINITY;
     for &arg in args {
         if arg < min {
@@ -198,8 +226,8 @@ pub fn min(args: &[f64]) -> f64 {
     min
 }
 
-// Returns the maximum of a slice of f64
-pub fn max(args: &[f64]) -> f64 {
+// Returns the maximum of a slice of Flt
+pub fn max(args: &[Flt]) -> Flt {
     let mut max = NEG_INFINITY;
     for &arg in args {
         if arg > max {
@@ -210,7 +238,7 @@ pub fn max(args: &[f64]) -> f64 {
 }
 
 // Width of an interval. 
-pub fn width(i: &Interval) -> f64 {
+pub fn width(i: &Interval) -> Flt {
     let w = i.sup - i.inf;
     if w < 0.0 {
         -w
@@ -221,7 +249,7 @@ pub fn width(i: &Interval) -> f64 {
 }
 
 // Rerturns the width of the widest interval in the box
-pub fn width_box(x: &Box) -> f64 {
+pub fn width_box(x: &Box) -> Flt {
     let mut result = NEG_INFINITY;
     for i in x {
         let w = width(i);
@@ -262,3 +290,20 @@ pub fn midpoint(x: &Box) -> Box {
     }
     result
 }
+
+pub fn func(_x: &Vec<Interval>) -> Interval {
+    let nthree = Interval::new(-3.0, -3.0);
+    let m1 = _x[0];
+    let w1 = _x[1];
+    let a1 = _x[2];
+    (w1 * -m1) * (nthree * (pow((a1/ w1), 2)))
+}   
+
+pub fn func_p(_x: &Vec<Flt>) -> Flt {
+    let nthree = -3.0;
+    let m1 = _x[0];
+    let w1 = _x[1];
+    let a1 = _x[2];
+    (w1 * -m1) * (nthree * (pow_d((a1/w1), 2)))
+}
+

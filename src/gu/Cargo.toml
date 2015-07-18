@@ -1,0 +1,11 @@
+[package]
+name  = "gu"
+version = "0.0.1"
+authors = ["You"]
+
+[lib]
+name = "gu"
+path = "gu.rs"
+
+[dependencies.gr]
+path = "../.."
