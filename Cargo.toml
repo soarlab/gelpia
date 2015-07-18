@@ -12,10 +12,6 @@ path = "src/bin/cooperative.rs"
 name = "serial"
 path = "src/main.rs"
 
-[[bin]]
-name = "test_gaol"
-path = "src/bin/test_gaol.rs"
-
 [dependencies.gu]
 path = "src/gu"
 
