@@ -125,7 +125,10 @@ impl Individual {
     pub fn new<R: Rng>(x: &Vec<GI>, rng: &mut R) -> Self {
         let mut result = Vec::new();
         for i in 0..x.len() {
-            let num = Range::new(lower_gaol(&x[i]), upper_gaol(&x[i])).ind_sample(rng);
+            let up = upper_gaol(&x[i]);
+            let low = lower_gaol(&x[i]);
+
+            let num = if up == low {up} else {Range::new(lower_gaol(&x[i]), upper_gaol(&x[i])).ind_sample(rng)};
             result.push(GI::new_d(num, num));
         }
         let fitness = lower_gaol(&func(&result));
@@ -139,8 +142,11 @@ impl Individual {
     pub fn mutate<R: Rng>(&mut self, x: &Vec<GI>, chance: f64, rng: &mut R) {
         if rng.gen_range(0_f64, 1_f64) < chance {
             let i = rng.gen_range(0, self.solution.len());
-            let num = Range::new(lower_gaol(&x[i]), 
-                                 upper_gaol(&x[i])).ind_sample(rng);
+            let up = upper_gaol(&x[i]);
+            let low = lower_gaol(&x[i]);
+
+            let num = if up == low {up} else {Range::new(lower_gaol(&x[i]), upper_gaol(&x[i])).ind_sample(rng)};
+
             self.solution[i] = GI::new_d(num, num);
         }
     }
