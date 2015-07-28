@@ -5,7 +5,7 @@
 // By Andy Schwartzmeyer (https://github.com/andschwa)
 
 extern crate time;
-use time::{Duration, precise_time_s};
+use time::{precise_time_s};
 
 extern crate rand;
 use rand::{Rng};

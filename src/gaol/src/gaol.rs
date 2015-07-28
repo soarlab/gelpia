@@ -1,10 +1,14 @@
 #![feature(libc)]
-
+#![feature(std_misc)]
 extern crate libc;
-use libc::{c_double, c_void, c_char, c_int};
+use libc::{c_double, c_char, c_int};
 use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
+
+use std::sync::{StaticMutex, MUTEX_INIT};
+
+static RWLOCK: StaticMutex = MUTEX_INIT;
 
 // Structure holding a GAOL interval.
 #[repr(C)]
@@ -136,8 +140,22 @@ impl GI {
 
     pub fn new_c(x: &str) -> GI{
         let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
-        unsafe{make_interval_s(CString::new(x).unwrap().as_ptr(), &mut result.data)};
+        unsafe {
+            let _g = RWLOCK.lock().unwrap();
+            make_interval_s(CString::new(x).unwrap().as_ptr(), &mut result.data)
+        };
         result 
+    }
+    
+    pub fn new_ss(inf: &str, sup: &str) -> GI {
+        let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+        unsafe {
+            let _g = RWLOCK.lock().unwrap();
+            make_interval_ss(CString::new(inf).unwrap().as_ptr(),
+                             CString::new(sup).unwrap().as_ptr(),
+                             &mut result.data)
+        };
+        result
     }
 
     pub fn new_e() -> GI {
@@ -267,11 +285,12 @@ impl Neg for GI {
 impl ToString for GI {
     fn to_string(&self) -> String {
         let x: *const c_char = unsafe {to_str(&self.data)};
-        let y = unsafe { 
-            CStr::from_ptr(x).to_bytes()
-            };
-        let z = String::from_utf8(y.to_vec()).unwrap();
-        z
+        unsafe { 
+            let _g = RWLOCK.lock().unwrap();
+            let y = CStr::from_ptr(x).to_bytes();
+            let z = String::from_utf8(y.to_vec()).unwrap();
+            z
+        }
     }
 }
 

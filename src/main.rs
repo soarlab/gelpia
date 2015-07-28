@@ -61,9 +61,9 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
 }
 
 fn main() {
-    let x_0 = vec![GI::new_d(-1.0, 1.0),
-                   GI::new_d(1.0e-5, 1.0),
-                   GI::new_d(1.0e-5, 1.0)];
+    let x_0 = vec![GI::new_ss("-1.0", "1.0"),
+                   GI::new_ss("1.0e-5", "1.0"),
+                   GI::new_ss("1.0e-5", "1.0")];
     let (max, interval) = ibba(&x_0, 0.0001, 0.0001);
     println!("{:?}", max);
     for x in interval {

@@ -231,9 +231,9 @@ fn main() {
     let f_bestag: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
     let f_best_shared: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
     
-    let x_0 = vec![GI::new_d(-1.0, 1.0),
-                   GI::new_d(1.0e-5, 1.0),
-                   GI::new_d(1.0e-5, 1.0)];
+    let x_0 = vec![GI::new_ss("-1.0", "1.0"),
+                   GI::new_ss("1.0e-5", "1.0"),
+                   GI::new_ss("1.0e-5", "1.0")];
     let f = func(&x_0);
     println!("{} {}", f.lower(), f.upper());
     let x_i = x_0.clone();

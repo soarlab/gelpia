@@ -1,7 +1,6 @@
 /* 
   Basic interval implementation and other common functions/data structures
 */
-use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::cmp::{PartialOrd, Ordering, PartialEq, Ord};
 use std::f64::{NEG_INFINITY, INFINITY};
 
