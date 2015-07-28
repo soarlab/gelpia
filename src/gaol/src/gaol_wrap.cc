@@ -3,208 +3,157 @@
 #include "gaol/gaol.h"
 #include "gaol_wrap.hh"
 #include <cstring>
+#define TO_INTERVAL(x) (*(reinterpret_cast<interval*>(x)))
+#define TO_INTERVAL_C(x) (*(reinterpret_cast<const interval*>(x)))
+#define TO_STACK(x) (*(reinterpret_cast<gaol_int*>(x)))
 
-gaol_int make_interval_dd(double inf, double sup) {
-  interval* x = new interval(inf, sup);
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void make_interval_dd(double inf, double sup, gaol_int* out) {
+  TO_INTERVAL(out) = interval(inf, sup);
 }
 
-gaol_int make_interval_ss(const char* inf, const char* sup) {
-  interval* result = new interval(inf, sup);
-  return (gaol_int){reinterpret_cast<void*>(result)};
+void make_interval_ss(const char* inf, const char* sup, gaol_int* out) {
+  TO_INTERVAL(out) = interval(inf, sup);
 }
 
-gaol_int make_interval_s(const char* x) {
-  interval* result = new interval(x); 
-  return (gaol_int){reinterpret_cast<void*>(result)};
+void make_interval_s(const char* in, gaol_int* out) {
+  TO_INTERVAL(out) = interval(in);
 }
 
-gaol_int make_interval_i(gaol_int x) {
-  interval* result = new interval(*reinterpret_cast<interval*>(x.data));
-  return (gaol_int) {reinterpret_cast<void*>(result)};
+void make_interval_i(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = interval(TO_INTERVAL_C(in));
 }
 
 gaol_int make_interval_e() {
-  interval* result = new interval();
-  return (gaol_int) {reinterpret_cast<void*>(result)};
+  interval result;
+  return TO_STACK(&result);
+}
+//  void del_int(gaol_int); 
+  
+void add(const gaol_int* a, const gaol_int* b, gaol_int* out) {
+  TO_INTERVAL(out) = TO_INTERVAL_C(a) + TO_INTERVAL_C(b);
 }
 
-void del_int(gaol_int g) {
-  delete reinterpret_cast<interval*>(g.data);
+void iadd(gaol_int* a, const gaol_int* b) {
+  TO_INTERVAL(a) += TO_INTERVAL_C(b);
 }
 
-gaol_int add(gaol_int a, gaol_int b) {
-  interval* x = new interval(*(reinterpret_cast<interval*>(a.data)) +
-			     *(reinterpret_cast<interval*>(b.data)));
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void sub(const gaol_int* a, const gaol_int* b, gaol_int* out) {
+  TO_INTERVAL(out) = TO_INTERVAL_C(a) - TO_INTERVAL_C(b);
 }
 
-gaol_int iadd(gaol_int a, gaol_int b) {
-  *reinterpret_cast<interval*>(a.data) += *reinterpret_cast<interval*>(b.data);
-  return a;
+void isub(gaol_int* a, const gaol_int* b) {
+  TO_INTERVAL(a) -= TO_INTERVAL_C(b);
 }
 
-gaol_int sub(gaol_int a, gaol_int b) {
-  interval* x = new interval(*(reinterpret_cast<interval*>(a.data)) -
-			     *(reinterpret_cast<interval*>(b.data)));
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void mul(const gaol_int* a, const gaol_int* b, gaol_int* out) {
+  TO_INTERVAL(out) = TO_INTERVAL_C(a) * TO_INTERVAL_C(b);
 }
 
-gaol_int isub(gaol_int a, gaol_int b) {
-  *reinterpret_cast<interval*>(a.data) -= *reinterpret_cast<interval*>(b.data);
-  return a;
+void imul(gaol_int* a, const gaol_int* b) {
+  TO_INTERVAL(a) *= TO_INTERVAL_C(b);
 }
 
-gaol_int mul(gaol_int a, gaol_int b) {
-  interval* x = new interval(*(reinterpret_cast<interval*>(a.data)) *
-			     *(reinterpret_cast<interval*>(b.data)));
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void div_g(const gaol_int* a, const gaol_int* b, gaol_int* out) {
+  TO_INTERVAL(out) = TO_INTERVAL_C(a) / TO_INTERVAL_C(b);
 }
 
-gaol_int imul(gaol_int a, gaol_int b) {
-  interval* x = reinterpret_cast<interval*>(a.data);
-  interval* y = reinterpret_cast<interval*>(b.data);
-  *x *= *y;
-  return a;
+void idiv_g(gaol_int* a, const gaol_int* b) {
+  TO_INTERVAL(a) /= TO_INTERVAL_C(b);
 }
 
-gaol_int div_g(gaol_int a, gaol_int b) {
-  interval* x = new interval(*(reinterpret_cast<interval*>(a.data)) /
-			     *(reinterpret_cast<interval*>(b.data)));
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void neg_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = -TO_INTERVAL_C(in);
 }
 
-gaol_int idiv_g(gaol_int a, gaol_int b) {
-  interval* x = reinterpret_cast<interval*>(a.data);
-  interval* y = reinterpret_cast<interval*>(b.data);
-  *x /= *y;
-  return a;
+void ineg_g(gaol_int* x) {
+  TO_INTERVAL(x) = -TO_INTERVAL(x);
 }
 
-gaol_int neg_g(gaol_int a) {
-  interval* x = new interval(-(*(reinterpret_cast<interval*>(a.data))));
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void sin_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = sin(TO_INTERVAL_C(in));
 }
 
-gaol_int ineg_g(gaol_int a) {
-  interval* x = reinterpret_cast<interval*>(a.data);
-  *x = -(*x);
-  return a;
+void isin_g(gaol_int* x) {
+  TO_INTERVAL(x) = sin(TO_INTERVAL(x));
 }
 
-gaol_int sin_g(gaol_int a) {
-  interval* x = new interval(sin(*(reinterpret_cast<interval*>(a.data))));
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void cos_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = cos(TO_INTERVAL_C(in));
 }
 
-gaol_int isin_g(gaol_int a) {
-  interval* x = reinterpret_cast<interval*>(a.data);
-  *x = sin(*x);
-  return a;
+void icos_g(gaol_int* x) {
+  TO_INTERVAL(x) = cos(TO_INTERVAL(x));
 }
 
-gaol_int cos_g(gaol_int a) {
-  interval* x = new interval(cos(*(reinterpret_cast<interval*>(a.data))));
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void tan_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = tan(TO_INTERVAL_C(in));
 }
 
-gaol_int icos_g(gaol_int a) {
-  interval* x = reinterpret_cast<interval*>(a.data);
-  *x = cos(*x);
-  return a;
+void itan_g(gaol_int* x) {
+  TO_INTERVAL(x) = tan(TO_INTERVAL(x));
 }
 
-gaol_int tan_g(gaol_int a) {
-  interval* x = new interval(tan(*(reinterpret_cast<interval*>(a.data))));
-  return (gaol_int) {reinterpret_cast<void*>(x)};
+void exp_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = exp(TO_INTERVAL_C(in));
 }
 
-gaol_int itan_g(gaol_int a) {
-  interval* x = reinterpret_cast<interval*>(a.data);
-  *x = tan(*x);
-  return a;
+void iexp_g(gaol_int* x) {
+  TO_INTERVAL(x) = exp(TO_INTERVAL(x));
 }
 
-gaol_int exp_g(gaol_int x) {
-  interval* a = reinterpret_cast<interval*>(x.data);
-  interval* result = new interval(exp(*a));
-  return (gaol_int){reinterpret_cast<void*>(result)};
+void log_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = log(TO_INTERVAL_C(in));
 }
 
-gaol_int iexp_g(gaol_int x) {
-  interval* a = reinterpret_cast<interval*>(x.data);
-  *a = exp(*a);
-  return x;
+void ilog_g(gaol_int* x) {
+  TO_INTERVAL(x) = log(TO_INTERVAL(x));
 }
 
-gaol_int log_g(gaol_int x) {
-  interval* a = reinterpret_cast<interval*>(x.data);
-  interval* result = new interval(log(*a));
-  return (gaol_int) {reinterpret_cast<void*>(result)};
+void pow_ig(const gaol_int* a, int b, gaol_int* out) {
+  TO_INTERVAL(out) = pow(TO_INTERVAL_C(a), b);
 }
 
-gaol_int ilog_g(gaol_int x) {
-  interval* a = reinterpret_cast<interval*>(x.data);
-  *a = log(*a);
-  return x;
+void ipow_ig(gaol_int* a, int b) {
+  TO_INTERVAL(a) = pow(TO_INTERVAL(a), b);
+}
+  
+void pow_vg(const gaol_int* a, const gaol_int* b, gaol_int* out) {
+  TO_INTERVAL(out) = pow(TO_INTERVAL_C(a), TO_INTERVAL_C(b));
 }
 
-gaol_int pow_ig(gaol_int x, int y) {
-  interval* a = reinterpret_cast<interval*>(x.data);
-  interval* result = new interval(pow(*a, y));
-  return (gaol_int){reinterpret_cast<void*>(result)};
+void ipow_vg(gaol_int* a, const gaol_int* b) {
+  TO_INTERVAL(a) = pow(TO_INTERVAL(a), TO_INTERVAL_C(b));
 }
 
-gaol_int ipow_ig(gaol_int x, int y) {
-  interval* a = reinterpret_cast<interval*>(x.data);
-  *a = pow(*a, y);
-  return x;
+void print(gaol_int* x) {
+  std::cout << TO_INTERVAL(x) << std::endl;
 }
 
-gaol_int pow_vg(gaol_int x, gaol_int y) {
-  interval* a = reinterpret_cast<interval*>(x.data);
-  interval* b = reinterpret_cast<interval*>(y.data);
-  interval* result = new interval(pow(*a, *b));
-  return (gaol_int){reinterpret_cast<void*>(result)};
-}
-gaol_int ipow_vg(gaol_int x, gaol_int y) {
-  interval* a = reinterpret_cast<interval*>(x.data);
-  interval* b = reinterpret_cast<interval*>(y.data);
-  *a = pow(*a, *b);
-  return x;
-}
 
-void print(gaol_int x) {
-  std::cout << *(reinterpret_cast<interval*>(x.data)) << std::endl;
-}
-
-const char* to_str(gaol_int x) {
-  std::string t(*reinterpret_cast<interval*>(x.data));
+const char* to_str(const gaol_int* x) {
+  std::string t(TO_INTERVAL_C(x));
   char* result = reinterpret_cast<char*>(malloc(t.size() * sizeof(char)));
   strcpy(result, t.c_str());
   return result;
 }
 
-double upper_g(gaol_int x) {
-  return reinterpret_cast<interval*>(x.data)->right();
+double upper_g(const gaol_int* x) {
+  return TO_INTERVAL_C(x).right();
 }
 
-double lower_g(gaol_int x) {
-  return reinterpret_cast<interval*>(x.data)->left();
+double lower_g(const gaol_int* x) {
+  return TO_INTERVAL_C(x).left();
 }
 
-double width_g(gaol_int x) {
-  return reinterpret_cast<interval*>(x.data)->width();
+double width_g(const gaol_int* x) {
+  return TO_INTERVAL_C(x).width();
 }
 
-gaol_int midpoint_g(gaol_int x) {
-  interval* result = new interval(reinterpret_cast<interval*>(x.data)->mid());
-  return (gaol_int) {reinterpret_cast<void*>(result)};
+gaol_int midpoint_g(const gaol_int* x) {
+  interval result = TO_INTERVAL_C(x).midpoint();
+  return TO_STACK(&result);
 }
 
-void split_g(gaol_int in, gaol_int out_1, gaol_int out_2) {
-  interval* in_i = reinterpret_cast<interval*>(in.data);
-  interval* out_1i = reinterpret_cast<interval*>(out_1.data);
-  interval* out_2i = reinterpret_cast<interval*>(out_2.data);
-  in_i->split(*out_1i, *out_2i);
+void split_g(const gaol_int* in, gaol_int* out_1, gaol_int* out_2) {
+  TO_INTERVAL_C(in).split(TO_INTERVAL(out_1), TO_INTERVAL(out_2));
 }

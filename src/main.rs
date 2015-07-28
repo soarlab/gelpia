@@ -8,8 +8,7 @@ extern crate gu;
 use gu::{Quple, INF, NINF, Flt};
 
 extern crate gr;
-use gr::{GI, upper_gaol, lower_gaol, func, width_gaol, width_box, split_box,
-         midbox_gaol};
+use gr::{GI, func, width_box, split_box, midpoint_box};
 
 fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
     let mut f_best_high = NINF;
@@ -31,14 +30,14 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
 
         let xw = width_box(x);
         let fx = func(x);
-        let fw = width_gaol(&fx);
+        let fw = fx.width();
 
-        if upper_gaol(&fx) < f_best_low ||
+        if fx.upper() < f_best_low ||
             xw < e_x ||
             fw < e_f //|| (!contains_zero && !on_boundary)
         {
-                if f_best_high < upper_gaol(&fx) {
-                    f_best_high = upper_gaol(&fx);
+                if f_best_high < fx.upper() {
+                    f_best_high = fx.upper();
                     best_x = x.clone();
                 }
                 continue;
@@ -46,12 +45,12 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
         else {
             let x_s = split_box(&x);
             for sx in x_s {
-                let est = func(&midbox_gaol(&sx));
-                if f_best_low < lower_gaol(&est)  {
-                    f_best_low = lower_gaol(&est);
+                let est = func(&midpoint_box(&sx));
+                if f_best_low < est.lower()  {
+                    f_best_low = est.lower();
                 }
                 i += 1;
-                q.push(Quple{p: upper_gaol(&est),
+                q.push(Quple{p: est.upper(),
                              pf: i,
                              data: sx});
             }
@@ -62,9 +61,9 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
 }
 
 fn main() {
-    let x_0 = vec![GI::new("-1", "1.0"),
-                   GI::new("1.0e-5", "1.0"),
-                   GI::new("1.0e-5", "1.0")];
+    let x_0 = vec![GI::new_d(-1.0, 1.0),
+                   GI::new_d(1.0e-5, 1.0),
+                   GI::new_d(1.0e-5, 1.0)];
     let (max, interval) = ibba(&x_0, 0.0001, 0.0001);
     println!("{:?}", max);
     for x in interval {

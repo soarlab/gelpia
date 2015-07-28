@@ -4,14 +4,17 @@
 use std::collections::BinaryHeap;
 
 extern crate rand;
+
+#[macro_use(max)]
 extern crate gu;
 extern crate ga;
 extern crate gr;
 
 use ga::{ea, Individual};
-use gu::{Quple, INF, NINF, Flt, Parameters, max};
 
-use gr::{GI, upper_gaol, lower_gaol, func, midbox_gaol, width_gaol, width_box, split_box};
+use gu::{Quple, INF, NINF, Flt, Parameters};
+
+use gr::{GI, func, width_box, split_box, midpoint_box};
 
 use std::sync::{Barrier, RwLock, Arc};
 
@@ -51,10 +54,10 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
                 let ref g_d = g.data;
                 let mut l_size = 1.0;
                 for b in g_d {
-                    l_size *= width_gaol(b);
+                    l_size *= b.width();
                 }
                 size += l_size;
-                let sup = upper_gaol(&func(&g_d));
+                let sup = func(&g_d).upper();
                 if sup >= f_best_low {
                     count += 1
                 }
@@ -69,7 +72,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
                 println!("New BB: {:?}", *m);
             }
         }
-        f_best_low = max(&[f_best_low, *f_bestag.read().unwrap()]);
+        f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
         let v = q.pop();
         let ref x =
             match v {
@@ -78,14 +81,13 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
             };
         let xw = width_box(x);
         let fx = func(x);
-        let fw = width_gaol(&fx);
-
-        if upper_gaol(&fx) < f_best_low ||
+        let fw = fx.width();
+        if fx.upper() < f_best_low ||
             xw < e_x ||
             fw < e_f {
-                if f_best_high < upper_gaol(&fx) {
-                    println!("New max: {:?}", upper_gaol(&fx));
-                    f_best_high = upper_gaol(&fx);
+                if f_best_high < fx.upper() {
+                    println!("New max: {:?}", fx.upper());
+                    f_best_high = fx.upper();
                     best_x = x.clone();
                 }
                 continue;
@@ -93,22 +95,23 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         else {
             let x_s = split_box(&x);
             for sx in x_s {
-                let mid = midbox_gaol(&sx);
+                let mid = midpoint_box(&sx);
                 let est_m = func(&mid);
                 let est_i = func(&sx);
-                let est_max = max(&[lower_gaol(&est_m), lower_gaol(&est_i)]);
+                let est_max = max!(est_m.lower(), est_i.lower());
                 if f_best_low < est_max  {
                     f_best_low = est_max;
                     *x_bestbb.write().unwrap() = sx.clone();
                 }
                 i += 1;
-                q.push(Quple{p: lower_gaol(&est_i),
+                q.push(Quple{p: est_i.lower(),
                              pf: i,
                              data: sx});
             }
         }
     }
     println!("{:?}", i);
+    // Tell GA thread to stop
     stop.store(true, Ordering::SeqCst);
     (f_best_high, best_x)
 }
@@ -116,8 +119,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
 fn distance(p: &Vec<GI>, x: &Vec<GI>) -> Flt {
     let mut result = 0.0;
     for i in 0..x.len() {
-        let dx = max(&[lower_gaol(&x[i]) - lower_gaol(&p[i]),
-                       0.0, lower_gaol(&p[i]) - upper_gaol(&x[i])]);
+        let dx = max!(x[i].lower() - p[i].lower(),
+                       0.0, &p[i].lower() - x[i].upper());
         result += dx*dx;
     }
     result.sqrt()
@@ -155,7 +158,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             while j < q.len() && d_min != 0.0 {
                 assert!(j < q.len(), "1");
                 x = q[j].data.clone();
-                if upper_gaol(&func(&x)) < *fbest {
+                if func(&x).upper() < *fbest {
                     assert!(j < q.len(), "2");
                     q.remove(j);
                     continue;
@@ -171,7 +174,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             }
             if d_min == 0.0 { 
                 assert!(i < pop.len(), "4");
-                let fp = lower_gaol(&func(&pop[i].solution));
+                let fp = func(&pop[i].solution).lower();
                 if px < fp {
                     assert!(j < q.len(), "5");
                     q[j] = Quple{p: fp, pf: q[j].pf, 
@@ -199,16 +202,16 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
 /* Projects the box x into the box x_c */
 fn project(p: &mut Individual, x_c: &Vec<GI>) {
     for i in 0..x_c.len() {
-        if lower_gaol(&p.solution[i]) < lower_gaol(&x_c[i])
-            || lower_gaol(&p.solution[i]) > upper_gaol(&x_c[i]) {
-            if upper_gaol(&x_c[i]) < lower_gaol(&p.solution[i]) 
-                {p.solution[i] = GI::new_d(upper_gaol(&x_c[i]),
-                                           upper_gaol(&x_c[i]));}
-            else {p.solution[i] = GI::new_d(lower_gaol(&x_c[i]),
-                                            lower_gaol(&x_c[i]));}
+        if p.solution[i].lower() < x_c[i].lower()
+            || p.solution[i].lower() > x_c[i].upper() {
+            if x_c[i].upper() < p.solution[i].lower() 
+                {p.solution[i] = GI::new_d(x_c[i].upper(),
+                                           x_c[i].upper());}
+            else {p.solution[i] = GI::new_d(x_c[i].lower(),
+                                            x_c[i].lower());}
         }
     }
-    p.fitness = lower_gaol(&func(&p.solution));
+    p.fitness = func(&p.solution).lower();
 }
 
 
@@ -228,9 +231,11 @@ fn main() {
     let f_bestag: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
     let f_best_shared: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
     
-    let x_0 = vec![GI::new("-1", "1.0"),
-                   GI::new("1.0e-5", "1.0"),
-                   GI::new("1.0e-5", "1.0")];
+    let x_0 = vec![GI::new_d(-1.0, 1.0),
+                   GI::new_d(1.0e-5, 1.0),
+                   GI::new_d(1.0e-5, 1.0)];
+    let f = func(&x_0);
+    println!("{} {}", f.lower(), f.upper());
     let x_i = x_0.clone();
 
     let x_e = x_0.clone();
@@ -263,11 +268,12 @@ fn main() {
         let b1 = b1.clone();
         let b2 = b2.clone();
         thread::Builder::new().name("EA".to_string()).spawn(move || {
-            ea(x_e, Parameters{population: 1000,
-                               selection: 4,
-                               elitism: 2,
-                               mutation: 0.3_f64,
-                               crossover: 0.5_f64},
+            ea(x_e, Parameters{population: 2000, //1000,
+                               selection: 8, //4,
+                               elitism: 5, //2,
+                               mutation: 0.4_f64,//0.3_f64,
+                               crossover: 0.3_f64 // 0.5_f64},
+                               },
                population, 
                f_bestag, 
                x_bestbb,
@@ -290,6 +296,7 @@ fn main() {
         })};
 
     let result = ibba_thread.unwrap().join();
+    ea_thread.unwrap().join();
     // Join EA and Update here pending stop signaling.
     if result.is_ok() {
         let (max, interval) = result.unwrap();

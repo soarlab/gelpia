@@ -4,6 +4,9 @@
 // Adapted from https://github.com/andschwa/rust-genetic-algorithm
 // By Andy Schwartzmeyer (https://github.com/andschwa)
 
+extern crate time;
+use time::{Duration, precise_time_s};
+
 extern crate rand;
 use rand::{Rng};
 
@@ -11,7 +14,7 @@ extern crate gu;
 use gu::{Parameters, INF, Flt};
 
 extern crate gr;
-use gr::{GI, upper_gaol, lower_gaol, func};
+use gr::{GI, func};
 
 use rand::distributions::{Range, IndependentSample};
 
@@ -47,6 +50,10 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
         assert!(population_w.len() == params.population);
     }
 
+    let mut running: f64 = 0.0;
+    let mut iters: u64 = 0;
+
+
     // start timing the search
     //let start_time = precise_time_s();
     // END SETUP
@@ -57,6 +64,13 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
             b1.wait();
             b2.wait();
         }
+        
+        if iters % 1000 == 0 {
+            println!("Average time per iteration: {} ms/i", running);
+        }
+
+        let start = precise_time_s();
+        
         let mut population = population.write().unwrap();
         {
             let mut fbest = f_bestag.write().unwrap();
@@ -101,6 +115,9 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
 
         // replace population with next generation
         *population = offspring;
+
+	running = ((precise_time_s() - start)*1000.0 + (iters as f64)*running)/(iters as f64 + 1.0);
+        iters += 1;
     }
 }
 
@@ -125,13 +142,17 @@ impl Individual {
     pub fn new<R: Rng>(x: &Vec<GI>, rng: &mut R) -> Self {
         let mut result = Vec::new();
         for i in 0..x.len() {
-            let up = upper_gaol(&x[i]);
-            let low = lower_gaol(&x[i]);
+            let up = x[i].upper();
+            let low = x[i].lower();
 
-            let num = if up == low {up} else {Range::new(lower_gaol(&x[i]), upper_gaol(&x[i])).ind_sample(rng)};
+            let num = if 
+                up == low {up} 
+            else 
+            {Range::new(low, 
+                        up).ind_sample(rng)};
             result.push(GI::new_d(num, num));
         }
-        let fitness = lower_gaol(&func(&result));
+        let fitness = func(&result).lower();
         Individual{solution: result, fitness: fitness}
     }
 
@@ -142,10 +163,10 @@ impl Individual {
     pub fn mutate<R: Rng>(&mut self, x: &Vec<GI>, chance: f64, rng: &mut R) {
         if rng.gen_range(0_f64, 1_f64) < chance {
             let i = rng.gen_range(0, self.solution.len());
-            let up = upper_gaol(&x[i]);
-            let low = lower_gaol(&x[i]);
+            let up = x[i].upper();
+            let low = x[i].lower();
 
-            let num = if up == low {up} else {Range::new(lower_gaol(&x[i]), upper_gaol(&x[i])).ind_sample(rng)};
+            let num = if up == low {up} else {Range::new(low, up).ind_sample(rng)};
 
             self.solution[i] = GI::new_d(num, num);
         }
@@ -165,8 +186,8 @@ impl Individual {
                 mem::swap(&mut x.solution[i % len], &mut y.solution[i % len]);
             }
         }
-        x.fitness = lower_gaol(&func(&x.solution));
-        y.fitness = lower_gaol(&func(&y.solution));
+        x.fitness = func(&x.solution).lower();
+        y.fitness = func(&y.solution).lower();
     }
 }
 

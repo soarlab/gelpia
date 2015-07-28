@@ -9,9 +9,11 @@ path = "algorithm.rs"
 
 [dependencies]
 rand = "0.3"
+time = "*"
 
 [dependencies.gu]
 path = "../.."
 
 [dependencies.gr]
 path = "../.."
+
