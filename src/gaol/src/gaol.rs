@@ -1,6 +1,6 @@
-#![feature(libc)]
-#![feature(std_misc)]
+#![feature(static_mutex)]
 #![feature(core)]
+#![feature(std_misc)]
 extern crate libc;
 use libc::{c_double, c_char, c_int};
 use std::ffi::{CString, CStr};
