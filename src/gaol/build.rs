@@ -8,6 +8,7 @@ fn main() {
         .cpp_link_stdlib(Some("stdc++"))
         .flag("-msse3")
         .flag("-O3")
+        .flag("-std=c++11")
         .flag("-march=native")
         .flag("-lgaol")
         .flag("-lgdtoa")

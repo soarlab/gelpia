@@ -1,10 +1,13 @@
 #![feature(libc)]
 #![feature(std_misc)]
+#![feature(core)]
 extern crate libc;
 use libc::{c_double, c_char, c_int};
 use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
+
+use std::simd;
 
 use std::sync::{StaticMutex, MUTEX_INIT};
 
@@ -14,8 +17,7 @@ static RWLOCK: StaticMutex = MUTEX_INIT;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct gaol_int {
-    pub l: c_double,
-    pub r: c_double
+    pub data: std::simd::f64x2
 }
 
 // Functions exported from the C GAOL wrapper.
@@ -133,13 +135,13 @@ pub struct GI {
 
 impl GI {
     pub fn new_d(inf: f64, sup: f64) -> GI {
-        let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         unsafe{make_interval_dd(inf as c_double, sup as c_double, &mut result.data)};
         result
     }
 
     pub fn new_c(x: &str) -> GI{
-        let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         unsafe {
             let _g = RWLOCK.lock().unwrap();
             make_interval_s(CString::new(x).unwrap().as_ptr(), &mut result.data)
@@ -148,7 +150,7 @@ impl GI {
     }
     
     pub fn new_ss(inf: &str, sup: &str) -> GI {
-        let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         unsafe {
             let _g = RWLOCK.lock().unwrap();
             make_interval_ss(CString::new(inf).unwrap().as_ptr(),
@@ -239,7 +241,7 @@ impl GI {
 impl Add for GI {
     type Output = GI;
     fn add(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         unsafe{add(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -248,7 +250,7 @@ impl Add for GI {
 impl Sub for GI {
     type Output = GI;
     fn sub(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         unsafe{sub(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -257,7 +259,7 @@ impl Sub for GI {
 impl Mul for GI {
     type Output = GI;
     fn mul(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         unsafe{mul(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -266,7 +268,7 @@ impl Mul for GI {
 impl Div for GI {
     type Output = GI;
     fn div(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         unsafe{div_g(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -275,7 +277,7 @@ impl Div for GI {
 impl Neg for GI {
     type Output = GI;
     fn neg(self) -> Self {
-        let mut result = GI{data: gaol_int{l:0.0, r:0.0}};
+        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         unsafe{neg_g(&self.data, &mut result.data)};
         result
     }
@@ -296,43 +298,43 @@ impl ToString for GI {
 
 
 pub fn pow(base: GI, exp: i32) -> GI {
-    let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{pow_ig(&base.data, exp, &mut result.data)};
     result
 }
 
 pub fn powi(base: GI, exp: GI) -> GI {
-    let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{pow_vg(&base.data, &exp.data, &mut result.data)};
     result
 }
 
 pub fn sin(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{sin_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn cos(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{cos_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn tan(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{tan_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn exp(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{exp_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn log(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{l: 0.0, r: 0.0}};
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{log_g(&x.data, &mut result.data)};
     result
 }

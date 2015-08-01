@@ -1,11 +1,12 @@
 #ifndef TEST_H
 #define TEST_H
+#include <xmmintrin.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  typedef struct gaol_int {double l; double r;} gaol_int;
+  typedef struct gaol_int {__m128 data;} gaol_int;
 
   void make_interval_dd(double, double, gaol_int*);
   void make_interval_ss(const char*, const char*, gaol_int*);

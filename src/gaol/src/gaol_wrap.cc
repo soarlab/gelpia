@@ -3,6 +3,8 @@
 #include "gaol/gaol.h"
 #include "gaol_wrap.hh"
 #include <cstring>
+#include <cassert>
+#include <cfenv>
 #define TO_INTERVAL(x) (*(reinterpret_cast<interval*>(x)))
 #define TO_INTERVAL_C(x) (*(reinterpret_cast<const interval*>(x)))
 #define TO_STACK(x) (*(reinterpret_cast<gaol_int*>(x)))
