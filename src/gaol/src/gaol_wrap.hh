@@ -5,7 +5,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+  
   typedef struct gaol_int {__m128 data;} gaol_int;
 
   void make_interval_dd(double, double, gaol_int*);

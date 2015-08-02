@@ -287,12 +287,13 @@ impl Neg for GI {
 impl ToString for GI {
     fn to_string(&self) -> String {
         let x: *const c_char = unsafe {to_str(&self.data)};
-        unsafe { 
+        let z = unsafe { 
             let _g = RWLOCK.lock().unwrap();
             let y = CStr::from_ptr(x).to_bytes();
-            let z = String::from_utf8(y.to_vec()).unwrap();
-            z
-        }
+            String::from_utf8(y.to_vec()).unwrap()
+        };
+        unsafe{libc::free(x as *mut libc::c_void);};
+        z
     }
 }
 

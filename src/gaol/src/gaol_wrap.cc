@@ -9,6 +9,12 @@
 #define TO_INTERVAL_C(x) (*(reinterpret_cast<const interval*>(x)))
 #define TO_STACK(x) (*(reinterpret_cast<gaol_int*>(x)))
 
+// The following assertions ensure that the punned type gaol_int is correct.
+static_assert(sizeof(interval) == sizeof(gaol_int), 
+	      "Size of punned type gaol_int does not match size of interval.");
+static_assert(alignof(interval) == alignof(gaol_int),
+	      "Alignment of punned type gaol_int does not match alignment of interval.");
+
 void make_interval_dd(double inf, double sup, gaol_int* out) {
   TO_INTERVAL(out) = interval(inf, sup);
 }
@@ -134,7 +140,7 @@ void print(gaol_int* x) {
 
 const char* to_str(const gaol_int* x) {
   std::string t(TO_INTERVAL_C(x));
-  char* result = reinterpret_cast<char*>(malloc(t.size() * sizeof(char)));
+  char* result = reinterpret_cast<char*>(malloc((t.size() + 1) * sizeof(char)));
   strcpy(result, t.c_str());
   return result;
 }
