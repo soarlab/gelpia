@@ -64,7 +64,8 @@ fn main() {
     let x_0 = vec![GI::new_ss("-1.0", "1.0"),
                    GI::new_ss("1.0e-5", "1.0"),
                    GI::new_ss("1.0e-5", "1.0")];
-    let (max, interval) = ibba(&x_0, 0.0001, 0.0001);
+
+    let (max, interval) = ibba(&x_0, 1e-11, 1e-11);
     println!("{:?}", max);
     for x in interval {
         println!("{}", x.to_string());

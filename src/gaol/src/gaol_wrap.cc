@@ -117,6 +117,14 @@ void ilog_g(gaol_int* x) {
   TO_INTERVAL(x) = log(TO_INTERVAL(x));
 }
 
+void abs_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = abs(TO_INTERVAL_C(in));
+}
+
+void iabs_g(gaol_int* x) {
+  TO_INTERVAL(x) = abs(TO_INTERVAL(x));
+}
+
 void pow_ig(const gaol_int* a, int b, gaol_int* out) {
   TO_INTERVAL(out) = pow(TO_INTERVAL_C(a), b);
 }

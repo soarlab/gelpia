@@ -47,31 +47,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         }
         // Take q as writable during an iteration
         let mut q = q.write().unwrap();
-        if i % 1000000 == 0 {
-            let mut count = 0;
-            let mut size = 0.0;
-            for g in q.iter() {
-                let ref g_d = g.data;
-                let mut l_size = 1.0;
-                for b in g_d {
-                    l_size *= b.width();
-                }
-                size += l_size;
-                let sup = func(&g_d).upper();
-                if sup >= f_best_low {
-                    count += 1
-                }
-            }
-            size /= q.len() as f64;
-            println!("Iteration: {}, Relevant items: {}, low: {:?}, high {}, size: {}", 
-                     i, count, f_best_low, f_best_high, size);
-        }
-        {
-            let m = f_bestag.read().unwrap();
-            if *m > f_best_low {
-                println!("New BB: {:?}", *m);
-            }
-        }
+
         f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
         let v = q.pop();
         let ref x =
@@ -86,7 +62,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
             xw < e_x ||
             fw < e_f {
                 if f_best_high < fx.upper() {
-                    println!("New max: {:?}", fx.upper());
                     f_best_high = fx.upper();
                     best_x = x.clone();
                 }
@@ -141,7 +116,6 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         b1.wait();
         // Do update bizness.
         let mut q_u = q.write().unwrap();
-        println!("Start {:?}",q_u.len());
         let mut q = Vec::new();
         for qi in q_u.iter() {
             q.push(qi.clone());
@@ -190,7 +164,6 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         }
         // Restore the q for the ibba thread.
         (*q_u) = BinaryHeap::from_vec(q);
-        println!("Done {:?}",q_u.len());
         // Clear sync flag.
         sync.store(false, Ordering::SeqCst);
         
@@ -234,8 +207,7 @@ fn main() {
     let x_0 = vec![GI::new_ss("-1.0", "1.0"),
                    GI::new_ss("1.0e-5", "1.0"),
                    GI::new_ss("1.0e-5", "1.0")];
-    let f = func(&x_0);
-    println!("{} {}", f.lower(), f.upper());
+
     let x_i = x_0.clone();
 
     let x_e = x_0.clone();
@@ -252,7 +224,7 @@ fn main() {
         let sync = sync.clone();
         let stop = stop.clone();
         thread::Builder::new().name("IBBA".to_string()).spawn(move || {
-            ibba(x_i, 0.0001, 0.0001,
+            ibba(x_i, 1e-11, 1e-11,
                  f_bestag, f_best_shared,
                  x_bestbb,
                  b1, b2, q, sync, stop)

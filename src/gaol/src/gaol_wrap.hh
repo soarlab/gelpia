@@ -40,7 +40,10 @@ extern "C" {
 
   void pow_ig(const gaol_int*, int, gaol_int*);
   void ipow_ig(gaol_int*, int);
-  
+
+  void abs_g(const gaol_int*, gaol_int*);
+  void iabs_g(gaol_int*);
+
   void pow_vg(const gaol_int*, const gaol_int*, gaol_int*);
   void ipow_vg(gaol_int*, const gaol_int*);
   

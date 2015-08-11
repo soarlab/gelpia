@@ -65,11 +65,11 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
             b2.wait();
         }
         
-        if iters % 1000 == 0 {
+/*        if iters % 1000 == 0 {
             println!("Average time per iteration: {} ms/i", running);
         }
 
-        let start = precise_time_s();
+        let start = precise_time_s();*/
         
         let mut population = population.write().unwrap();
         {
@@ -116,8 +116,8 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
         // replace population with next generation
         *population = offspring;
 
-	running = ((precise_time_s() - start)*1000.0 + (iters as f64)*running)/(iters as f64 + 1.0);
-        iters += 1;
+/*	running = ((precise_time_s() - start)*1000.0 + (iters as f64)*running)/(iters as f64 + 1.0);
+        iters += 1;*/
     }
 }
 

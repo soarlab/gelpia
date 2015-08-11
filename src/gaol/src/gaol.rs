@@ -102,6 +102,10 @@ extern {
     fn log_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = ln(a).
     fn ilog_g(a: *mut gaol_int);
+
+    fn abs_g(x: *const gaol_int, out: *mut gaol_int);
+
+    fn iabs_g(x: *mut gaol_int);
     
     // Returns a^b as a new interval.
     fn pow_ig(a: *const gaol_int, b: c_int, out: *mut gaol_int);
@@ -187,6 +191,10 @@ impl GI {
 
     pub fn div(&mut self, other: GI) {
         unsafe{idiv_g(&mut self.data, &other.data)};
+    }
+
+    pub fn abs(&mut self) {
+        unsafe{iabs_g(&mut self.data)};
     }
 
     pub fn pow(&mut self, exp: i32) {
@@ -298,6 +306,11 @@ impl ToString for GI {
     }
 }
 
+pub fn abs(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    unsafe{abs_g(&x.data, &mut result.data)};
+    result
+}
 
 pub fn pow(base: GI, exp: i32) -> GI {
     let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
