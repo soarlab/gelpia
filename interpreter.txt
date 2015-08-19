@@ -18,5 +18,5 @@ Functions:
 	    exp, log, neg}.
 
 Integer power function:
-"pow#": Applies the power function to the top of the stack with integer exponent
- 	#.
+"p#": Applies the power function to the top of the stack with integer exponent
+      #.
