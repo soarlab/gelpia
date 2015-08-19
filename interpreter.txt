@@ -1,0 +1,22 @@
+Commands:
+
+Push onto stack:
+"c#": pushes a constant to the stack, # is an integer index 
+      into the constants array.
+"i#": pushes a variabe to the stack, # is an integer index into 
+      the variables array.
+"v#": pushes a user created variable to the stack, # is an integer index into
+      the user variables array.
+
+Operators:
+"o<op>":  applies the operator <op>, where <op> is in {+, -, *, /, p},
+       where p is interval exponent power function.
+
+Functions:
+"f<name>":  Applies single arg function <name> to the top of the 
+	    stack, where <name> is in {abs, sin, cos, tan,
+	    exp, log, neg}.
+
+Integer power function:
+"pow#": Applies the power function to the top of the stack with integer exponent
+ 	#.
