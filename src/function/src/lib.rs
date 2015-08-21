@@ -1,3 +1,4 @@
+#![feature(str_split_at)]
 #![feature(convert)]
 
 extern crate gr;
@@ -87,31 +88,16 @@ impl FuncObj {
         let mut insts = vec![];
        
         for inst in instructions.split(',') {
-            let mut first = true;
-            let mut tmp = "".to_string();
-            let mut result = OpType::Const(0);
-            for c in inst.to_string().trim().to_string().chars() {
-                if first {
-                    match c {
-                        'c' => {result = OpType::Const(0)},
-                        'i' => {result = OpType::Var(0)},
-                        'v' => {result = OpType::UVar(0)},
-                        'o' => {result = OpType::Op("".to_string())},
-                        'f' => {result = OpType::Func("".to_string())},
-                        'p' => {result = OpType::Pow(0)},
-                        _   => unreachable!()
-                    }
-                    first = false;
-                }
-                else {tmp.push(c);}
-            }
-            insts.push(match result {
-                OpType::Const(_) => OpType::Const(tmp.parse::<usize>().unwrap()),
-                OpType::Var(_) => OpType::Var(tmp.parse::<usize>().unwrap()),
-                OpType::UVar(_) => OpType::UVar(tmp.parse::<usize>().unwrap()),
-                OpType::Op(_) => OpType::Op(tmp),
-                OpType::Func(_) => OpType::Func(tmp),
-                OpType::Pow(_) => OpType::Pow(tmp.parse::<i32>().unwrap()),                
+            let dummy = inst.trim().to_string();
+            let (first, rest) = dummy.split_at(1);
+            insts.push(match first {
+                "c" => OpType::Const(rest.to_string().parse::<usize>().unwrap()),
+                "i" => OpType::Var(rest.to_string().parse::<usize>().unwrap()),
+                "v" => OpType::UVar(rest.to_string().parse::<usize>().unwrap()),
+                "o" => OpType::Op(rest.to_string()),
+                "f" => OpType::Func(rest.to_string()),
+                "p" => OpType::Pow(rest.to_string().parse::<i32>().unwrap()),
+                _   => panic!()
             });
         }
         
