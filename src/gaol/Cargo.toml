@@ -3,7 +3,7 @@ name  = "gr"
 version = "0.0.0"
 authors = ["Mark S. Baranowski"]
 build="build.rs"
-links="gaol"
+#links="gaol"
 
 [lib]
 name = "gr"

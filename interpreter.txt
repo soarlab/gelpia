@@ -1,4 +1,8 @@
-Commands:
+An instruction sequnce is defined as
+inst_seq : inst
+         | inst "," inst_seq
+
+An <inst> is as follows:
 
 Push onto stack:
 "c#": pushes a constant to the stack, # is an integer index 
