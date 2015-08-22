@@ -4,6 +4,8 @@
 extern crate gr;
 use gr::*;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 enum OpType {
     Func(String),
     Const(usize),
@@ -17,7 +19,7 @@ struct FuncObj {
     user_vars: Vec<GI>,
     constants: Vec<GI>,
     instructions: Vec<OpType>,
-    switched: bool,
+    switched: AtomicBool,
     func: Box<fn(&Vec<GI>) -> GI>
 }
 
@@ -27,7 +29,7 @@ fn dummy(_x: &Vec<GI>) -> GI {
 
 impl FuncObj {
     pub fn call(&self, _x: &Vec<GI>) -> GI {
-        if self.switched {
+        if self.switched.load(Ordering::SeqCst) {
             func(_x)
         }
         else {
@@ -40,18 +42,17 @@ impl FuncObj {
         for inst in &self.instructions {
             match inst {
                 &OpType::Func(ref s) => {
-                    let op = stack.pop().unwrap();
-                    let result = match s.as_str() {
-                        "abs" => abs(op),
-                        "sin" => sin(op),
-                        "cos" => cos(op),
-                        "tan" => tan(op),
-                        "exp" => exp(op),
-                        "log" => log(op),
-                        "neg" => -op,
+                    let op = stack.last_mut().unwrap();
+                    match s.as_str() {
+                        "abs" => op.abs(),
+                        "sin" => op.sin(),
+                        "cos" => op.cos(),
+                        "tan" => op.tan(),
+                        "exp" => op.exp(),
+                        "log" => op.log(),
+                        "neg" => op.neg(),
                         _     => unreachable!()
                     };
-                    stack.push(result);
                 },
                 &OpType::Const(i) => {
                     stack.push(self.constants[i]);
@@ -64,20 +65,19 @@ impl FuncObj {
                 },
                 &OpType::Op(ref s) => {
                     let right = stack.pop().unwrap();
-                    let left = stack.pop().unwrap();
-                    let result = match s.as_str() {
-                        "+" => left + right,
-                        "-" => left - right,
-                        "*" => left * right,
-                        "/" => left / right,
-                        "p" => powi(left, right),
+                    let left = stack.last_mut().unwrap();
+                    match s.as_str() {
+                        "+" => left.add(right),
+                        "-" => left.sub(right),
+                        "*" => left.mul(right),
+                        "/" => left.div(right),
+                        "p" => left.powi(right),
                         _   => unreachable!()
                     };
-                    stack.push(result);
                 },
                 &OpType::Pow(exp) => {
-                    let arg = stack.pop().unwrap();
-                    stack.push(gr::pow(arg, exp));
+                    let arg = stack.last_mut().unwrap();
+                    arg.pow(exp);
                 }
             }
         }
@@ -104,7 +104,7 @@ impl FuncObj {
         FuncObj{user_vars: vec![],
                 constants: consts.clone(),
                 instructions: insts,
-                switched: false,
+                switched: AtomicBool::new(false),
                 func: Box::new(dummy)}
     }
 }
