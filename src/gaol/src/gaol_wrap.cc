@@ -85,6 +85,14 @@ void isin_g(gaol_int* x) {
   TO_INTERVAL(x) = sin(TO_INTERVAL(x));
 }
 
+void sqrt_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = sqrt(TO_INTERVAL_C(in));
+}
+
+void isqrt_g(gaol_int* x) {
+  TO_INTERVAL(x) = sqrt(TO_INTERVAL(x));
+}
+
 void cos_g(const gaol_int* in, gaol_int* out) {
   TO_INTERVAL(out) = cos(TO_INTERVAL_C(in));
 }
@@ -147,6 +155,7 @@ void print(gaol_int* x) {
 
 
 const char* to_str(const gaol_int* x) {
+  //  interval::precision(100);
   std::string t(TO_INTERVAL_C(x));
   char* result = reinterpret_cast<char*>(malloc((t.size() + 1) * sizeof(char)));
   strcpy(result, t.c_str());

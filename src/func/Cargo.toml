@@ -1,0 +1,12 @@
+[package]
+name = "func"
+version = "0.1.0"
+authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>"]
+
+[lib]
+name = "func"
+path = "src/lib.rs"
+crate-type = ["dylib"]
+
+[dependencies.gr]
+path = "../.."

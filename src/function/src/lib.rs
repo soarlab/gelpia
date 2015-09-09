@@ -1,11 +1,20 @@
 #![feature(str_split_at)]
 #![feature(convert)]
-
+#![feature(dynamic_lib)]
+#![feature(asm)]
+#![feature(core_simd)]
 extern crate gr;
 use gr::*;
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering, AtomicPtr, AtomicUsize};
+use std::option::Option;
+use std::dynamic_lib::DynamicLibrary;
+use std::simd;
+use std::sync::{Arc, RwLock};
+use std::fmt;
+use std::io::Write;
 
+#[derive(Clone)]
 enum OpType {
     Func(String),
     Const(usize),
@@ -15,29 +24,77 @@ enum OpType {
     Pow(i32)
 }
 
-struct FuncObj {
+impl fmt::Display for OpType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        
+        let outstring = match self {
+            &OpType::Func(ref s) => format!("f{}", s),
+            &OpType::Const(i) => format!("c{}", i),
+            &OpType::Var(i) => format!("i{}", i),
+            &OpType::UVar(i) => format!("v{}", i),
+            &OpType::Op(ref s) => format!("o{}", s),
+            &OpType::Pow(i) => format!("p{}", i)
+        };
+        write!(f, "{}", outstring)
+    }
+    
+}
+
+#[derive(Clone)]
+pub struct FuncObj {
+    handle: Arc<RwLock<Option<DynamicLibrary>>>,
     user_vars: Vec<GI>,
     constants: Vec<GI>,
     instructions: Vec<OpType>,
-    switched: AtomicBool,
-    func: Box<fn(&Vec<GI>) -> GI>
+    switched: Arc<AtomicBool>,
+    function: Arc<AtomicPtr<fn(&Vec<GI>, &Vec<GI>) -> GI>>,
+
 }
 
-fn dummy(_x: &Vec<GI>) -> GI {
+unsafe impl Sync for FuncObj {}
+unsafe impl Send for FuncObj {}
+fn dummy(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {
     GI::new_c("1.0")
 }
 
 impl FuncObj {
     pub fn call(&self, _x: &Vec<GI>) -> GI {
-        if self.switched.load(Ordering::SeqCst) {
-            func(_x)
+        if self.switched.load(Ordering::Acquire) {
+            let result = unsafe{
+                std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->GI,
+                                               fn(&Vec<GI>, &Vec<GI>)->GI>(
+                (self.function.load(Ordering::Acquire)))(_x, &self.constants)};
+            let mut interim: std::simd::f64x2;
+            // The compiler doesn't seem to be generating the code here to
+            // retrieve the return value. This gets the result from the xmm0
+            // register and returns it to the caller.
+            unsafe{asm!("movapd %xmm0, $0"
+                        : "=x"(interim)
+                        : : :)};
+            let test_var = GI{data:
+                              gaol_int{data:
+                                       interim
+                              }};
+            test_var
+
+//            result
         }
         else {
-            self.interpreted(_x)
+            self.interpreted(_x, &self.constants)
         }
     }
+
+    pub fn set(&self, f: fn(&Vec<GI>,&Vec<GI>) -> GI, handle: DynamicLibrary) {
+        // This FuncObj owns the handle from the dynamic lib as the lifetime of
+        // f is tied to the lifetime of the handle.
+        self.function.store(unsafe{std::mem::transmute::<fn(&Vec<GI>, &Vec<GI>)->GI,
+                                                         *mut fn(&Vec<GI>, &Vec<GI>)->GI>(f)}, Ordering::Release);
+        let mut h = self.handle.write().unwrap();
+        *h = Some(handle);
+        self.switched.store(true, Ordering::Release);
+    }
     
-    fn interpreted(&self, _x: &Vec<GI>) -> GI {
+    fn interpreted(&self, _x: &Vec<GI>, _c: &Vec<GI>) -> GI {
         let mut stack: Vec<GI> = Vec::new();
         for inst in &self.instructions {
             match inst {
@@ -51,6 +108,7 @@ impl FuncObj {
                         "exp" => op.exp(),
                         "log" => op.log(),
                         "neg" => op.neg(),
+                        "sqrt" => op.sqrt(),
                         _     => unreachable!()
                     };
                 },
@@ -80,11 +138,16 @@ impl FuncObj {
                     arg.pow(exp);
                 }
             }
+/*            for ref i in stack.iter() {
+                print!{"{}, ", i.to_string()};
+            }
+            println!("");*/
         }
+//        loop {}
         stack[0]
     }
-    
-    fn new(consts: &Vec<GI>, instructions: &String) -> FuncObj {
+
+    pub fn new(consts: &Vec<GI>, instructions: &String) -> FuncObj {
         let mut insts = vec![];
        
         for inst in instructions.split(',') {
@@ -100,12 +163,14 @@ impl FuncObj {
                 _   => panic!()
             });
         }
-        
-        FuncObj{user_vars: vec![],
+        FuncObj{handle: Arc::new(RwLock::new(Option::None)),
+                user_vars: vec![],
                 constants: consts.clone(),
                 instructions: insts,
-                switched: AtomicBool::new(false),
-                func: Box::new(dummy)}
+                switched: Arc::new(AtomicBool::new(false)),
+                function: Arc::new(AtomicPtr::new(unsafe{std::mem::transmute::<fn(&Vec<GI>, &Vec<GI>)->GI,
+                                                                               *mut fn(&Vec<GI>, &Vec<GI>)->GI>(dummy)})),
+        }
     }
 }
 

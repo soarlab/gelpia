@@ -2,6 +2,7 @@
 #![feature(core)]
 #![feature(std_misc)]
 #![feature(core_simd)]
+
 extern crate libc;
 use libc::{c_double, c_char, c_int};
 use std::ffi::{CString, CStr};
@@ -22,7 +23,7 @@ pub struct gaol_int {
 }
 
 // Functions exported from the C GAOL wrapper.
-#[link(name="rustgaol", kind="static")]
+#[link(name="rustgaol", kind="dylib")]
 #[link(name="gaol", kind="dylib")]
 #[link(name="gdtoa", kind="dylib")]
 #[link(name="crlibm", kind="dylib")]
@@ -84,6 +85,9 @@ extern {
     fn sin_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = sin(a).
     fn isin_g(a: *mut gaol_int);
+    fn sqrt_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = sin(a).
+    fn isqrt_g(a: *mut gaol_int);
     // Returns cos(a) as a new interval.
     fn cos_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = cos(a).
@@ -134,7 +138,7 @@ extern {
 
 #[derive(Copy, Clone)]
 pub struct GI {
-    data: gaol_int
+    pub data: gaol_int
 }
 
 
@@ -215,6 +219,9 @@ impl GI {
     
     pub fn sin(&mut self) {
         unsafe{isin_g(&mut self.data)};
+    }
+    pub fn sqrt(&mut self) {
+        unsafe{isqrt_g(&mut self.data)};
     }
     
     pub fn cos(&mut self) {
@@ -306,6 +313,7 @@ impl ToString for GI {
     }
 }
 
+
 pub fn abs(x: GI) -> GI {
     let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{abs_g(&x.data, &mut result.data)};
@@ -327,6 +335,12 @@ pub fn powi(base: GI, exp: GI) -> GI {
 pub fn sin(x: GI) -> GI {
     let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
     unsafe{sin_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn sqrt(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    unsafe{sqrt_g(&x.data, &mut result.data)};
     result
 }
 
@@ -393,15 +407,5 @@ pub fn split_box(_x: &Vec<GI>) -> Vec<Vec<GI>> {
 
 
 pub fn func(_x: &Vec<GI>) -> GI {
-    let mut nthree = GI::new_d(3.0, 3.0);
-    let ref m1 = _x[0];
-    let ref w1 = _x[1];
-    let ref a1 = _x[2];
-    let mut b = *a1/ *w1;
-    let mut a = -*m1;
-    (&mut a).mul(*w1);
-    (&mut b).pow(2);
-    (&mut nthree).mul(b);
-    (&mut a).mul(nthree);
-    a
+    GI::new_d(0.0, 0.0)
 }

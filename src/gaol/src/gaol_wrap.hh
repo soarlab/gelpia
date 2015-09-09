@@ -27,6 +27,8 @@ extern "C" {
   void ineg_g(gaol_int*);
   void sin_g(const gaol_int*, gaol_int*);
   void isin_g(gaol_int*);
+  void sqrt_g(const gaol_int*, gaol_int*);
+  void isqrt_g(gaol_int*);
   void cos_g(const gaol_int*, gaol_int*);
   void icos_g(gaol_int*);
   void tan_g(const gaol_int*, gaol_int*);
