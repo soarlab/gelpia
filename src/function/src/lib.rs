@@ -3,16 +3,26 @@
 #![feature(dynamic_lib)]
 #![feature(asm)]
 #![feature(core_simd)]
+#![feature(dynamic_lib)]
+use std::dynamic_lib::DynamicLibrary;
+use std::path::Path;
+use std::mem::transmute;
+
+use std::env;
+use std::process::Command;
+use std::thread;
+
 extern crate gr;
 use gr::*;
 
 use std::sync::atomic::{AtomicBool, Ordering, AtomicPtr, AtomicUsize};
 use std::option::Option;
-use std::dynamic_lib::DynamicLibrary;
 use std::simd;
 use std::sync::{Arc, RwLock};
 use std::fmt;
 use std::io::Write;
+
+
 
 #[derive(Clone)]
 enum OpType {
@@ -76,15 +86,13 @@ impl FuncObj {
                                        interim
                               }};
             test_var
-
-//            result
         }
         else {
             self.interpreted(_x, &self.constants)
         }
     }
 
-    pub fn set(&self, f: fn(&Vec<GI>,&Vec<GI>) -> GI, handle: DynamicLibrary) {
+    fn set(&self, f: fn(&Vec<GI>,&Vec<GI>) -> GI, handle: DynamicLibrary) {
         // This FuncObj owns the handle from the dynamic lib as the lifetime of
         // f is tied to the lifetime of the handle.
         self.function.store(unsafe{std::mem::transmute::<fn(&Vec<GI>, &Vec<GI>)->GI,
@@ -138,12 +146,7 @@ impl FuncObj {
                     arg.pow(exp);
                 }
             }
-/*            for ref i in stack.iter() {
-                print!{"{}, ", i.to_string()};
-            }
-            println!("");*/
         }
-//        loop {}
         stack[0]
     }
 
@@ -163,16 +166,48 @@ impl FuncObj {
                 _   => panic!()
             });
         }
-        FuncObj{handle: Arc::new(RwLock::new(Option::None)),
+        let result =
+            FuncObj{handle: Arc::new(RwLock::new(Option::None)),
                 user_vars: vec![],
                 constants: consts.clone(),
                 instructions: insts,
                 switched: Arc::new(AtomicBool::new(false)),
                 function: Arc::new(AtomicPtr::new(unsafe{std::mem::transmute::<fn(&Vec<GI>, &Vec<GI>)->GI,
-                                                                               *mut fn(&Vec<GI>, &Vec<GI>)->GI>(dummy)})),
-        }
+                                                                               *mut fn(&Vec<GI>, &Vec<GI>)->GI>(dummy)}))
+        };
+
+        {
+            let fo_c = result.clone();
+            thread::spawn(move || {
+                &fo_c.compile();
+            })
+        };
+        result
+    }
+
+    fn compile(&self) {
+        let ignore = Command::new("/usr/bin/make").output()                    
+            .unwrap_or_else(|e| {panic!("Could not compile: {}", e)});          
+        if !ignore.status.success() {                                           
+            panic!("Could not compile: {}\n----\n{}", String::from_utf8(ignore.stdout).unwrap(),
+                   String::from_utf8(ignore.stderr).unwrap());                  
+        }                                                                      
+        DynamicLibrary::prepend_search_path(Path::new("./"));                  
+        let f = match DynamicLibrary::open(Some(Path::new("libfunc.so"))) {    
+            Ok(lib) => lib,                                                     
+            Err(err) => panic!("Could not load library: {}", err)
+        };                                                                     
+        
+        let g = unsafe{match f.symbol("gelpia_func") {                         
+            Ok(func) => transmute::<*mut u32, fn(&Vec<GI>, &Vec<GI>)->GI>(func),
+            Err(err) => panic!("Could not load function: {}", err),          
+        }};                                                                    
+
+        self.set(g, f);  
     }
 }
+
+
 
 #[test]
 fn test1() {

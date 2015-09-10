@@ -8,9 +8,20 @@ extern crate gu;
 use gu::{Quple, INF, NINF, Flt};
 
 extern crate gr;
-use gr::{GI, func, width_box, split_box, midpoint_box};
+use gr::{GI, width_box, split_box, midpoint_box};
 
-fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
+extern crate function;
+use function::FuncObj;
+
+// BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+use std::env;
+
+extern crate getopts;
+use getopts::Options;
+// END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+
+
+fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
     let mut f_best_high = NINF;
     let mut f_best_low  = NINF;
     let mut best_x = x_0.clone();
@@ -25,11 +36,11 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
                 Some(y) 
                     => 
                     y.data,
-                None    => panic!("wtf")
+                None => panic!("wtf")
             };
 
         let xw = width_box(x);
-        let fx = func(x);
+        let fx = f.call(x);
         let fw = fx.width();
 
         if fx.upper() < f_best_low ||
@@ -45,7 +56,7 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
         else {
             let x_s = split_box(&x);
             for sx in x_s {
-                let est = func(&midpoint_box(&sx));
+                let est = f.call(&midpoint_box(&sx));
                 if f_best_low < est.lower()  {
                     f_best_low = est.lower();
                 }
@@ -56,19 +67,50 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt) -> (Flt, Vec<GI>) {
             }
         }
     }
-    println!("{:?}", i);
+//    println!("{:?}", i);
     (f_best_high, best_x)
 }
 
-fn main() {
-    let x_0 = vec![GI::new_ss("-1.0", "1.0"),
-                   GI::new_ss("1.0e-5", "1.0"),
-                   GI::new_ss("1.0e-5", "1.0")];
+// BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+fn proc_consts(consts: &String) -> Vec<GI> {
+    let mut result = vec![];
+    for inst in consts.split('|') {
+        if inst == "" {
+            continue;
+        }
+        result.push(GI::new_c(inst));
+    }
+    result
+}
 
-    let (max, interval) = ibba(&x_0, 1e-11, 1e-11);
-    println!("{:?}", max);
-    for x in interval {
-        println!("{}", x.to_string());
+// END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+
+fn main() {
+    // BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+    opts.reqopt("c", "constants", "", "");
+    opts.reqopt("f", "function", "", "");
+    opts.reqopt("i", "input", "", "");
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => {m},
+        Err(f) => {panic!(f.to_string())}
+    };
+    let const_string = matches.opt_str("c").unwrap();
+    let input_string = matches.opt_str("i").unwrap();
+    let func_string = matches.opt_str("f").unwrap();
+
+    let args = proc_consts(&input_string.to_string());
+    let mut fo = FuncObj::new(&proc_consts(&const_string.to_string()),
+                              &func_string.to_string());
+    
+    // END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+
+    let (max, interval) = ibba(&args, 1e-1, 1e-1, fo.clone());
+    println!("Max: {:?}", max);
+    for i in 0..interval.len()  {
+        println!("X{}: {}", i, interval[i].to_string());
     }
         
 }

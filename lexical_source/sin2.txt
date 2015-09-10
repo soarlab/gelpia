@@ -1,0 +1,2 @@
+sin(x)*pow(sin(pow(y*z,2)),3)*z + interval(3.9999999, 4.000001)
+

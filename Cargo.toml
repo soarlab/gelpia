@@ -29,9 +29,13 @@ path = "src/gaol"
 [dependencies]
 threadpool = "0.1"
 rand = "0.3"
+getopts = "0.2"
 
 [dependencies.ga]
 path = "src/ga"
+
+[dependencies.function]
+path = "src/function"
 
 [profile.release]
 opt-level = 3

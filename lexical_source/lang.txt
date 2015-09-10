@@ -1,0 +1,4 @@
+pow(abs(-y * z - x * a + y * b + z * c - b * c + x * (-x + y + z - a + b + c)), 2)
+
+
+
