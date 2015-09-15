@@ -5,14 +5,6 @@ authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>", "Ian Briggs <ibri
 build = "build.rs"
 
 [[bin]]
-name = "par_test"
-path = "src/par_test.rs"
-
-[[bin]]
-name = "test_stack"
-path = "src/test_stack.rs"
-
-[[bin]]
 name = "cooperative"
 path = "src/bin/cooperative.rs"
 

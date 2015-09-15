@@ -14,7 +14,7 @@ use ga::{ea, Individual};
 
 use gu::{Quple, INF, NINF, Flt, Parameters};
 
-use gr::{GI, func, width_box, split_box, midpoint_box};
+use gr::{GI, width_box, split_box, midpoint_box};
 
 use std::sync::{Barrier, RwLock, Arc};
 
@@ -23,6 +23,24 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use std::thread::{sleep_ms};
+extern crate function;
+use function::FuncObj;
+
+// BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+use std::env;
+
+extern crate getopts;
+use getopts::Options;
+// END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+
+fn abs(x: f64) -> f64 {
+    if x < 0.0 {
+        -x
+    }
+    else {
+        x
+    }
+}
 
 fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, 
         f_bestag: Arc<RwLock<Flt>>, 
@@ -30,7 +48,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         x_bestbb: Arc<RwLock<Vec<GI>>>,
         b1: Arc<Barrier>, b2: Arc<Barrier>, 
         q: Arc<RwLock<BinaryHeap<Quple>>>, 
-        sync: Arc<AtomicBool>, stop: Arc<AtomicBool>) 
+        sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
+        f: FuncObj) 
         -> (Flt, Vec<GI>) {
     let mut f_best_high = NINF;
     let mut f_best_low  = NINF;
@@ -50,14 +69,23 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
 
         f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
         let v = q.pop();
-        let ref x =
+        let (ref x, e_fx) =
             match v {
-                Some(y) => y.data,
+                Some(y) => (y.data, y.p),
                 None    => panic!("wtf")
             };
         let xw = width_box(x);
-        let fx = func(x);
+        let fx = f.call(x);
         let fw = fx.width();
+/*        if abs(fx.upper() - e_fx) < e_f *(abs(e_fx) + 1.0) {
+            println!("Discarded: relative width");
+            if f_best_high < fx.upper() {
+                f_best_high = fx.upper();
+                best_x = x.clone();
+            }
+            continue;
+        }*/
+
         if fx.upper() < f_best_low ||
             xw < e_x ||
             fw < e_f {
@@ -71,8 +99,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
             let x_s = split_box(&x);
             for sx in x_s {
                 let mid = midpoint_box(&sx);
-                let est_m = func(&mid);
-                let est_i = func(&sx);
+                let est_m = f.call(&mid);
+                let est_i = f.call(&sx);
                 let est_max = max!(est_m.lower(), est_i.lower());
                 if f_best_low < est_max  {
                     f_best_low = est_max;
@@ -105,7 +133,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
           f_best_shared: Arc<RwLock<Flt>>,
           stop: Arc<AtomicBool>, sync: Arc<AtomicBool>,
           b1: Arc<Barrier>, b2: Arc<Barrier>,
-          duration: u32) {
+          duration: u32, f: FuncObj) {
     while !stop.load(Ordering::SeqCst) {
         // Timer code...
         thread::sleep_ms(duration);
@@ -132,7 +160,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             while j < q.len() && d_min != 0.0 {
                 assert!(j < q.len(), "1");
                 x = q[j].data.clone();
-                if func(&x).upper() < *fbest {
+                if f.call(&x).upper() < *fbest {
                     assert!(j < q.len(), "2");
                     q.remove(j);
                     continue;
@@ -148,7 +176,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             }
             if d_min == 0.0 { 
                 assert!(i < pop.len(), "4");
-                let fp = func(&pop[i].solution).lower();
+                let fp = f.call(&pop[i].solution).lower();
                 if px < fp {
                     assert!(j < q.len(), "5");
                     q[j] = Quple{p: fp, pf: q[j].pf, 
@@ -159,7 +187,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
                 // Individual is outside the search region.
                 // Project it back into the nearest current search space.
                 assert!(i < pop.len(), "6");
-                project(&mut pop[i], &x_c);
+                project(&mut pop[i], &x_c, f.clone());
             }
         }
         // Restore the q for the ibba thread.
@@ -173,7 +201,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
 }
 
 /* Projects the box x into the box x_c */
-fn project(p: &mut Individual, x_c: &Vec<GI>) {
+fn project(p: &mut Individual, x_c: &Vec<GI>, f: FuncObj) {
     for i in 0..x_c.len() {
         if p.solution[i].lower() < x_c[i].lower()
             || p.solution[i].lower() > x_c[i].upper() {
@@ -184,11 +212,45 @@ fn project(p: &mut Individual, x_c: &Vec<GI>) {
                                             x_c[i].lower());}
         }
     }
-    p.fitness = func(&p.solution).lower();
+    p.fitness = f.call(&p.solution).lower();
 }
 
+// BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+fn proc_consts(consts: &String) -> Vec<GI> {
+    let mut result = vec![];
+    for inst in consts.split('|') {
+        if inst == "" {
+            continue;
+        }
+        result.push(GI::new_c(inst));
+    }
+    result
+}
+
+// END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
 
 fn main() {
+    // BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+    opts.reqopt("c", "constants", "", "");
+    opts.reqopt("f", "function", "", "");
+    opts.reqopt("i", "input", "", "");
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => {m},
+        Err(f) => {panic!(f.to_string())}
+    };
+    let const_string = matches.opt_str("c").unwrap();
+    let input_string = matches.opt_str("i").unwrap();
+    let func_string = matches.opt_str("f").unwrap();
+
+    let x_0 = proc_consts(&input_string.to_string());
+    let mut fo = FuncObj::new(&proc_consts(&const_string.to_string()),
+                              &func_string.to_string());
+    
+    // END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+
     let q_inner: BinaryHeap<Quple> = BinaryHeap::new();
     let q = Arc::new(RwLock::new(q_inner));
     
@@ -203,14 +265,17 @@ fn main() {
 
     let f_bestag: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
     let f_best_shared: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
-    
-    let x_0 = vec![GI::new_ss("-1.0", "1.0"),
-                   GI::new_ss("1.0e-5", "1.0"),
-                   GI::new_ss("1.0e-5", "1.0")];
-
-    let x_i = x_0.clone();
 
     let x_e = x_0.clone();
+    let x_i = x_0.clone();
+    
+//    let x_0 = vec![GI::new_ss("-1.0", "1.0"),
+//                   GI::new_ss("1.0e-5", "1.0"),
+//                   GI::new_ss("1.0e-5", "1.0")];
+
+//    let x_i = x_0.clone();
+
+//    let x_e = x_0.clone();
     let x_bestbb = Arc::new(RwLock::new(x_0.clone()));
 
     let ibba_thread = 
@@ -223,11 +288,12 @@ fn main() {
         let x_bestbb = x_bestbb.clone();
         let sync = sync.clone();
         let stop = stop.clone();
+        let fo_c = fo.clone();
         thread::Builder::new().name("IBBA".to_string()).spawn(move || {
-            ibba(x_i, 1e-11, 1e-11,
+            ibba(x_i, 1e-4, 1e-4,
                  f_bestag, f_best_shared,
                  x_bestbb,
-                 b1, b2, q, sync, stop)
+                 b1, b2, q, sync, stop, fo_c)
         })};
 
     let ea_thread = 
@@ -239,6 +305,7 @@ fn main() {
         let stop = stop.clone();
         let b1 = b1.clone();
         let b2 = b2.clone();
+        let fo_c = fo.clone();
         thread::Builder::new().name("EA".to_string()).spawn(move || {
             ea(x_e, Parameters{population: 2000, //1000,
                                selection: 8, //4,
@@ -250,7 +317,7 @@ fn main() {
                f_bestag, 
                x_bestbb,
                b1, b2,
-               stop, sync)
+               stop, sync, fo_c)
         })};
 
     let update_thread = 
@@ -262,9 +329,10 @@ fn main() {
         let stop = stop.clone();
         let b1 = b1.clone();
         let b2 = b2.clone();
+        let fo_c = fo.clone();
         thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(q, population, f_best_shared,
-                   stop, sync, b1, b2, 10000)
+                   stop, sync, b1, b2, 10000, fo_c)
         })};
 
     let result = ibba_thread.unwrap().join();

@@ -33,9 +33,7 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
         let v = q.pop();
         let ref x =
             match v {
-                Some(y) 
-                    => 
-                    y.data,
+                Some(y) => y.data,
                 None => panic!("wtf")
             };
 
@@ -107,7 +105,7 @@ fn main() {
     
     // END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
 
-    let (max, interval) = ibba(&args, 1e-1, 1e-1, fo.clone());
+    let (max, interval) = ibba(&args, 1e-4, 1e-4, fo.clone());
     println!("Max: {:?}", max);
     for i in 0..interval.len()  {
         println!("X{}: {}", i, interval[i].to_string());

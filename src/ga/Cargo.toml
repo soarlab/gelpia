@@ -17,3 +17,6 @@ path = "../.."
 [dependencies.gr]
 path = "../.."
 
+[dependencies.function]
+path = "../.."
+

@@ -152,7 +152,7 @@ def runmain():
     (function, constants, part) = translate(data)
     import random
 #    inputs = []
-    inputs = [(.001, 1) for i in range(50)]
+    inputs = [(.001, 1) for i in range(len(GLOBAL_FREE_NAMES_SET))]
 #    for i in range(50):
 #        first = 50*random.random()
 #        second = 50*random.random()
@@ -163,7 +163,7 @@ def runmain():
     inputs = "|".join(inputs)
     with open("src/func/src/lib.rs", 'w') as f:
         f.write(function)
-    subprocess.call(['target/release/serial', '-c', constants, '-f', part, '-i', inputs])
+    subprocess.call(['target/release/cooperative', '-c', constants, '-f', part, '-i', inputs])
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ extern crate gu;
 use gu::{Parameters, INF, Flt};
 
 extern crate gr;
-use gr::{GI, func};
+use gr::{GI};
 
 use rand::distributions::{Range, IndependentSample};
 
@@ -27,6 +27,9 @@ use std::sync::{Barrier, RwLock, Arc};
 use std::sync::atomic::{AtomicBool};
 use std::sync::atomic::Ordering as AtOrd;
 
+extern crate function;
+use function::FuncObj;
+
 /// A genetic algorithm that searches for convergence to the given
 /// tolerance for the problem across the n-dimensional hypercube,
 /// using a population of individuals, up to a maximum iterations
@@ -36,7 +39,7 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
           f_bestag: Arc<RwLock<Flt>>,
           x_bestbb: Arc<RwLock<Vec<GI>>>,
           b1: Arc<Barrier>, b2: Arc<Barrier>,
-          stop: Arc<AtomicBool>, sync: Arc<AtomicBool>) {
+          stop: Arc<AtomicBool>, sync: Arc<AtomicBool>, f: FuncObj) {
     // SETUP
     // get thread local random number generator
     let mut rng = rand::thread_rng();
@@ -45,7 +48,7 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
     {
         let mut population_w = population.write().unwrap();
         for _ in 0..params.population {
-            population_w.push(Individual::new(&x_0, &mut rng));
+            population_w.push(Individual::new(&x_0, &mut rng, &f));
         }
         assert!(population_w.len() == params.population);
     }
@@ -86,7 +89,7 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
                                   select(&population, params.selection, &mut rng));
             x.mutate(&x_0, params.mutation, &mut rng);
             y.mutate(&x_0, params.mutation, &mut rng);
-            Individual::crossover(&mut x, &mut y, params.crossover, &mut rng);
+            Individual::crossover(&mut x, &mut y, params.crossover, &mut rng, &f);
             offspring.push(x);
             offspring.push(y);
         }
@@ -110,7 +113,7 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
         }
         {
             let bestbb = x_bestbb.read().unwrap();
-            offspring[worst_i] = Individual::new(&bestbb, &mut rng);
+            offspring[worst_i] = Individual::new(&bestbb, &mut rng, &f);
         }
 
         // replace population with next generation
@@ -139,7 +142,7 @@ pub struct Individual {
 
 impl Individual {
     /// Constructs a new Individual to solve Problem with n random values
-    pub fn new<R: Rng>(x: &Vec<GI>, rng: &mut R) -> Self {
+    pub fn new<R: Rng>(x: &Vec<GI>, rng: &mut R, f: &FuncObj) -> Self {
         let mut result = Vec::new();
         for i in 0..x.len() {
             let up = x[i].upper();
@@ -152,7 +155,7 @@ impl Individual {
                         up).ind_sample(rng)};
             result.push(GI::new_d(num, num));
         }
-        let fitness = func(&result).lower();
+        let fitness = f.call(&result).lower();
         Individual{solution: result, fitness: fitness}
     }
 
@@ -177,7 +180,7 @@ impl Individual {
     ///
     /// Fitness is ALWAYS evaluated because it is NOT done in mutate()
     pub fn crossover<R: Rng>(x: &mut Individual, y: &mut Individual,
-                             chance: f64, rng: &mut R) {
+                             chance: f64, rng: &mut R, f: &FuncObj) {
         // assert_eq!(x.problem, y.problem);
         if rng.gen_range(0_f64, 1_f64) < chance {
             let len = x.solution.len();
@@ -186,8 +189,8 @@ impl Individual {
                 mem::swap(&mut x.solution[i % len], &mut y.solution[i % len]);
             }
         }
-        x.fitness = func(&x.solution).lower();
-        y.fitness = func(&y.solution).lower();
+        x.fitness = f.call(&x.solution).lower();
+        y.fitness = f.call(&y.solution).lower();
     }
 }
 
