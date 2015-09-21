@@ -56,30 +56,19 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
     let mut running: f64 = 0.0;
     let mut iters: u64 = 0;
 
-
-    // start timing the search
-    //let start_time = precise_time_s();
-    // END SETUP
-    // search iterations number of generations
-    //for i in 0..params.iterations {
-    while !stop.load(AtOrd::SeqCst) {
-        if sync.load(AtOrd::SeqCst) {
+    while !stop.load(AtOrd::Acquire) {
+        if sync.load(AtOrd::Acquire) {
             b1.wait();
             b2.wait();
         }
         
-/*        if iters % 1000 == 0 {
-            println!("Average time per iteration: {} ms/i", running);
-        }
-
-        let start = precise_time_s();*/
         
         let mut population = population.write().unwrap();
         {
             let mut fbest = f_bestag.write().unwrap();
             *fbest = match (*population).iter().max() {
                 Some(i) => i.fitness,
-                None => panic!("wtf"),
+                None => panic!(),
                 }
         }
         // select, mutate, and crossover individuals for next generation
@@ -93,7 +82,6 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
             offspring.push(x);
             offspring.push(y);
         }
-        assert!(offspring.len() == population.len());
 
         // replace 2 random individuals with elite of prior generation
         for _ in 0..params.elitism {
@@ -119,8 +107,6 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
         // replace population with next generation
         *population = offspring;
 
-/*	running = ((precise_time_s() - start)*1000.0 + (iters as f64)*running)/(iters as f64 + 1.0);
-        iters += 1;*/
     }
 }
 

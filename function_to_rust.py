@@ -163,7 +163,7 @@ def runmain():
     inputs = "|".join(inputs)
     with open("src/func/src/lib.rs", 'w') as f:
         f.write(function)
-    subprocess.call(['target/release/cooperative', '-c', constants, '-f', part, '-i', inputs])
+    subprocess.call(['target/release/cooperative', '-c', constants, '-f', part, '-i', inputs, "-x", "1e-2", "-y", "1e-2"])
 
 
 if __name__ == "__main__":

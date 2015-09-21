@@ -20,11 +20,14 @@ path = "src/gaol"
 
 [dependencies]
 threadpool = "0.1"
-rand = "0.3"
 getopts = "0.2"
+rand = "0.3"
 
 [dependencies.ga]
 path = "src/ga"
+
+[dependencies.args]
+path = "src/args"
 
 [dependencies.function]
 path = "src/function"

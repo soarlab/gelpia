@@ -26,21 +26,8 @@ use std::thread::{sleep_ms};
 extern crate function;
 use function::FuncObj;
 
-// BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-use std::env;
-
-extern crate getopts;
-use getopts::Options;
-// END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-
-fn abs(x: f64) -> f64 {
-    if x < 0.0 {
-        -x
-    }
-    else {
-        x
-    }
-}
+extern crate args;
+use args::{process_args};
 
 fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, 
         f_bestag: Arc<RwLock<Flt>>, 
@@ -58,7 +45,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
     let mut i: u32 = 0;
     q.write().unwrap().push(Quple{p: INF, pf: i, data: x_0.clone()});
     while q.read().unwrap().len() != 0 {
-        if sync.load(Ordering::SeqCst) {
+        if sync.load(Ordering::Acquire) {
             // Ugly: Update the update thread's view of the best branch bound.
             *f_best_shared.write().unwrap() = f_best_low;
             b1.wait();
@@ -77,14 +64,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         let xw = width_box(x);
         let fx = f.call(x);
         let fw = fx.width();
-/*        if abs(fx.upper() - e_fx) < e_f *(abs(e_fx) + 1.0) {
-            println!("Discarded: relative width");
-            if f_best_high < fx.upper() {
-                f_best_high = fx.upper();
-                best_x = x.clone();
-            }
-            continue;
-        }*/
 
         if fx.upper() < f_best_low ||
             xw < e_x ||
@@ -113,9 +92,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
             }
         }
     }
-    println!("{:?}", i);
     // Tell GA thread to stop
-    stop.store(true, Ordering::SeqCst);
+    stop.store(true, Ordering::Release);
     (f_best_high, best_x)
 }
 
@@ -134,11 +112,11 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
           stop: Arc<AtomicBool>, sync: Arc<AtomicBool>,
           b1: Arc<Barrier>, b2: Arc<Barrier>,
           duration: u32, f: FuncObj) {
-    while !stop.load(Ordering::SeqCst) {
+    while !stop.load(Ordering::Acquire) {
         // Timer code...
         thread::sleep_ms(duration);
         // Signal EA and IBBA threads.
-        sync.store(true, Ordering::SeqCst);
+        sync.store(true, Ordering::Release);
 
         // Wait for EA and IBBA threads to stop.
         b1.wait();
@@ -158,14 +136,11 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             let px: Flt = NINF;
             let mut x_c: Vec<GI> = q[0].data.clone();
             while j < q.len() && d_min != 0.0 {
-                assert!(j < q.len(), "1");
                 x = q[j].data.clone();
                 if f.call(&x).upper() < *fbest {
-                    assert!(j < q.len(), "2");
                     q.remove(j);
                     continue;
                 }
-                assert!(i < pop.len(), "3");
                 let d = distance(&pop[i].solution, &x);
                 
                 if d == 0.0 {d_min = 0.0; continue;}
@@ -175,10 +150,8 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
                 j += 1;
             }
             if d_min == 0.0 { 
-                assert!(i < pop.len(), "4");
                 let fp = f.call(&pop[i].solution).lower();
                 if px < fp {
-                    assert!(j < q.len(), "5");
                     q[j] = Quple{p: fp, pf: q[j].pf, 
                                  data: q[j].data.clone()}.clone();
                 }
@@ -186,7 +159,6 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             else {
                 // Individual is outside the search region.
                 // Project it back into the nearest current search space.
-                assert!(i < pop.len(), "6");
                 project(&mut pop[i], &x_c, f.clone());
             }
         }
@@ -215,42 +187,14 @@ fn project(p: &mut Individual, x_c: &Vec<GI>, f: FuncObj) {
     p.fitness = f.call(&p.solution).lower();
 }
 
-// BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-fn proc_consts(consts: &String) -> Vec<GI> {
-    let mut result = vec![];
-    for inst in consts.split('|') {
-        if inst == "" {
-            continue;
-        }
-        result.push(GI::new_c(inst));
-    }
-    result
-}
-
-// END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-
 fn main() {
-    // BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-    let args: Vec<String> = env::args().collect();
+    let args = process_args();
 
-    let mut opts = Options::new();
-    opts.reqopt("c", "constants", "", "");
-    opts.reqopt("f", "function", "", "");
-    opts.reqopt("i", "input", "", "");
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => {m},
-        Err(f) => {panic!(f.to_string())}
-    };
-    let const_string = matches.opt_str("c").unwrap();
-    let input_string = matches.opt_str("i").unwrap();
-    let func_string = matches.opt_str("f").unwrap();
-
-    let x_0 = proc_consts(&input_string.to_string());
-    let mut fo = FuncObj::new(&proc_consts(&const_string.to_string()),
-                              &func_string.to_string());
+    let ref x_0 = args.domain;
+    let ref fo = args.function;
+    let x_err = args.x_error;
+    let y_err = args.x_error;
     
-    // END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-
     let q_inner: BinaryHeap<Quple> = BinaryHeap::new();
     let q = Arc::new(RwLock::new(q_inner));
     
@@ -269,13 +213,6 @@ fn main() {
     let x_e = x_0.clone();
     let x_i = x_0.clone();
     
-//    let x_0 = vec![GI::new_ss("-1.0", "1.0"),
-//                   GI::new_ss("1.0e-5", "1.0"),
-//                   GI::new_ss("1.0e-5", "1.0")];
-
-//    let x_i = x_0.clone();
-
-//    let x_e = x_0.clone();
     let x_bestbb = Arc::new(RwLock::new(x_0.clone()));
 
     let ibba_thread = 
@@ -290,7 +227,7 @@ fn main() {
         let stop = stop.clone();
         let fo_c = fo.clone();
         thread::Builder::new().name("IBBA".to_string()).spawn(move || {
-            ibba(x_i, 1e-4, 1e-4,
+            ibba(x_i, x_err, y_err,
                  f_bestag, f_best_shared,
                  x_bestbb,
                  b1, b2, q, sync, stop, fo_c)

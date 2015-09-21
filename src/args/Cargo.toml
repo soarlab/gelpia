@@ -1,0 +1,17 @@
+[package]
+name = "args"
+version = "0.1.0"
+authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>"]
+
+[lib]
+name = "args"
+path = "src/lib.rs"
+
+[dependencies.gr]
+path = "../.."
+
+[dependencies.function]
+path = "../.."
+
+[dependencies]
+getopts = "0.2"
