@@ -91,7 +91,7 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
         }
         
         // Replace worst with bestbb
-        let mut worst_i = -1;
+        let mut worst_i = 0;
         let mut worst = INF;
         for i in 0..offspring.len() {
             if offspring[i].fitness < worst {

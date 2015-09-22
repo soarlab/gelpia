@@ -1,4 +1,5 @@
 #![feature(collections)]
+#![feature(binary_heap_extras)]
 // Demo program for cooperative interval branch and bound algorithm.
 
 use std::collections::BinaryHeap;
