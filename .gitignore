@@ -1,6 +1,6 @@
-obj/*.o
-bin/*.py
-bin/*.so
-bin/__pycache__
-interface/*.py
-interface/*.cc
+*.[oa]
+*.lock
+*.so
+__pycache__
+src/func/src/lib.rs
+**/target/**
