@@ -8,12 +8,12 @@ prefix_binary_functions = [
 ]
 
 prefix_unary_functions = [
-    'sin',
-    'cos',
-    'tan',
     'abs',
+    'cos',
     'exp',
     'log',
+    'sin',
+    'tan',
 ]
 
 tokens = [
@@ -24,10 +24,10 @@ tokens = [
     'DIVIDE',
     'BINOP',
     'UNIOP',
-    
+
     # Assignment
     'EQUALS',
-    
+
     # Variables
     'VARIABLE',
 
@@ -35,7 +35,7 @@ tokens = [
     'INTEGER',
     'FLOAT',
     'INTERVAL',
-    
+
     # Deliminators
     'LPAREN',
     'RPAREN',
@@ -89,12 +89,15 @@ def t_comment(t):
     pass
 
 def t_error(t):
-    print("Illegal character '{}'".format(t),
-          file=SYS.stderr)
+    print("Illegal character '{}'".format(t), file=SYS.stderr)
     SYS.exit(-1)
-    
+
+
+
+
+# Create lexer on call and import
 lexer = LEX.lex()
 
+# On call run as a util, taking in text and printing the lexed version
 if __name__ == "__main__":
     LEX.runmain(lexer)
-    

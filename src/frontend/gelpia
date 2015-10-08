@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+
+import ian_utils as IU
+import argparse as AP
+import time as T
+import sys as SYS
+import os.path as P
+import os as OS
+import ast as AST
+import re as RE
+import sys as SYS
+import subprocess as SP
+
+
+def parse_box2(box_string):
+    #mark please comment this function
+    # Put numbers in strings
+    # num_re = r"((?:-?\d+\.\d+)|(?:-?\d+\.)|(?:-?\.\d+)|(?:-?\d+))"
+    # interval_re = r"\((" + num_re + r"),\s*(" + num_re + ")\)"
+    import input_parser
+    box_string = input_parser.process(box_string[0])
+    # box_string = RE.sub(interval_re,
+    #                     lambda m: '("{}", "{}")'.format(m.group(1), m.group(3)),
+    #                     box_string[0])
+    python_box = AST.literal_eval(box_string)
+    variables = dict()
+    index = 0
+    box = []
+    try:
+        dimensions = len(python_box)
+        for pair in python_box.keys():
+            variables[pair] = index
+            index += 1
+            pair = python_box[pair]
+            if (len(pair) != 2):
+                IU.error("Interval must be a N by 2 list.")
+                IU.error("item <{}> is of length {}".format(pair, len(pair)))
+                SYS.exit()
+            if (not isinstance(pair[0], str) or
+                not isinstance(pair[1], str)):
+                IU.error("Improve this error 0")
+                SYS.exit()
+            box.append(pair)
+
+        return (box, dimensions, variables)
+
+    except:
+        IU.error("Improve this error 1")
+        raise
+        SYS.exit()
+
+
+
+
+
+def parse_args():
+    """ Command line argumetn parser. Returns a dict from arg name to value"""
+
+    # Using the Ian argument parser since it has nicer from file characteristics
+    parser = IU.IanArgumentParser(description="Global function optimizer based "
+                                  "on branch and bound for noncontinuous "
+                                  "functions.",
+                                  fromfile_prefix_chars='@')
+    # Verbosity level
+    parser.add_argument("-v", "--verbose", help="increase output verbosity",
+                        type=int)
+    # All flags have descriptions
+#    parser.add_argument("-t", "--threads",
+#                        help="number of threads to use",
+#                        type=int, default=1)
+    parser.add_argument("-ie", "--input-epsilon",
+                        help="cuttoff for function input size",
+                        type=float, default=.001)
+    parser.add_argument("-oe", "--output-epsilon",
+                        help="cuttoff for function output size",
+                        type=float, default=.001)
+    parser.add_argument("-i", "--input",
+                        help="Search space",
+                        type=str, nargs='+', required=True,)
+    parser.add_argument("-f", "--function",
+                        help="the c++ interval arithmatic function to evaluate",
+                        type=str, nargs='+', required=True,)
+
+    # actually parse
+    args = parser.parse_args()
+
+    # set verbosity level
+    if args.verbose:
+        IU.set_log_level(args.verbose)
+
+    # grab function (this is required since the function may have spaces in it)
+    # `input` is handled differently
+    function = ' '.join(args.function)
+
+    return {"input_epsilon"  : str(args.input_epsilon),
+            "output_epsilon" : str(args.output_epsilon),
+            "input"          : args.input,
+            "function"       : function,}
+
+
+def write_function_source(filename, function, variables):
+    """ Writes the given function to the given file as a rust function """
+    body = create_function_body(function, variables)
+    with open(filename, 'w') as f:
+        f.write('\n'.join(body))
+
+
+def make_X_0(box_list):
+    """ Makes a GU.box from the given python structure"""
+    box = list()
+    for i in range(len(box_list)):
+        box.append(box_list[i][0], box_list[i][1])
+    return box
+
+
+
+
+def main():
+    arg_dict = parse_args()
+
+    # Directory names used in this script
+    full_dir = P.abspath(P.dirname(SYS.argv[0])) # Directory for this script
+    base_dir = P.split(full_dir)[0] # One directory up
+    bin_dir = P.join(base_dir, "bin/") # Directories within that directroy
+    src_dir = P.join(base_dir, "src/")
+    include_dir = P.join(base_dir, "include/")
+    generated_dir = P.join(base_dir, "generated/")
+
+    # Grab input interval variables, use them for the function translation,
+    # and write them out to a rust file
+    start_box, dimensions, variables = parse_box2(arg_dict["input"])
+    import function_to_rust
+    (function, constants, part) = function_to_rust.translate(arg_dict["function"])
+
+    inputs = ["[{}, {}]".format(x[0], x[1]) for x in start_box]
+    inputs = "|".join(inputs)
+    
+    with open(P.join(src_dir, "func/lib.rs"), 'w') as f:
+        f.write(function)
+        
+    # Use try so that we can catch control-c easily
+    try:
+        start = T.time()
+        IU.log(1, IU.cyan("Running"))
+        SP.call(['./target/release/cooperative', '-c', constants,
+                 '-f', part,
+                 '-i', inputs,
+                 "-x", "1e-2",
+                 "-y", "1e-2"])
+
+    finally:
+        end = T.time()
+
+    IU.log(0, IU.green("Solver time: ")+str(end-start))
+
+
+
+if __name__ == "__main__":
+    main()

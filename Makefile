@@ -1,5 +1,13 @@
+
+all: libfunc.so bin/gelpia
+	
+
+bin/gelpia:
+	cp src/frontend/*.py bin
+	cp src/frontend/gelpia bin
+
 libfunc.so: src/func/src/lib.rs
-	@./build.sh
+	@cd src/func && cargo build --release --verbose
 	@cp src/func/target/release/libfunc.so ./
 
 clean:
