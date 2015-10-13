@@ -15,7 +15,6 @@ def make_constant(exp):
     ''' Given a constant expression places it in the global const list
     and mutates it to represent that it is a constant '''
     global GLOBAL_CONSTANTS_LIST
-
     # If the constant value is already in the list, don't recreate it
     try:
         i = GLOBAL_CONSTANTS_LIST.index(exp)
@@ -77,9 +76,9 @@ def runmain():
     lift_constants(exp)
     consts = ["{} : {}".format(i, c) for i, c in
               enumerate(GLOBAL_CONSTANTS_LIST)]
-    print("[{}]".format('\n '.join(consts)))
-    print(GLOBAL_NAMES)
-    print(exp)
+    print("consts: [{}]".format('\n '.join(consts)))
+    print("globals:", GLOBAL_NAMES)
+    print("expression:", exp)
 
 # On call run as a util, taking in text and printing the constant lifted version
 if __name__ == "__main__":

@@ -45,21 +45,26 @@ def rewrite(exp):
         return "{}({})".format(funcs[exp[0]],
                                rewrite(exp[1]))
     if exp[0] == 'abs':
-        return "(sqrt(pow({}, 2)))".format(rewrite(exp[1]))
+        return "abs({})".format(rewrite(exp[1]))
     if exp[0] == 'Neg':
         return "-({})".format(rewrite(exp[1]))
     if exp[0] == 'pow':
         return "powi({}, {})".format(rewrite(exp[1]), rewrite(exp[2]))
     if exp[0] == "ipow":
         c = GOBAL_CONSTANTS_LIST[exp[2][1]][1]
-        return "{pow({}, {})".format(rewrite(exp[1]), c)
+        return "pow({}, {})".format(rewrite(exp[1]), c)
+    if exp[0] == "sqrt":
+        return"sqrt({})".format(rewrite(exp[1]))
     print("Error rewriting '{}'".format(exp))
     SYS.exit(-1)
 
 def trans_const():
     consts = list()
     for expr in GLOBAL_CONSTANTS_LIST:
-        consts.append(rewrite(expr).replace("powi", "pow"))
+        if expr[0] == 'abs':
+            consts.append(rewrite(['sqrt', ['pow', expr[1], ['Float', 2]]]).replace("powi", "pow"))
+        else:
+            consts.append(rewrite(expr).replace("powi", "pow"))
     return consts
         
 def translate(data):
@@ -97,9 +102,9 @@ def runmain():
         data = SYS.stdin.read()
 
     (function, constants, part) = translate(data)
-    print(function)
-    print(constants)
-    print(part)
+    print("Function:", function)
+    print("Constants:", constants)
+    print("Part:", part)
 
 
 if __name__ == "__main__":
