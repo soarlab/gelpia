@@ -22,13 +22,15 @@ funcs = {
     'tan'    : 'tan',
 }
 
+VARIABLES = None
+
 def rewrite(exp):
     if exp[0] == 'Float':
         return "{}".format(exp[1])
     if exp[0] == 'Interval':
         return "[{}, {}]".format(exp[1], exp[2])    
     if exp[0] == 'Input':
-        return "_x[{}]".format(exp[1])
+        return "_x[{}]".format(VARIABLES[exp[1]])
     if exp[0] == 'Bound':
         return rewrite(GLOBAL_NAMES[exp[1]])
     if exp[0] == 'Const':
@@ -67,7 +69,9 @@ def trans_const():
             consts.append(rewrite(expr).replace("powi", "pow"))
     return consts
         
-def translate(data):
+def translate(data, variables):
+    global VARIABLES
+    VARIABLES = variables
     function = """extern crate gr;
 use gr::*;
 
@@ -75,18 +79,17 @@ use gr::*;
 pub extern "C"
 fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {
 """
-    
     exp = parser.parse(data)
+    
     lift_constants(exp)
     constants = "|".join(trans_const())
 
-    part = rewrite_interpreter(exp)
+    part = rewrite_int(exp, variables)
     part = ', '.join(part.split())
     
     function += '    {}'.format(rewrite(exp))
 
     function += '\n}\n'
-    
     return (function, constants, part)
     
 

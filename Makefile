@@ -1,6 +1,6 @@
 all: libfunc.so bin/gelpia;
 
-bin/gelpia:
+bin/gelpia: src/frontend/gelpia
 	@cp src/frontend/*.py bin
 	@cp src/frontend/gelpia bin
 

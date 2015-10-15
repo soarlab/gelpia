@@ -131,7 +131,7 @@ def main():
     # and write them out to a rust file
     start_box, dimensions, variables = parse_box2(arg_dict["input"])
     import function_to_rust
-    (function, constants, part) = function_to_rust.translate(arg_dict["function"])
+    (function, constants, part) = function_to_rust.translate(arg_dict["function"], variables)
 
     inputs = ["[{}, {}]".format(x[0], x[1]) for x in start_box]
     inputs = "|".join(inputs)

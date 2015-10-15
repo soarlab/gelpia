@@ -23,10 +23,11 @@ funcs_interpreter = {
     'tan'    : 'tan',
 }
 
+INT_VARIABLES = None
 
 def rewrite_interpreter(exp):
     if exp[0] == 'Input':
-        return "i{} ".format(exp[1])
+        return "i{} ".format(INT_VARIABLES[exp[1]])
     if exp[0] == 'Bound':
         return rewrite_interpreter(GLOBAL_NAMES[exp[1]])
     if exp[0] == 'Const':
@@ -53,6 +54,11 @@ def rewrite_interpreter(exp):
     print("Error rewriting_interpreter '{}'".format(exp))
     SYS.exit(-1)
 
+def rewrite_int(exp, variables):
+    global INT_VARIABLES
+    INT_VARIABLES = variables
+    return rewrite_interpreter(exp)
+    
 def runmain():
     data = SYS.argv[1]
 

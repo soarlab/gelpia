@@ -12,6 +12,8 @@ GLOBAL_NAMES = list()
 GLOBAL_FREE_NAMES_LIST = list()
 GLOBAL_BOUND_NAMES_LIST = list()
 
+GLOBAL_VARIABLES = None
+
 def p_function_assign(t):
     '''function : VARIABLE EQUALS expression SEMICOLON function'''
     # make sure this variable being assigned to has not alreaady been used as
@@ -74,13 +76,7 @@ def p_name(t):
     '''name : VARIABLE'''
     # if the name has not already been bound it must be free
     if t[1] not in GLOBAL_BOUND_NAMES_LIST:
-        if t[1] not in GLOBAL_FREE_NAMES_LIST:
-            GLOBAL_FREE_NAMES_LIST.append(t[1])
-            # Returns ['Input', index]
-            t[0] = ['Input', len(GLOBAL_FREE_NAMES_LIST)-1]
-        else:
-            # Returns ['Input', index]
-            t[0] = ['Input', GLOBAL_FREE_NAMES_LIST.index(t[1])]
+            t[0] = ['Input', t[1]]
     else:
         # Returns ['Variable', name]
         t[0] = ['Variable', t[1]]
