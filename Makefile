@@ -10,4 +10,4 @@ libfunc.so: src/func/src/lib.rs
 
 .PHONY: clean
 clean:
-	@rm -f libfunc.so bin/*.py bin/gelpia bin/__pycache__ bin/parser.out
+	@rm -fr libfunc.so bin/*.py bin/gelpia bin/__pycache__ bin/parser.out
