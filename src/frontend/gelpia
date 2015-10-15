@@ -54,7 +54,7 @@ def parse_box2(box_string):
 
 
 def parse_args():
-    """ Command line argumetn parser. Returns a dict from arg name to value"""
+    """ Command line argument parser. Returns a dict from arg name to value"""
 
     # Using the Ian argument parser since it has nicer from file characteristics
     parser = IU.IanArgumentParser(description="Global function optimizer based "
@@ -75,7 +75,7 @@ def parse_args():
                         help="cuttoff for function output size",
                         type=float, default=.001)
     parser.add_argument("-i", "--input",
-                        help="Search space",
+                        help="Search space. Format is: {V1 : (inf(V1), sup(V1)), ...}",
                         type=str, nargs='+', required=True,)
     parser.add_argument("-f", "--function",
                         help="the c++ interval arithmatic function to evaluate",
@@ -121,6 +121,7 @@ def main():
     # Directory names used in this script
     full_dir = P.abspath(P.dirname(SYS.argv[0])) # Directory for this script
     base_dir = P.split(full_dir)[0] # One directory up
+    OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/release/deps"
     bin_dir = P.join(base_dir, "bin/") # Directories within that directroy
     src_dir = P.join(base_dir, "src/")
     include_dir = P.join(base_dir, "include/")
@@ -137,7 +138,7 @@ def main():
     
     with open(P.join(src_dir, "func/lib.rs"), 'w') as f:
         f.write(function)
-        
+
     # Use try so that we can catch control-c easily
     try:
         start = T.time()
@@ -145,8 +146,8 @@ def main():
         SP.call(['./target/release/cooperative', '-c', constants,
                  '-f', part,
                  '-i', inputs,
-                 "-x", "1e-2",
-                 "-y", "1e-2"])
+                 "-x", arg_dict["input_epsilon"],
+                  "-y", arg_dict["output_epsilon"]])
 
     finally:
         end = T.time()

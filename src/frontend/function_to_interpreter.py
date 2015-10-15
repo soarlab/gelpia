@@ -43,7 +43,7 @@ def rewrite_interpreter(exp):
         return "{} f{}".format(rewrite_interpreter(exp[1]),
                               funcs_interpreter[exp[0]])
     if exp[0] == 'abs':
-        return "{} abs".format(rewrite_interpreter(exp[1]))
+        return "{} fabs".format(rewrite_interpreter(exp[1]))
     if exp[0] == 'sqrt':
         return "{} fsqrt".format(rewrite_interpreter(exp[1]))
 #        return "{} p2 fsqrt".format(rewrite_interpreter(exp[1]))
