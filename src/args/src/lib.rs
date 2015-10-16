@@ -26,7 +26,19 @@ pub struct Args {
     pub x_error: f64,
     pub y_error: f64,
     pub timeout: f64,
-    pub iters: u64
+    pub iters: u64,
+    pub names: Vec<String>        
+}
+
+fn proc_names(names: &String) -> Vec<String> {
+    let mut result = vec![];
+    for n in names.split(',') {
+        if n == "" {
+            continue;
+        }
+        result.push(n.to_string());
+    }
+    result
 }
 
 pub fn process_args() -> Args {
@@ -41,6 +53,8 @@ pub fn process_args() -> Args {
     opts.reqopt("y", "y_epsilon", "", "");
     opts.optopt("t", "time_out", "", "");
     opts.optopt("m", "max_iters", "", "");
+    opts.reqopt("n", "names", "", "");
+    
     
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -49,11 +63,13 @@ pub fn process_args() -> Args {
     let const_string = matches.opt_str("c").unwrap();
     let input_string = matches.opt_str("i").unwrap();
     let func_string = matches.opt_str("f").unwrap();
-
+    let name_string = matches.opt_str("n").unwrap();
+    
     let x_0 = proc_consts(&input_string.to_string());
     let fo = FuncObj::new(&proc_consts(&const_string.to_string()),
                               &func_string.to_string());
-    
+    let names = proc_names(&name_string);
     Args{domain: x_0, function: fo, x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
-         y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), timeout: 0.0, iters: 0}
+         y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), timeout: 0.0, iters: 0,
+         names: names}
 }

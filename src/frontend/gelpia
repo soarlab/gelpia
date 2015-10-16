@@ -138,7 +138,9 @@ def main():
     
     with open(P.join(src_dir, "func/lib.rs"), 'w') as f:
         f.write(function)
-
+    names = [None for i in range(len(variables))]
+    for i in variables.keys():
+        names[variables[i]] = i
     # Use try so that we can catch control-c easily
     try:
         start = T.time()
@@ -147,7 +149,8 @@ def main():
                  '-f', part,
                  '-i', inputs,
                  "-x", arg_dict["input_epsilon"],
-                  "-y", arg_dict["output_epsilon"]])
+                  "-y", arg_dict["output_epsilon"],
+                 "-n", ",".join(names)])
 
     finally:
         end = T.time()

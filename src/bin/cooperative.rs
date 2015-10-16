@@ -278,10 +278,11 @@ fn main() {
     // Join EA and Update here pending stop signaling.
     if result.is_ok() {
         let (max, interval) = result.unwrap();
-        println!("{}", max);
-        for x in interval {
-            println!("{}", x.to_string());
+        println!("[{}, {{", max);
+        for i in 0..args.names.len() {
+            println!("{} : {},", args.names[i], interval[i].to_string());
         }
+        println!("}}]");
         
     }
     else {println!("error")}
