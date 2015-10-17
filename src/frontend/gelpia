@@ -126,6 +126,7 @@ def main():
 
     if arg_dict["debug"]:
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/debug/deps"
+        OS.environt["RUST_BACKTRACE"] = "1"
     else:
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/release/deps"
 

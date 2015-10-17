@@ -1,7 +1,6 @@
 all: libfunc.so bin/gelpia;
 
 debug: bin/gelpia
-	@echo DEBUG
 	@cd src/func && cargo build
 	@cp src/func/target/debug/libfunc.so ./
 
