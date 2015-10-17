@@ -28,8 +28,10 @@ def rewrite(exp):
     if exp[0] == 'Float':
         return "{}".format(exp[1])
     if exp[0] == 'Interval':
-        return "[{}, {}]".format(exp[1], exp[2])    
+        return "[{}, {}]".format(exp[1], exp[2])
     if exp[0] == 'Input':
+        if exp[1] not in VARIABLES.keys():
+            raise "Unknown variable: {}".format(exp[1])
         return "_x[{}]".format(VARIABLES[exp[1]])
     if exp[0] == 'Bound':
         return rewrite(GLOBAL_NAMES[exp[1]])

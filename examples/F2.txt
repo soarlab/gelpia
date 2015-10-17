@@ -1,4 +1,4 @@
---input-epsilon .001
---output-epsilon .001
---function "x*(1-x)"
---input "{'x' : (0,1)}"
+-ie .001
+-oe .001
+-f "x*(1-x)"
+-i "{'x' : (0,1)}"

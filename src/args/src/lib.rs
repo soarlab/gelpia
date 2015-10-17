@@ -27,7 +27,7 @@ pub struct Args {
     pub y_error: f64,
     pub timeout: f64,
     pub iters: u64,
-    pub names: Vec<String>        
+    pub names: Vec<String>,
 }
 
 fn proc_names(names: &String) -> Vec<String> {
@@ -48,7 +48,7 @@ pub fn process_args() -> Args {
     opts.reqopt("c", "constants", "", "");
     opts.reqopt("f", "function", "", "");
     opts.reqopt("i", "input", "", "");
-
+    opts.optflag("d", "debug", "Enable debugging");
     opts.reqopt("x", "x_epsilon", "", "");
     opts.reqopt("y", "y_epsilon", "", "");
     opts.optopt("t", "time_out", "", "");
@@ -67,7 +67,7 @@ pub fn process_args() -> Args {
     
     let x_0 = proc_consts(&input_string.to_string());
     let fo = FuncObj::new(&proc_consts(&const_string.to_string()),
-                              &func_string.to_string());
+                              &func_string.to_string(), matches.opt_present("d"));
     let names = proc_names(&name_string);
     Args{domain: x_0, function: fo, x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
          y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), timeout: 0.0, iters: 0,

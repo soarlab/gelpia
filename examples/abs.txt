@@ -1,4 +1,4 @@
---input-epsilon .01
---output-epsilon .01
---function "abs(x)"
---input "{'x' : (1.01e-2,2e0)}"
+-ie .01
+-oe .01
+-f "abs(x)"
+-i "{'x' : (1.01e-2,2e0)}"

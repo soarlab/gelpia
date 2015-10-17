@@ -1,4 +1,4 @@
---input-epsilon .01
---output-epsilon .01
---function "pow(x, 2)*pow(y, 4)"
---input "{'x' : (-10,10), 'y' : (-10,10)}"
+-ie .01
+-oe .01
+-f "pow(x, 2)*pow(y, 4)"
+-i "{'x' : (-10,10), 'y' : (-10,10)}"

@@ -73,7 +73,7 @@ impl FuncObj {
             let result = unsafe{
                 std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->GI,
                                                fn(&Vec<GI>, &Vec<GI>)->GI>(
-                (self.function.load(Ordering::Acquire)))(_x, &self.constants)};
+                    (self.function.load(Ordering::Acquire)))(_x, &self.constants)};
             let mut interim: std::simd::f64x2;
             // The compiler doesn't seem to be generating the code here to
             // retrieve the return value. This gets the result from the xmm0
@@ -150,7 +150,7 @@ impl FuncObj {
         stack[0]
     }
 
-    pub fn new(consts: &Vec<GI>, instructions: &String) -> FuncObj {
+    pub fn new(consts: &Vec<GI>, instructions: &String, debug: bool) -> FuncObj {
         let mut insts = vec![];
        
         for inst in instructions.split(',') {
@@ -179,29 +179,32 @@ impl FuncObj {
         {
             let fo_c = result.clone();
             thread::spawn(move || {
-                &fo_c.compile();
+                &fo_c.compile(debug);
             })
         };
         result
     }
 
-    fn compile(&self) {
-        let ignore = Command::new("/usr/bin/make").output()                    
-            .unwrap_or_else(|e| {panic!("Could not compile: {}", e)});          
+    fn compile(&self, debug: bool) {
+        let mut process = Command::new("/usr/bin/make");
+        if debug {
+            process.arg("debug");
+        }
+        let ignore = process.output().unwrap_or_else(|e| {panic!("Could not compile: {}", e)});
         if !ignore.status.success() {                                           
             panic!("Could not compile: {}\n----\n{}", String::from_utf8(ignore.stdout).unwrap(),
                    String::from_utf8(ignore.stderr).unwrap());                  
-        }                                                                      
+        }
+
         DynamicLibrary::prepend_search_path(Path::new("./"));                  
         let f = match DynamicLibrary::open(Some(Path::new("libfunc.so"))) {    
             Ok(lib) => lib,                                                     
             Err(err) => panic!("Could not load library: {}", err)
         };                                                                     
-        
         let g = unsafe{match f.symbol("gelpia_func") {                         
             Ok(func) => transmute::<*mut u32, fn(&Vec<GI>, &Vec<GI>)->GI>(func),
             Err(err) => panic!("Could not load function: {}", err),          
-        }};                                                                    
+        }};
 
         self.set(g, f);  
     }

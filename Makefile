@@ -1,5 +1,10 @@
 all: libfunc.so bin/gelpia;
 
+debug: bin/gelpia
+	@echo DEBUG
+	@cd src/func && cargo build
+	@cp src/func/target/debug/libfunc.so ./
+
 bin/gelpia: src/frontend/gelpia
 	@cp src/frontend/*.py bin
 	@cp src/frontend/gelpia bin
