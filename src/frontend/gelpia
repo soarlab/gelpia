@@ -63,7 +63,7 @@ def parse_args():
                                   fromfile_prefix_chars='@')
     # Verbosity level
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
-                        type=int)
+                        type=int, default=0)
     # All flags have descriptions
 #    parser.add_argument("-t", "--threads",
 #                        help="number of threads to use",
@@ -84,11 +84,9 @@ def parse_args():
                         help="Debug run of file", action="store_true")
     # actually parse
     args = parser.parse_args()
-
     # set verbosity level
-    if args.verbose:
-        IU.set_log_level(args.verbose)
-
+    if args.debug or args.verbose:
+        IU.set_log_level(max(1, args.verbose))
     # grab function (this is required since the function may have spaces in it)
     # `input` is handled differently
     function = ' '.join(args.function)
@@ -126,7 +124,7 @@ def main():
 
     if arg_dict["debug"]:
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/debug/deps"
-        OS.environ["RUST_BACKTRACE"] = "1"
+        OS.environ["RUST_BACKTRACE"] = "1" # Set debug mode in case of a crash
     else:
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/release/deps"
 
@@ -151,6 +149,10 @@ def main():
         names[variables[i]] = i
     if arg_dict["debug"]:
         executable = './target/debug/cooperative'
+        IU.log(1, "Interpreted: " + part)
+        IU.log(1, "Rust: " + function)
+        IU.log(1, "Domain: " + inputs)
+            
     else:
         executable = './target/release/cooperative'
     # Use try so that we can catch control-c easily
@@ -162,7 +164,8 @@ def main():
                  '-i', inputs,
                  "-x", arg_dict["input_epsilon"],
                   "-y", arg_dict["output_epsilon"],
-                 "-n", ",".join(names), "-d" if arg_dict["debug"] else ""])
+                 "-n", ",".join(names),
+                 "-d" if arg_dict["debug"] else ""]) # If a debug run
 
     finally:
         end = T.time()

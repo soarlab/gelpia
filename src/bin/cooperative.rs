@@ -280,7 +280,7 @@ fn main() {
         let (max, interval) = result.unwrap();
         println!("[{}, {{", max);
         for i in 0..args.names.len() {
-            println!("{} : {},", args.names[i], interval[i].to_string());
+            println!("'{}' : {},", args.names[i], interval[i].to_string());
         }
         println!("}}]");
         
