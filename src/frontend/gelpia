@@ -149,12 +149,16 @@ def main():
         names[variables[i]] = i
     if arg_dict["debug"]:
         executable = './target/debug/cooperative'
-        IU.log(1, "Interpreted: " + part)
-        IU.log(1, "Rust: " + function)
-        IU.log(1, "Domain: " + inputs)
-            
     else:
         executable = './target/release/cooperative'
+
+    # Log output
+        
+    IU.log(1, IU.cyan("Interpreted: ") + part)
+    IU.log(1, IU.cyan("Rust: ") + function)
+    IU.log(1, IU.cyan("Domain: ") + inputs)
+    IU.log(1, IU.cyan("Variables: ") + ", ".join(names))
+
     # Use try so that we can catch control-c easily
     try:
         start = T.time()
