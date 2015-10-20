@@ -5,3 +5,4 @@ Currently known to build on Ubuntu 14.04
 Requires:
 rust 1.0
 gaol (4.2.0) currently compiled with CRLibm option
+./configure --with-mathlib=crlibm --enable-simd --prefix=$HOME/tools --disable-debug --disable-preserve-rounding --enable-optimize --disable-verbose-mode
