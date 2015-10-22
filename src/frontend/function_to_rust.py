@@ -20,6 +20,7 @@ funcs = {
     'log'    : 'log',
     'sin'    : 'sin',
     'tan'    : 'tan',
+    'sqrt'   : 'sqrt',
 }
 
 VARIABLES = None
@@ -66,7 +67,10 @@ def trans_const():
     consts = list()
     for expr in GLOBAL_CONSTANTS_LIST:
         if expr[0] == 'abs':
-            consts.append(rewrite(['sqrt', ['pow', expr[1], ['Float', 2]]]).replace("powi", "pow"))
+            consts.append(
+                rewrite(['sqrt',
+                         ['pow', expr[1],
+                          ['Float', 2]]]).replace("powi", "pow"))
         else:
             consts.append(rewrite(expr).replace("powi", "pow"))
     return consts
