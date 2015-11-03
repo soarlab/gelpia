@@ -34,4 +34,7 @@ cd gaol
 make
 make install
 
-
+echo ""
+echo ""
+echo ""
+echo Remeber to set your PATH to include $SCRIPT_LOCATION/bin
