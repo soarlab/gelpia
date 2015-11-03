@@ -129,6 +129,7 @@ def main():
     else:
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/release/deps"
 
+    OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/requirements/lib"
     bin_dir = P.join(base_dir, "bin/") # Directories within that directroy
     src_dir = P.join(base_dir, "src/")
     include_dir = P.join(base_dir, "include/")
