@@ -129,9 +129,11 @@ def main():
         OS.environ["LD_LIBRARY_PATH"] = base_dir + "/requirements/lib"
     
     if arg_dict["debug"]:
+        OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/src/func/target/debug/"
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/debug/deps"
         OS.environ["RUST_BACKTRACE"] = "1" # Set debug mode in case of a crash
     else:
+        OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/src/func/target/release/"
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/release/deps"
 
     bin_dir = P.join(base_dir, "bin/") # Directories within that directroy
