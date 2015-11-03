@@ -195,7 +195,9 @@ fn main() {
     let ref fo = args.function;
     let x_err = args.x_error;
     let y_err = args.x_error;
-    
+    if x_err <= 0.0 || y_err <= 0.0 {
+        panic!("Tolerance is 0");
+    }
     let q_inner: BinaryHeap<Quple> = BinaryHeap::new();
     let q = Arc::new(RwLock::new(q_inner));
     
