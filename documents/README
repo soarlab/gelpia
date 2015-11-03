@@ -16,6 +16,11 @@ files to bin for execution.
 
 
 Gelpia may then be ran, it is an executable in the bin directory.
+It has a built in help system for argument clarification.
+A file may be specified which has arguments in it, one per line, this name
+must be preceded by an @ symbol. The examples directory has many of these
+files. Additional arguments, or overwiting arguments, may be specified after the
+file.
 
 example uses:
 
