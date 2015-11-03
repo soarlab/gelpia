@@ -194,9 +194,10 @@ fn main() {
     let ref x_0 = args.domain;
     let ref fo = args.function;
     let x_err = args.x_error;
-    let y_err = args.x_error;
-    if x_err <= 0.0 || y_err <= 0.0 {
-        panic!("Tolerance is 0");
+    let y_err = args.y_error;
+
+    if x_err <= std::f64::EPSILON || y_err <= std::f64::EPSILON {
+        panic!("Tolerance is below machine epsilon.");
     }
     let q_inner: BinaryHeap<Quple> = BinaryHeap::new();
     let q = Arc::new(RwLock::new(q_inner));
