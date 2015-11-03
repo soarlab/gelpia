@@ -5,11 +5,18 @@ export CPLUS_INCLUDE_PATH := ${CPLUS_INCLUDE_PATH}:$(CURDIR)/requirements/includ
 export LIBRARY_PATH := ${LIBRARY_PATH}:$(CURDIR)/requirements/lib
 
 
-all: libfunc.so bin/gelpia;
+all: libfunc.so bin/gelpia target/release/coperative
 
-debug: bin/gelpia
+
+target/release/coperative: src/main.rs
+	@cargo build --release
+
+debug: bin/gelpia target/debug/coperative
 	@cd src/func && cargo build
 	@cp src/func/target/debug/libfunc.so ./
+
+target/debug/coperative: src/main.rs
+	@cargo build
 
 bin/gelpia: src/frontend/gelpia
 	@cp src/frontend/*.py bin
