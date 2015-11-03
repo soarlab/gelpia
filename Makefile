@@ -1,3 +1,10 @@
+
+export PATH := ${CURDIR}/requirements/bin:${PATH}
+export LD_LIBRARY_PATH := ${LD_LIBRARY_PATH}:$(CURDIR)/requirements/lib
+export CPLUS_INCLUDE_PATH := ${CPLUS_INCLUDE_PATH}:$(CURDIR)/requirements/include
+export LIBRARY_PATH := ${LIBRARY_PATH}:$(CURDIR)/requirements/lib
+
+
 all: libfunc.so bin/gelpia;
 
 debug: bin/gelpia
@@ -15,3 +22,5 @@ libfunc.so: src/func/src/lib.rs
 .PHONY: clean
 clean:
 	@rm -fr libfunc.so bin/*.py bin/gelpia bin/__pycache__ bin/parser.out
+	@cargo clean
+	@cd src/func && cargo clean

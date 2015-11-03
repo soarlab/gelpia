@@ -43,4 +43,7 @@ Gaol:
 	run `./configure  --with-mathlib=crlibm --enable-simd --disable-debug --disable-preserve-rounding --enable-optimize --disable-verbose-mode --prefix=<where you want gaol>`
 	run `make && make install`
 
-	TODO: determine exact path changes needed.
+	Make sure you have the location of the install lib directory in
+	your LD_LIBRARY_PATH and LIBRARY_PATH as well as the install
+	include directory in you CPLUS_INCLUDE_PATH.
+	Also set them in your shell's configuration file.

@@ -10,12 +10,6 @@ For automatic building of requirements run /requirements/build.sh
 For building by hand see documents/BuildingRequirements
 
 
-If the automatic build script is used only the PATH variable needs to be
-modified, the others get modified during gelpia execution. If the requirements
-are installed by hand all environment variables must be modified as indicated in
-documents/BuildingRequirements.
-
-
 Once requirements are met gelpia may be made by running make in the git's root
 directory. This runs rust's cargo build system as well as it adds the correct
 files to bin for execution.

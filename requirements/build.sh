@@ -33,8 +33,3 @@ cd gaol
 ./configure  --with-mathlib=crlibm --enable-simd --disable-debug --disable-preserve-rounding --enable-optimize --disable-verbose-mode --prefix=$SCRIPT_LOCATION
 make
 make install
-
-echo ""
-echo ""
-echo ""
-echo Remeber to set your PATH to include $SCRIPT_LOCATION/bin
