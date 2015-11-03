@@ -1,5 +1,5 @@
 
-export PATH := ${CURDIR}/requirements/bin:${PATH}
+export PATH := ${PATH}:${CURDIR}/requirements/bin
 export LD_LIBRARY_PATH := ${LD_LIBRARY_PATH}:$(CURDIR)/requirements/lib
 export CPLUS_INCLUDE_PATH := ${CPLUS_INCLUDE_PATH}:$(CURDIR)/requirements/include
 export LIBRARY_PATH := ${LIBRARY_PATH}:$(CURDIR)/requirements/lib
