@@ -2,6 +2,7 @@
 #![feature(core)]
 #![feature(std_misc)]
 #![feature(core_simd)]
+#![feature(float_extras)]
 
 extern crate libc;
 use libc::{c_double, c_char, c_int};
@@ -368,15 +369,24 @@ pub fn log(x: GI) -> GI {
     result
 }
 
-pub fn width_box(_x: &Vec<GI>) -> f64 {
+pub fn eps_tol(widest: GI, tol: f64) -> bool {
+    let (_,exp_x,_) = widest.lower().integer_decode();
+    let wideste = (2.0f64).powi(exp_x as i32);
+    let ww = widest.width();
+    ww <= tol || ww <= wideste
+}
+
+pub fn width_box(_x: &Vec<GI>, tol: f64) -> bool {
     let mut w = NINF;
+    let mut widest = GI::new_e();
     for a in _x {
         let wid = a.width();
         if wid > w {
             w = wid;
+            widest = *a;
         }
     }
-    w
+    eps_tol(widest, tol)
 }
 
 pub fn midpoint_box(_x: &Vec<GI>) -> Vec<GI> {

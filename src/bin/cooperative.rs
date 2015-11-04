@@ -15,7 +15,7 @@ use ga::{ea, Individual};
 
 use gu::{Quple, INF, NINF, Flt, Parameters};
 
-use gr::{GI, width_box, split_box, midpoint_box};
+use gr::{GI, width_box, split_box, midpoint_box, eps_tol};
 
 use std::sync::{Barrier, RwLock, Arc};
 
@@ -62,13 +62,13 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
                 Some(y) => (y.data, y.p),
                 None    => panic!("wtf")
             };
-        let xw = width_box(x);
+//        let xw = width_box(x);
         let fx = f.call(x);
-        let fw = fx.width();
+//        let fw = fx.width();
 
         if fx.upper() < f_best_low ||
-            xw < e_x ||
-            fw < e_f {
+            width_box(x, e_x) ||
+            eps_tol(fx, e_f) {
                 if f_best_high < fx.upper() {
                     f_best_high = fx.upper();
                     best_x = x.clone();
@@ -196,9 +196,6 @@ fn main() {
     let x_err = args.x_error;
     let y_err = args.y_error;
 
-    if x_err <= std::f64::EPSILON || y_err <= std::f64::EPSILON {
-        panic!("Tolerance is below machine epsilon.");
-    }
     let q_inner: BinaryHeap<Quple> = BinaryHeap::new();
     let q = Arc::new(RwLock::new(q_inner));
     

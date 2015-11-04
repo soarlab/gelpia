@@ -8,7 +8,7 @@ extern crate gu;
 use gu::{Quple, INF, NINF, Flt};
 
 extern crate gr;
-use gr::{GI, width_box, split_box, midpoint_box};
+use gr::{GI, width_box, split_box, midpoint_box, eps_tol};
 
 extern crate function;
 use function::FuncObj;
@@ -37,13 +37,13 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
                 None => panic!("wtf")
             };
 
-        let xw = width_box(x);
+//        let xw = width_box(x);
         let fx = f.call(x);
-        let fw = fx.width();
+//        let fw = fx.width();
 
         if fx.upper() < f_best_low ||
-            xw < e_x ||
-            fw < e_f //|| (!contains_zero && !on_boundary)
+            width_box(x, e_x) ||
+            eps_tol(fx, e_f) //|| (!contains_zero && !on_boundary)
         {
                 if f_best_high < fx.upper() {
                     f_best_high = fx.upper();

@@ -1,6 +1,8 @@
 /* 
   Basic interval implementation and other common functions/data structures
 */
+#![feature(float_extras)]
+
 use std::cmp::{PartialOrd, Ordering, PartialEq, Ord};
 use std::f64::{NEG_INFINITY, INFINITY};
 
@@ -100,3 +102,8 @@ impl Ord for Quple {
 }
 // End Quple ordering.
 
+pub fn eps_tol(x: f64, y: f64, tol: f64) -> bool {
+    let (_,exp_x,_) = x.integer_decode();
+    let xe = (2.0f64).powi(exp_x as i32);
+    return y - x <= max!(tol, xe);
+}
