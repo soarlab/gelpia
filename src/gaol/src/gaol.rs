@@ -9,7 +9,7 @@ use libc::{c_double, c_char, c_int};
 use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
-
+use std::mem;
 use std::simd;
 
 use std::sync::{StaticMutex, MUTEX_INIT};
@@ -371,9 +371,12 @@ pub fn log(x: GI) -> GI {
 
 pub fn eps_tol(widest: GI, tol: f64) -> bool {
     let (_,exp_x,_) = widest.lower().integer_decode();
-    let wideste = (2.0f64).powi(exp_x as i32);
+    let (_,exp_y,_) = widest.upper().integer_decode();
+    let exp = {if exp_x < exp_y {exp_y} else {exp_x}} as i64;
+    let mut wideste = ((exp+1023) << 52) & 0x7FF0000000000000;
+    let d: f64 = unsafe{mem::transmute(wideste)};
     let ww = widest.width();
-    ww <= tol || ww <= wideste
+    ww <= tol || ww <= d
 }
 
 pub fn width_box(_x: &Vec<GI>, tol: f64) -> bool {
