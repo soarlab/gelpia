@@ -196,6 +196,13 @@ fn main() {
     let x_err = args.x_error;
     let y_err = args.y_error;
 
+    // Early out if there are no input variables...
+    if x_0.len() == 0 {
+        let result = fo.call(&x_0);
+        println!("[{}, {{}}]", result.upper());
+        return
+    }
+    
     let q_inner: BinaryHeap<Quple> = BinaryHeap::new();
     let q = Arc::new(RwLock::new(q_inner));
     

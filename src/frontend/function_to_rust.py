@@ -55,6 +55,8 @@ def rewrite(exp):
         return "-({})".format(rewrite(exp[1]))
     if exp[0] == 'pow':
         return "powi({}, {})".format(rewrite(exp[1]), rewrite(exp[2]))
+    if exp[0] == 'cpow':
+        return "pow({}, {})".format(rewrite(exp[1]), rewrite(exp[2]))
     if exp[0] == "ipow":
         c = GOBAL_CONSTANTS_LIST[exp[2][1]][1]
         return "pow({}, {})".format(rewrite(exp[1]), c)
@@ -63,18 +65,26 @@ def rewrite(exp):
     print("Error rewriting '{}'".format(exp))
     SYS.exit(-1)
 
+
+def trans_const_r(expr):
+    '''expr is a constant. We need to replace abs with sqrt(pow( '''
+
+    if type(expr) != list:
+        return expr
+    if expr[0] == 'abs':
+        return ['sqrt',['cpow', trans_const_r(expr[1]), ['Float', 2]]]
+    if expr[0] == 'powi':
+        return ['pow', trans_const_r(expr[1])]
+
+    return [trans_const_r(e) for e in expr]
+    
 def trans_const():
     consts = list()
     for expr in GLOBAL_CONSTANTS_LIST:
-        if expr[0] == 'abs':
-            consts.append(
-                rewrite(['sqrt',
-                         ['pow', expr[1],
-                          ['Float', 2]]]).replace("powi", "pow"))
-        else:
-            consts.append(rewrite(expr).replace("powi", "pow"))
+        consts.append(rewrite(trans_const_r(expr)))
     return consts
-        
+
+
 def translate(data, variables):
     global VARIABLES
     VARIABLES = variables
@@ -88,8 +98,10 @@ fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {
     exp = parser.parse(data)
     
     lift_constants(exp)
-    constants = "|".join(trans_const())
-
+    global GLOBAL_CONSTANTS_LIST
+    GLOBAL_CONSTANTS_LIST = trans_const()
+    constants = "|".join(GLOBAL_CONSTANTS_LIST)
+    
     part = rewrite_int(exp, variables)
     part = ', '.join(part.split())
     

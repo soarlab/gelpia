@@ -166,7 +166,13 @@ def main():
     IU.log(1, IU.cyan("Rust: ") + function)
     IU.log(1, IU.cyan("Domain: ") + inputs)
     IU.log(1, IU.cyan("Variables: ") + ", ".join(names))
-
+    IU.log(1, IU.cyan("Command: ") + str(" ".join([executable, '-c', constants,
+                 '-f', part,
+                 '-i', inputs,
+                 "-x", arg_dict["input_epsilon"],
+                  "-y", arg_dict["output_epsilon"],
+                 "-n", ",".join(names),
+                 "-d" if arg_dict["debug"] else ""])))
     # Use try so that we can catch control-c easily
     try:
         start = T.time()
@@ -178,7 +184,6 @@ def main():
                   "-y", arg_dict["output_epsilon"],
                  "-n", ",".join(names),
                  "-d" if arg_dict["debug"] else ""]) # If a debug run
-
     finally:
         end = T.time()
 
