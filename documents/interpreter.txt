@@ -11,7 +11,7 @@ inst : "c" [0-9]+
 
 op   : "+" | "-" | "*" | "/" | "p"
 
-func : "abs" | "cos" | "exp" | "log" | "neg" | "sin" | "tan"
+func : "abs" | "cos" | "exp" | "log" | "neg" | "sin" | "tan" | "sqrt"
 
 Instructions sequences are written in RPN. The behavior of each operation is
 described below.
