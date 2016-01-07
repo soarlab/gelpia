@@ -54,8 +54,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         if sync.load(Ordering::Acquire) {
             // Ugly: Update the update thread's view of the best branch bound.
             *f_best_shared.write().unwrap() = f_best_low;
-            b1.wait();
-            b2.wait();
+            b1.wait();                                                           // Dead lock here
+            b2.wait();                                                           // Dead lock here?
         }
         // Take q as writable during an iteration
         let mut q = q.write().unwrap();
@@ -124,15 +124,28 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
           f_best_shared: Arc<RwLock<Flt>>,
           stop: Arc<AtomicBool>, sync: Arc<AtomicBool>,
           b1: Arc<Barrier>, b2: Arc<Barrier>,
-          duration: u32, f: FuncObj) {
+          duration: u32, f: FuncObj,
+          timeout: u32) {  
+    let start = time::get_time();
+
     while !stop.load(Ordering::Acquire) {
+        // Rewrite this so that the timing code is finer by checking for
+        // whether the next scheduled event should be executed, e.g., the time
+        // or update operation.
+        
         // Timer code...
         thread::sleep_ms(duration);
+        if timeout > 0 && time::get_time().sec - start.sec >= timeout as i64
+            && !stop.load(Ordering::Acquire) { // Check if we've already stopped
+                writeln!(&mut std::io::stderr(), "Stopping early...");
+                stop.store(true, Ordering::Release);
+            }
+        
         // Signal EA and IBBA threads.
         sync.store(true, Ordering::Release);
 
         // Wait for EA and IBBA threads to stop.
-        b1.wait();
+        b1.wait();                                                               // Dead lock here?
         // Do update bizness.
         let mut q_u = q.write().unwrap();
         let mut q = Vec::new();
@@ -181,7 +194,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         sync.store(false, Ordering::SeqCst);
         
         // Resume EA and IBBA threads.
-        b2.wait();
+        b2.wait();                                                               // Dead lock here?
     }
 }
 
@@ -305,19 +318,11 @@ fn main() {
         let b1 = b1.clone();
         let b2 = b2.clone();
         let fo_c = fo.clone();
+        let to = args.timeout.clone();
         thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(q, population, f_best_shared,
-                   stop, sync, b1, b2, 10000, fo_c)
+                   stop, sync, b1, b2, 10000, fo_c, to)
         })};
-
-    let timeout_thread =
-    {
-        let stop = stop.clone();
-        let to = args.timeout.clone();
-        thread::Builder::new().name("Timeout".to_string()).spawn(move || {
-            timeout(stop, to);
-        })
-    };
 
     let result = ibba_thread.unwrap().join();
     ea_thread.unwrap().join();
