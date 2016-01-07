@@ -139,6 +139,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             && !stop.load(Ordering::Acquire) { // Check if we've already stopped
                 writeln!(&mut std::io::stderr(), "Stopping early...");
                 stop.store(true, Ordering::Release);
+                break;
             }
         
         // Signal EA and IBBA threads.
@@ -212,24 +213,6 @@ fn project(p: &mut Individual, x_c: &Vec<GI>, f: FuncObj) {
     }
     p.fitness = f.call(&p.solution).lower();
 }
-
-
-// stop is used to signal the other threads to stop
-// timeout is the timeout time in seconds. 0 means no timeout
-fn timeout(stop: Arc<AtomicBool>, timeout: u32) {
-    let start = time::get_time();
-    
-    if timeout > 0 {
-        while time::get_time().sec - start.sec < timeout as i64 {
-            std::thread::sleep_ms(timeout*1000);
-        } // guard agains spurious wakes.
-        if !stop.load(Ordering::Acquire) { // Check if we've already stopped
-            writeln!(&mut std::io::stderr(), "Stopping early...");
-            stop.store(true, Ordering::Release);
-        }
-    }
-}
-
 
 fn main() {
     let args = process_args();
