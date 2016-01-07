@@ -83,6 +83,11 @@ def parse_args():
     parser.add_argument("-d", "--debug",
                         help="Debug run of function. Makes the minimum verbosity "
                         "level one. Runs a debug build of gelpia, with backtrace enabled.", action="store_true")
+
+    parser.add_argument("-t", "--timeout",
+                        help="Timeout for execution in seconds.",
+                        default=0)
+                        
     # actually parse
     args = parser.parse_args()
     # set verbosity level
@@ -96,7 +101,8 @@ def parse_args():
             "output_epsilon" : str(args.output_epsilon),
             "input"          : args.input,
             "function"       : function,
-            "debug"          : args.debug}
+            "debug"          : args.debug,
+            "timeout"        : str(args.timeout)}
 
 
 def write_function_source(filename, function, variables):
@@ -172,6 +178,7 @@ def main():
                  "-x", arg_dict["input_epsilon"],
                   "-y", arg_dict["output_epsilon"],
                  "-n", ",".join(names),
+                 "-t", arg_dict["timeout"],
                  "-d" if arg_dict["debug"] else ""])))
     # Use try so that we can catch control-c easily
     try:
@@ -183,6 +190,7 @@ def main():
                  "-x", arg_dict["input_epsilon"],
                   "-y", arg_dict["output_epsilon"],
                  "-n", ",".join(names),
+                 "-t", arg_dict["timeout"],
                  "-d" if arg_dict["debug"] else ""]) # If a debug run
     finally:
         end = T.time()

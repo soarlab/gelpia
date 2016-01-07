@@ -25,7 +25,7 @@ pub struct Args {
     pub function: FuncObj,
     pub x_error: f64,
     pub y_error: f64,
-    pub timeout: f64,
+    pub timeout: u32,
     pub iters: u64,
     pub names: Vec<String>,
 }
@@ -55,7 +55,6 @@ pub fn process_args() -> Args {
     opts.optopt("m", "max_iters", "", "");
     opts.reqopt("n", "names", "", "");
     
-    
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {panic!(f.to_string())}
@@ -67,9 +66,16 @@ pub fn process_args() -> Args {
     
     let x_0 = proc_consts(&input_string.to_string());
     let fo = FuncObj::new(&proc_consts(&const_string.to_string()),
-                              &func_string.to_string(), matches.opt_present("d"));
+                          &func_string.to_string(), matches.opt_present("d"));
+
+    let mut to = 0 as u32;
+
+    if matches.opt_present("t") {
+        to = matches.opt_str("t").unwrap().parse::<u32>().unwrap();
+    }
+    
     let names = proc_names(&name_string);
     Args{domain: x_0, function: fo, x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
-         y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), timeout: 0.0, iters: 0,
+         y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), timeout: to, iters: 0,
          names: names}
 }

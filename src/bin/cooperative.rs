@@ -3,6 +3,7 @@
 // Demo program for cooperative interval branch and bound algorithm.
 
 use std::collections::BinaryHeap;
+use std::io::Write;
 
 extern crate rand;
 
@@ -30,6 +31,10 @@ use function::FuncObj;
 extern crate args;
 use args::{process_args};
 
+extern crate time;
+
+// Returns the upper bound, the domain where this bound occurs and a status
+// flag indicating whether the answer is complete for the problem.
 fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, 
         f_bestag: Arc<RwLock<Flt>>, 
         f_best_shared: Arc<RwLock<Flt>>,
@@ -38,14 +43,14 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         q: Arc<RwLock<BinaryHeap<Quple>>>, 
         sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
         f: FuncObj) 
-        -> (Flt, Vec<GI>) {
+        -> (Flt, Vec<GI>, bool) {
     let mut f_best_high = NINF;
     let mut f_best_low  = NINF;
     let mut best_x = x_0.clone();
 
     let mut i: u32 = 0;
     q.write().unwrap().push(Quple{p: INF, pf: i, data: x_0.clone()});
-    while q.read().unwrap().len() != 0 {
+    while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
         if sync.load(Ordering::Acquire) {
             // Ugly: Update the update thread's view of the best branch bound.
             *f_best_shared.write().unwrap() = f_best_low;
@@ -93,9 +98,17 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
             }
         }
     }
-    // Tell GA thread to stop
-    stop.store(true, Ordering::Release);
-    (f_best_high, best_x)
+    println!("Stopped IBBA");
+    if !stop.load(Ordering::Acquire) {
+        // Exiting normally
+        // Tell GA thread to stop
+        stop.store(true, Ordering::Release);
+        (f_best_high, best_x, true)
+    }
+    else {
+        // Exiting by some other condition
+        (f_best_high, best_x, false)
+    }
 }
 
 fn distance(p: &Vec<GI>, x: &Vec<GI>) -> Flt {
@@ -171,6 +184,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         // Resume EA and IBBA threads.
         b2.wait();
     }
+    println!("Update exiting");
 }
 
 /* Projects the box x into the box x_c */
@@ -187,6 +201,24 @@ fn project(p: &mut Individual, x_c: &Vec<GI>, f: FuncObj) {
     }
     p.fitness = f.call(&p.solution).lower();
 }
+
+
+// stop is used to signal the other threads to stop
+// timeout is the timeout time in seconds. 0 means no timeout
+fn timeout(stop: Arc<AtomicBool>, timeout: u32) {
+    let start = time::get_time();
+    
+    if timeout > 0 {
+        while time::get_time().sec - start.sec < timeout as i64 {
+            std::thread::sleep_ms(timeout*1000);
+        } // guard agains spurious wakes.
+        if !stop.load(Ordering::Acquire) { // Check if we've already stopped
+            writeln!(&mut std::io::stderr(), "Stopping early...");
+            stop.store(true, Ordering::Release);
+        }
+    }
+}
+
 
 fn main() {
     let args = process_args();
@@ -280,11 +312,35 @@ fn main() {
                    stop, sync, b1, b2, 10000, fo_c)
         })};
 
+    let timeout_thread =
+    {
+        let stop = stop.clone();
+        let to = args.timeout.clone();
+        thread::Builder::new().name("Timeout".to_string()).spawn(move || {
+            timeout(stop, to);
+        })
+    };
+
     let result = ibba_thread.unwrap().join();
     ea_thread.unwrap().join();
+    
     // Join EA and Update here pending stop signaling.
     if result.is_ok() {
-        let (max, interval) = result.unwrap();
+        let (mut max, mut interval, completed) = result.unwrap();
+        if !completed {
+            // Go through all remaining intervals from IBBA to find the true
+            // max
+            let mut lq = q.write().unwrap();
+            while lq.len() != 0 {
+                let v = lq.pop().unwrap();
+                let ref l_data = &v.data;
+                let ub = fo.call(l_data).upper();
+                if ub > max {
+                    max = ub;
+                    interval =v.data.clone();
+                }
+            }
+        }
         println!("[{}, {{", max);
         for i in 0..args.names.len() {
             println!("'{}' : {},", args.names[i], interval[i].to_string());
