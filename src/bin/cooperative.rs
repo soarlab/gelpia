@@ -98,7 +98,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
             }
         }
     }
-    println!("Stopped IBBA");
     if !stop.load(Ordering::Acquire) {
         // Exiting normally
         // Tell GA thread to stop
@@ -184,7 +183,6 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         // Resume EA and IBBA threads.
         b2.wait();
     }
-    println!("Update exiting");
 }
 
 /* Projects the box x into the box x_c */
