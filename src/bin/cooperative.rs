@@ -302,9 +302,10 @@ fn main() {
         let b2 = b2.clone();
         let fo_c = fo.clone();
         let to = args.timeout.clone();
+        let ui = args.update_interval.clone();
         thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(q, population, f_best_shared,
-                   stop, sync, b1, b2, 10000, fo_c, to)
+                   stop, sync, b1, b2, ui*1000, fo_c, to)
         })};
 
     let result = ibba_thread.unwrap().join();

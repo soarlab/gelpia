@@ -87,6 +87,10 @@ def parse_args():
     parser.add_argument("-t", "--timeout",
                         help="Timeout for execution in seconds.",
                         default=0)
+
+    parser.add_argument("-u", "--update",
+                        help="Time between update thread executions.",
+                        default=0)
                         
     # actually parse
     args = parser.parse_args()
@@ -102,7 +106,8 @@ def parse_args():
             "input"          : args.input,
             "function"       : function,
             "debug"          : args.debug,
-            "timeout"        : str(args.timeout)}
+            "timeout"        : str(args.timeout),
+            "update"         : str(args.update)}
 
 
 def write_function_source(filename, function, variables):
@@ -179,6 +184,7 @@ def main():
                   "-y", arg_dict["output_epsilon"],
                  "-n", ",".join(names),
                  "-t", arg_dict["timeout"],
+                 "-u", arg_dict["update"],
                  "-d" if arg_dict["debug"] else ""])))
     # Use try so that we can catch control-c easily
     try:
@@ -191,6 +197,7 @@ def main():
                   "-y", arg_dict["output_epsilon"],
                  "-n", ",".join(names),
                  "-t", arg_dict["timeout"],
+                 "-u", arg_dict["update"],
                  "-d" if arg_dict["debug"] else ""]) # If a debug run
     finally:
         end = T.time()
