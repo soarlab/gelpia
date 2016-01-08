@@ -64,7 +64,7 @@ pub struct FuncObj {
 unsafe impl Sync for FuncObj {}
 unsafe impl Send for FuncObj {}
 fn dummy(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {
-    GI::new_c("1.0")
+    GI::new_c("1.0").unwrap()
 }
 
 impl FuncObj {
@@ -190,7 +190,7 @@ impl FuncObj {
         if debug {
             process.arg("debug");
         }
-        let ignore = process.output().unwrap_or_else(|e| {panic!("Could not compile: {}", e)});
+        let ignore = process.arg("libfunc.so").output().unwrap_or_else(|e| {panic!("Could not compile: {}", e)});
         if !ignore.status.success() {                                           
             panic!("Could not compile: {}\n----\n{}", String::from_utf8(ignore.stdout).unwrap(),
                    String::from_utf8(ignore.stderr).unwrap());                  

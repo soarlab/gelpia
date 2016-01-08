@@ -15,7 +15,7 @@ fn proc_consts(consts: &String) -> Vec<GI> {
         if inst == "" {
             continue;
         }
-        result.push(GI::new_c(inst));
+        result.push(GI::new_c(inst).unwrap());
     }
     result
 }

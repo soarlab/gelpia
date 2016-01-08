@@ -16,15 +16,30 @@ static_assert(alignof(interval) == alignof(gaol_int),
 	      "Alignment of punned type gaol_int does not match alignment of interval.");
 
 void make_interval_dd(double inf, double sup, gaol_int* out) {
-  TO_INTERVAL(out) = interval(inf, sup);
+    TO_INTERVAL(out) = interval(inf, sup);
 }
 
-void make_interval_ss(const char* inf, const char* sup, gaol_int* out) {
-  TO_INTERVAL(out) = interval(inf, sup);
+// These Gaol functions my throw. Exceptions must be caught here since Rust
+// has no mechanism for handling these.
+
+void make_interval_ss(const char* inf, const char* sup, gaol_int* out, char* success) {
+  try {
+    TO_INTERVAL(out) = interval(inf, sup);
+    *success = 1;
+  }
+  catch(...) {
+    *success = 0;
+  }
 }
 
-void make_interval_s(const char* in, gaol_int* out) {
-  TO_INTERVAL(out) = interval(in);
+void make_interval_s(const char* in, gaol_int* out, char* success) {
+  try {
+    TO_INTERVAL(out) = interval(in);
+    *success = 1;
+  }
+  catch(...) {
+    *success = 0;
+  }
 }
 
 void make_interval_i(const gaol_int* in, gaol_int* out) {

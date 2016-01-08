@@ -9,8 +9,8 @@ extern "C" {
   typedef struct gaol_int {__m128 data;} gaol_int;
 
   void make_interval_dd(double, double, gaol_int*);
-  void make_interval_ss(const char*, const char*, gaol_int*);
-  void make_interval_s(const char*, gaol_int*);
+  void make_interval_ss(const char*, const char*, gaol_int*, char*);
+  void make_interval_s(const char*, gaol_int*, char*);
   void make_interval_i(gaol_int, gaol_int*);
   gaol_int make_interval_e();
   //  void del_int(gaol_int); 

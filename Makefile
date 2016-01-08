@@ -5,7 +5,7 @@ export CPLUS_INCLUDE_PATH := ${CPLUS_INCLUDE_PATH}:$(CURDIR)/requirements/includ
 export LIBRARY_PATH := ${LIBRARY_PATH}:$(CURDIR)/requirements/lib
 
 
-all: libfunc.so bin/gelpia
+all: bin/gelpia
 	@cargo build --release
 
 debug: bin/gelpia

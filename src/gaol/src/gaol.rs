@@ -36,10 +36,12 @@ extern {
     fn make_interval_dd(a: c_double, b: c_double, out: *mut gaol_int);
     // Constructs an interval from two strings
     fn make_interval_ss(inf: *const c_char,
-                        sup: *const c_char, out: *mut gaol_int);
+                        sup: *const c_char,
+                        out: *mut gaol_int, success: *mut c_char);
     // Constructs an interval from one string, using the single string 
     // constructor. See the GAOL documentation.
-    fn make_interval_s(x: *const c_char, out: *mut gaol_int);
+    fn make_interval_s(x: *const c_char, out: *mut gaol_int,
+                       success: *mut c_char);
     // Creates a clone of a GAOL interval
     fn make_interval_i(x: *const gaol_int, out: *mut gaol_int);
     
@@ -150,24 +152,36 @@ impl GI {
         result
     }
 
-    pub fn new_c(x: &str) -> GI{
+    pub fn new_c(x: &str) -> Result<GI, &'static str> {
         let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut success = 1 as i8;
         unsafe {
             let _g = RWLOCK.lock().unwrap();
-            make_interval_s(CString::new(x).unwrap().as_ptr(), &mut result.data)
+            make_interval_s(CString::new(x).unwrap().as_ptr(), &mut result.data, &mut success)
         };
-        result 
+        if success == 1{
+            Ok(result)
+        }
+        else {
+            Err("Error evaluating expression")
+        }
     }
     
-    pub fn new_ss(inf: &str, sup: &str) -> GI {
+    pub fn new_ss(inf: &str, sup: &str) -> Result<GI, &'static str> {
         let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut success = 1 as i8;
         unsafe {
             let _g = RWLOCK.lock().unwrap();
             make_interval_ss(CString::new(inf).unwrap().as_ptr(),
                              CString::new(sup).unwrap().as_ptr(),
-                             &mut result.data)
+                             &mut result.data, &mut success)
         };
-        result
+        if success == 1 {
+            Ok(result)
+        }
+        else {
+            Err("Error evaluating expression")
+        }
     }
 
     pub fn new_e() -> GI {
