@@ -152,7 +152,7 @@ impl GI {
         result
     }
 
-    pub fn new_c(x: &str) -> Result<GI, &'static str> {
+    pub fn new_c(x: &str) -> Result<GI, String> {
         let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         let mut success = 1 as i8;
         unsafe {
@@ -163,11 +163,11 @@ impl GI {
             Ok(result)
         }
         else {
-            Err("Error evaluating expression")
+            Err(format!("Error evaluating expression: {}", x))
         }
     }
     
-    pub fn new_ss(inf: &str, sup: &str) -> Result<GI, &'static str> {
+    pub fn new_ss(inf: &str, sup: &str) -> Result<GI, String> {
         let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
         let mut success = 1 as i8;
         unsafe {
@@ -180,7 +180,7 @@ impl GI {
             Ok(result)
         }
         else {
-            Err("Error evaluating expression")
+            Err(format!("Error evaluating expression: {}, {}", inf, sup))
         }
     }
 
