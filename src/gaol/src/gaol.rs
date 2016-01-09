@@ -1,6 +1,4 @@
 #![feature(static_mutex)]
-#![feature(core)]
-#![feature(std_misc)]
 #![feature(core_simd)]
 #![feature(float_extras)]
 
@@ -10,17 +8,20 @@ use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
 use std::mem;
-use std::simd;
+//use std::simd;
+extern crate simd;
 
 use std::sync::{StaticMutex, MUTEX_INIT};
 
 static RWLOCK: StaticMutex = MUTEX_INIT;
 
+pub type c_interval = simd::x86::sse2::f64x2;
+
 // Structure holding a GAOL interval.
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct gaol_int {
-    pub data: std::simd::f64x2
+    pub data: c_interval
 }
 
 // Functions exported from the C GAOL wrapper.
@@ -147,13 +148,13 @@ pub struct GI {
 
 impl GI {
     pub fn new_d(inf: f64, sup: f64) -> GI {
-        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
         unsafe{make_interval_dd(inf as c_double, sup as c_double, &mut result.data)};
         result
     }
 
     pub fn new_c(x: &str) -> Result<GI, String> {
-        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
         let mut success = 1 as i8;
         unsafe {
             let _g = RWLOCK.lock().unwrap();
@@ -168,7 +169,7 @@ impl GI {
     }
     
     pub fn new_ss(inf: &str, sup: &str) -> Result<GI, String> {
-        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
         let mut success = 1 as i8;
         unsafe {
             let _g = RWLOCK.lock().unwrap();
@@ -272,7 +273,7 @@ impl GI {
 impl Add for GI {
     type Output = GI;
     fn add(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
         unsafe{add(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -281,7 +282,7 @@ impl Add for GI {
 impl Sub for GI {
     type Output = GI;
     fn sub(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
         unsafe{sub(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -290,7 +291,7 @@ impl Sub for GI {
 impl Mul for GI {
     type Output = GI;
     fn mul(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
         unsafe{mul(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -299,7 +300,7 @@ impl Mul for GI {
 impl Div for GI {
     type Output = GI;
     fn div(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
         unsafe{div_g(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -308,7 +309,7 @@ impl Div for GI {
 impl Neg for GI {
     type Output = GI;
     fn neg(self) -> Self {
-        let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
         unsafe{neg_g(&self.data, &mut result.data)};
         result
     }
@@ -330,55 +331,55 @@ impl ToString for GI {
 
 
 pub fn abs(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{abs_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn pow(base: GI, exp: i32) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{pow_ig(&base.data, exp, &mut result.data)};
     result
 }
 
 pub fn powi(base: GI, exp: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{pow_vg(&base.data, &exp.data, &mut result.data)};
     result
 }
 
 pub fn sin(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{sin_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn sqrt(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{sqrt_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn cos(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{cos_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn tan(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{tan_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn exp(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{exp_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn log(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: std::simd::f64x2(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: c_interval::new(0.0, 0.0)}};
     unsafe{log_g(&x.data, &mut result.data)};
     result
 }
@@ -387,7 +388,7 @@ pub fn eps_tol(widest: GI, tol: f64) -> bool {
     let (_,exp_x,_) = widest.lower().integer_decode();
     let (_,exp_y,_) = widest.upper().integer_decode();
     let exp = {if exp_x < exp_y {exp_y} else {exp_x}} as i64;
-    let mut wideste = ((exp+1023) << 52) & 0x7FF0000000000000;
+    let wideste = ((exp+1023) << 52) & 0x7FF0000000000000;
     let d: f64 = unsafe{mem::transmute(wideste)};
     let ww = widest.width();
     ww <= tol || ww <= d

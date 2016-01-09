@@ -12,6 +12,7 @@ fn main() {
         .flag("-march=native")
         .flag("-lgaol")
         .flag("-lgdtoa")
+        .flag("-lgaol")
         .flag("-lcrlibm")
         .file("src/gaol_wrap.cc")
         .compile("librustgaol.a");

@@ -21,7 +21,8 @@ path = "src/gaol"
 [dependencies]
 threadpool = "0.1"
 getopts = "0.2"
-rand = "0.3"
+#rand = "0.3"
+rand = { git = "https://github.com/rust-lang-nursery/rand.git" }
 time = "0.1"
 
 [dependencies.ga]

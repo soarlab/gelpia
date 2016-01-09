@@ -190,7 +190,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             }
         }
         // Restore the q for the ibba thread.
-        (*q_u) = BinaryHeap::from_vec(q);
+        (*q_u) = BinaryHeap::from(q);
         // Clear sync flag.
         sync.store(false, Ordering::SeqCst);
         

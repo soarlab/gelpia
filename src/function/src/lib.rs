@@ -2,7 +2,6 @@
 #![feature(convert)]
 #![feature(dynamic_lib)]
 #![feature(asm)]
-#![feature(core_simd)]
 #![feature(dynamic_lib)]
 use std::dynamic_lib::DynamicLibrary;
 use std::path::Path;
@@ -17,7 +16,7 @@ use gr::*;
 
 use std::sync::atomic::{AtomicBool, Ordering, AtomicPtr, AtomicUsize};
 use std::option::Option;
-use std::simd;
+
 use std::sync::{Arc, RwLock};
 use std::fmt;
 use std::io::Write;
@@ -74,7 +73,7 @@ impl FuncObj {
                 std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->GI,
                                                fn(&Vec<GI>, &Vec<GI>)->GI>(
                     (self.function.load(Ordering::Acquire)))(_x, &self.constants)};
-            let mut interim: std::simd::f64x2;
+            let mut interim: c_interval;
             // The compiler doesn't seem to be generating the code here to
             // retrieve the return value. This gets the result from the xmm0
             // register and returns it to the caller.
