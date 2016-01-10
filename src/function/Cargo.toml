@@ -9,3 +9,6 @@ path = "src/lib.rs"
 
 [dependencies.gr]
 path = "../.."
+
+[dependencies]
+dylib = "0.0.2"

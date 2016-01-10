@@ -1,7 +1,4 @@
-#![feature(collections)]
-#![feature(binary_heap_extras)]
-// Demo program for cooperative interval branch and bound algorithm.
-
+// Cooperative optimization solver
 use std::collections::BinaryHeap;
 use std::io::Write;
 
@@ -24,7 +21,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use std::thread;
 
-use std::thread::{sleep_ms};
+use std::time::Duration;
+
 extern crate function;
 use function::FuncObj;
 
@@ -124,7 +122,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
           f_best_shared: Arc<RwLock<Flt>>,
           stop: Arc<AtomicBool>, sync: Arc<AtomicBool>,
           b1: Arc<Barrier>, b2: Arc<Barrier>,
-          duration: u32, f: FuncObj,
+          upd_interval: u32, f: FuncObj,
           timeout: u32) {  
     let start = time::get_time();
 
@@ -134,8 +132,8 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         // or update operation.
         
         // Timer code...
-        thread::sleep_ms(duration);
-        if timeout > 0 && time::get_time().sec - start.sec >= timeout as i64
+        thread::sleep(Duration::new(upd_interval as u64, 0));
+        if timeout > 0 && (time::get_time() - start).num_seconds() >= timeout as i64
             && !stop.load(Ordering::Acquire) { // Check if we've already stopped
                 writeln!(&mut std::io::stderr(), "Stopping early...");
                 stop.store(true, Ordering::Release);
@@ -305,7 +303,7 @@ fn main() {
         let ui = args.update_interval.clone();
         thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(q, population, f_best_shared,
-                   stop, sync, b1, b2, ui*1000, fo_c, to)
+                   stop, sync, b1, b2, ui, fo_c, to)
         })};
 
     let result = ibba_thread.unwrap().join();

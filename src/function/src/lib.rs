@@ -1,26 +1,25 @@
-#![feature(str_split_at)]
 #![feature(convert)]
-#![feature(dynamic_lib)]
 #![feature(asm)]
-#![feature(dynamic_lib)]
-use std::dynamic_lib::DynamicLibrary;
+
+//use std::dynamic_lib::DynamicLibrary;
 use std::path::Path;
 use std::mem::transmute;
 
-use std::env;
 use std::process::Command;
 use std::thread;
 
 extern crate gr;
 use gr::*;
 
-use std::sync::atomic::{AtomicBool, Ordering, AtomicPtr, AtomicUsize};
+use std::sync::atomic::{AtomicBool, Ordering, AtomicPtr};
 use std::option::Option;
 
 use std::sync::{Arc, RwLock};
 use std::fmt;
 use std::io::Write;
 
+extern crate dylib;
+use dylib::DynamicLibrary;
 
 
 #[derive(Clone)]
@@ -73,7 +72,7 @@ impl FuncObj {
                 std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->GI,
                                                fn(&Vec<GI>, &Vec<GI>)->GI>(
                     (self.function.load(Ordering::Acquire)))(_x, &self.constants)};
-            let mut interim: c_interval;
+            let mut interim: CInterval;
             // The compiler doesn't seem to be generating the code here to
             // retrieve the return value. This gets the result from the xmm0
             // register and returns it to the caller.
