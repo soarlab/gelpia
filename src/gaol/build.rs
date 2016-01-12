@@ -10,10 +10,7 @@ fn main() {
         .flag("-O3")
         .flag("-std=c++11")
         .flag("-march=native")
-        .flag("-lgaol")
-        .flag("-lgdtoa")
-        .flag("-lgaol")
-        .flag("-lcrlibm")
+        .flag("-fno-lto")
         .file("src/gaol_wrap.cc")
         .compile("librustgaol.a");
 }
