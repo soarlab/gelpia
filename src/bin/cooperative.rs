@@ -1,7 +1,6 @@
 // Cooperative optimization solver
 use std::collections::BinaryHeap;
 use std::io::Write;
-
 extern crate rand;
 
 #[macro_use(max)]
@@ -122,24 +121,23 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
           f_best_shared: Arc<RwLock<Flt>>,
           stop: Arc<AtomicBool>, sync: Arc<AtomicBool>,
           b1: Arc<Barrier>, b2: Arc<Barrier>,
-          upd_interval: u32, f: FuncObj,
+          f: FuncObj,
+          upd_interval: u32,
           timeout: u32) {  
     let start = time::get_time();
 
-    while !stop.load(Ordering::Acquire) {
-        // Rewrite this so that the timing code is finer by checking for
-        // whether the next scheduled event should be executed, e.g., the time
-        // or update operation.
-        
+    'out: while !stop.load(Ordering::Acquire) {
         // Timer code...
-        thread::sleep(Duration::new(upd_interval as u64, 0));
-        if timeout > 0 && (time::get_time() - start).num_seconds() >= timeout as i64
-            && !stop.load(Ordering::Acquire) { // Check if we've already stopped
-                writeln!(&mut std::io::stderr(), "Stopping early...");
-                stop.store(true, Ordering::Release);
-                break;
-            }
-        
+        let mut last_update = time::get_time();
+        while (time::get_time() - last_update).num_seconds() <= upd_interval as i64 {
+            thread::sleep(Duration::new(1, 0));
+            if timeout > 0 && (time::get_time() - start).num_seconds() >= timeout as i64
+                && !stop.load(Ordering::Acquire) { // Check if we've already stopped
+                    writeln!(&mut std::io::stderr(), "Stopping early...");
+                    stop.store(true, Ordering::Release);
+                    break 'out;
+                }
+        }
         // Signal EA and IBBA threads.
         sync.store(true, Ordering::Release);
 
@@ -186,6 +184,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
                 // Project it back into the nearest current search space.
                 project(&mut pop[i], &x_c, f.clone());
             }
+            last_update = time::get_time();
         }
         // Restore the q for the ibba thread.
         (*q_u) = BinaryHeap::from(q);
@@ -303,7 +302,7 @@ fn main() {
         let ui = args.update_interval.clone();
         thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(q, population, f_best_shared,
-                   stop, sync, b1, b2, ui, fo_c, to)
+                   stop, sync, b1, b2, fo_c, ui, to)
         })};
 
     let result = ibba_thread.unwrap().join();
