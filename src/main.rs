@@ -101,7 +101,7 @@ fn main() {
 
     let args = proc_consts(&input_string.to_string());
     let mut fo = FuncObj::new(&proc_consts(&const_string.to_string()),
-                              &func_string.to_string(), false);
+                              &func_string.to_string(), false, "".to_string());
     
     // END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
 

@@ -10,7 +10,13 @@ import ast as AST
 import re as RE
 import sys as SYS
 import subprocess as SP
+import time
 
+def mk_file_hash(function):
+    h  = hash(function)
+    h *= hash(time.time())
+    h *= OS.getpid()
+    return hex(h % (1 << 48))[2:] # Trim 0x
 
 def parse_box2(box_string):
     #mark please comment this function
@@ -160,8 +166,10 @@ def main():
 
     inputs = ["[{}, {}]".format(x[0], x[1]) for x in start_box]
     inputs = "|".join(inputs)
+
+    file_id = mk_file_hash(arg_dict["function"])
     
-    with open(P.join(src_dir, "func/src/lib.rs"), 'w') as f:
+    with open(P.join(src_dir, "func/src/lib_" + file_id + ".rs"), 'w') as f:
         f.write(function)
     names = [None for i in range(len(variables))]
     for i in variables.keys():
@@ -172,38 +180,38 @@ def main():
         executable = './target/release/cooperative'
 
     # Log output
-        
+
+    command_base = [executable, '-c', constants,
+                    '-f', part,
+                    '-i', inputs,
+                    "-x", arg_dict["input_epsilon"],
+                    "-y", arg_dict["output_epsilon"],
+                    "-S", file_id, # Function file suffix
+                    "-n", ",".join(names),
+                    "-t", arg_dict["timeout"],
+                    "-u", arg_dict["update"],
+                    "-d" if arg_dict["debug"] else ""] # If a debug run
+    
     IU.log(1, IU.cyan("Interpreted: ") + part)
     IU.log(1, IU.cyan("Rust: ") + function)
     IU.log(1, IU.cyan("Domain: ") + inputs)
     IU.log(1, IU.cyan("Variables: ") + ", ".join(names))
-    IU.log(1, IU.cyan("Command: ") + str(" ".join([executable, '-c', constants,
-                 '-f', part,
-                 '-i', inputs,
-                 "-x", arg_dict["input_epsilon"],
-                  "-y", arg_dict["output_epsilon"],
-                 "-n", ",".join(names),
-                 "-t", arg_dict["timeout"],
-                 "-u", arg_dict["update"],
-                 "-d" if arg_dict["debug"] else ""])))
+    IU.log(1, IU.cyan("Command: ") + str(" ".join(command_base)))
     # Use try so that we can catch control-c easily
     try:
         start = T.time()
         IU.log(1, IU.cyan("Running"))
-        SP.call([executable, '-c', constants,
-                 '-f', part,
-                 '-i', inputs,
-                 "-x", arg_dict["input_epsilon"],
-                  "-y", arg_dict["output_epsilon"],
-                 "-n", ",".join(names),
-                 "-t", arg_dict["timeout"],
-                 "-u", arg_dict["update"],
-                 "-d" if arg_dict["debug"] else ""]) # If a debug run
+        SP.call(command_base) # If a debug run
     finally:
         end = T.time()
 
     IU.log(0, IU.green("Solver time: ")+str(end-start))
 
+    try:
+        OS.remove("src/func/src/lib_"+file_id+".rs")
+        OS.remove(".compiled/libfunc_"+file_id+".so")
+    except:
+        print("Could not delete temp files");
 
 
 if __name__ == "__main__":

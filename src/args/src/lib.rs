@@ -29,6 +29,7 @@ pub struct Args {
     pub update_interval: u32,
     pub iters: u64,
     pub names: Vec<String>,
+    pub func_suffix: String,
 }
 
 fn proc_names(names: &String) -> Vec<String> {
@@ -46,6 +47,7 @@ pub fn process_args() -> Args {
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
+    opts.reqopt("S", "func-suffix", "", "");
     opts.reqopt("c", "constants", "", "");
     opts.reqopt("f", "function", "", "");
     opts.reqopt("i", "input", "", "");
@@ -65,10 +67,12 @@ pub fn process_args() -> Args {
     let input_string = matches.opt_str("i").unwrap();
     let func_string = matches.opt_str("f").unwrap();
     let name_string = matches.opt_str("n").unwrap();
+    let func_suff = matches.opt_str("S").unwrap();
     
     let x_0 = proc_consts(&input_string.to_string());
     let fo = FuncObj::new(&proc_consts(&const_string.to_string()),
-                          &func_string.to_string(), matches.opt_present("d"));
+                          &func_string.to_string(), matches.opt_present("d"),
+                          func_suff.clone());
 
     let mut to = 0 as u32;
 
@@ -81,9 +85,10 @@ pub fn process_args() -> Args {
     if matches.opt_present("u") {
         ui = matches.opt_str("u").unwrap().parse::<u32>().unwrap();
     }
+
     
     let names = proc_names(&name_string);
     Args{domain: x_0, function: fo, x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
          y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), timeout: to, iters: 0,
-         names: names, update_interval: ui}
+         names: names, update_interval: ui, func_suffix: func_suff}
 }

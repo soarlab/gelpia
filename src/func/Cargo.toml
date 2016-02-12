@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>"]
 
 [lib]
-name = "func"
-path = "src/lib.rs"
+name = "func_fillin"
+path = "src/lib_fillin.rs"
 crate-type = ["dylib"]
 
 [dependencies.gr]

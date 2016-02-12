@@ -148,7 +148,7 @@ impl FuncObj {
         stack[0]
     }
 
-    pub fn new(consts: &Vec<GI>, instructions: &String, debug: bool) -> FuncObj {
+    pub fn new(consts: &Vec<GI>, instructions: &String, debug: bool, suffix: String) -> FuncObj {
         let mut insts = vec![];
        
         for inst in instructions.split(',') {
@@ -177,26 +177,31 @@ impl FuncObj {
         {
             let fo_c = result.clone();
             thread::spawn(move || {
-                &fo_c.compile(debug);
+                &fo_c.compile(debug, &suffix);
             })
         };
         result
     }
 
-    fn compile(&self, debug: bool) {
-        let mut process = Command::new("/usr/bin/make");
-        if debug {
-            process.arg("debug");
-        }
-        let ignore = process.arg("libfunc.so").output().unwrap_or_else(|e| {panic!("Could not compile: {}", e)});
+    fn compile(&self, debug: bool, suffix: &String) {
+        let mut process = Command::new("./build_func.sh");
+        // if debug {
+        //     process.arg("debug");
+        // }
+        let ignore = process.arg(suffix.clone()).output()
+            .unwrap_or_else(|e| {panic!("Could not compile: {}", e)});
+        
         if !ignore.status.success() {                                           
             panic!("Could not compile: {}\n----\n{}", String::from_utf8(ignore.stdout).unwrap(),
                    String::from_utf8(ignore.stderr).unwrap());                  
         }
 
-        DynamicLibrary::prepend_search_path(Path::new("./"));                  
-        let f = match DynamicLibrary::open(Some(Path::new("libfunc.so"))) {    
-            Ok(lib) => lib,                                                     
+        DynamicLibrary::prepend_search_path(Path::new("./.compiled"));
+        let dylib: String = "libfunc_".to_string()+ suffix + ".so".into();
+
+        let f = match DynamicLibrary::open(Some(Path::new(&dylib)))
+        {
+            Ok(lib) => lib,
             Err(err) => panic!("Could not load library: {}", err)
         };                                                                     
         let g = unsafe{match f.symbol("gelpia_func") {                         
