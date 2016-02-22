@@ -140,11 +140,29 @@ def main():
     full_dir = P.abspath(P.dirname(SYS.argv[0])) # Directory for this script
     base_dir = P.split(full_dir)[0] # One directory up
 
+    # Assuming PATH is always defined
+    OS.environ["PATH"] = OS.environ["PATH"] + ":" +  base_dir + "/requirements/bin"
+
     try:
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/requirements/lib"
     except KeyError:
         OS.environ["LD_LIBRARY_PATH"] = base_dir + "/requirements/lib"
+
+    try:
+        OS.environ["LIBRARY_PATH"] = OS.environ["LIBRARY_PATH"] + ":" +  base_dir + "/requirements/lib"
+    except KeyError:
+        OS.environ["LIBRARY_PATH"] = base_dir + "/requirements/lib"
     
+    try:
+        OS.environ["C_INCLUDE_PATH"] = OS.environ["C_INCLUDE_PATH"] + ":" +  base_dir + "/requirements/lib"
+    except KeyError:
+        OS.environ["C_INCLUDE_PATH"] = base_dir + "/requirements/lib"
+
+    try:
+        OS.environ["CPLUS_INCLUDE_PATH"] = OS.environ["CPLUS_INCLUDE_PATH"] + ":" +  base_dir + "/requirements/lib"
+    except KeyError:
+        OS.environ["CPLUS_INCLUDE_PATH"] = base_dir + "/requirements/lib"
+
     if arg_dict["debug"]:
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/src/func/target/debug/"
         OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/debug/deps"
