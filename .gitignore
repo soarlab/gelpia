@@ -12,4 +12,4 @@ requirements/lib
 requirements/share
 requirements/Sources
 
-bin/
+./bin/
