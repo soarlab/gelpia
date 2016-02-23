@@ -131,7 +131,8 @@ def make_X_0(box_list):
 
 def append_to_environ(pathname, addition):
     try:
-        OS.environ[pathname] += ":{}".format(addition)
+        OS.environ[pathname] = "{}:{}".format(addition,
+                                              OS.environ[pathname])
     except KeyError:
         OS.environ[pathname] = addition
 
