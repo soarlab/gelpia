@@ -48,7 +48,7 @@ def get_result(output):
 
 def get_expected(filename):
   with open(filename, 'r') as f:
-    match = re.search(r'\# *answer: *([^ \n]+)', f.read())
+    match = re.search(r'\#[ ]*answer:[ ]*([^ \n]+)', f.read())
     if match:
       return float(match.group(1))
     else:
