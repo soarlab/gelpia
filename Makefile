@@ -28,6 +28,7 @@ clean:
 	$(RM) libfunc.so 
 	$(RM) bin/*.py 
 	$(RM) bin/gelpia 
+	$(RM) bin/build_func.sh
 	$(RM) bin/parser.out
 	$(RM) -r  bin/__pycache__ 
 	cargo clean
