@@ -17,7 +17,7 @@ bin/gelpia: src/frontend/gelpia
 
 src/func/comp_comm.sh: src/func/src/lib_fillin.rs
 	@cd src/func/ && ./make_command
-	@mkdir .compiled
+	@mkdir -f .compiled
 
 .PHONY: clean
 clean:
