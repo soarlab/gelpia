@@ -73,7 +73,7 @@ def p_pair(t):
 def p_error(t):
     print("Syntax error at '{}'".format(t.value))
 
-parser = ply.yacc.yacc()
+parser = ply.yacc.yacc(debug=0, write_tables=0)
 
 def process(d):
     return parser.parse(d)
