@@ -8,11 +8,8 @@ export LIBRARY_PATH := $(CURDIR)/requirements/lib:${LIBRARY_PATH}
 all: bin/gelpia src/func/comp_comm.sh
 	@cargo build --release
 
-debug: bin/gelpia
+debug: bin/gelpia src/func/comp_comm.sh
 	@cargo build
-	@cd src/func && cargo build
-	@cp src/func/target/debug/libfunc.so ./
-
 
 bin/gelpia: src/frontend/gelpia
 	@cp src/frontend/*.py bin
@@ -24,8 +21,27 @@ src/func/comp_comm.sh: src/func/src/lib_fillin.rs
 
 .PHONY: clean
 clean:
-	@rm -fr libfunc.so bin/*.py bin/gelpia bin/__pycache__ bin/parser.out
-	@cargo clean
-	@rm -fr .compiled
-	@rm -f src/func/comp_comm.sh
-	@cd src/func && cargo clean
+	$(RM) libfunc.so 
+	$(RM) bin/*.py 
+	$(RM) bin/gelpia 
+	$(RM) bin/parser.out
+	$(RM) -r  bin/__pycache__ 
+	cargo clean
+	$(RM) -r .compiled
+	$(RM) src/func/comp_comm.sh
+	cd src/func && cargo clean
+
+
+.PHONY: requirements
+requirements: requirements/build.sh
+	cd requirements && ./build.sh
+
+
+.PHONY: clean-requirements
+clean-requirements:
+	$(RM) -r requirements/bin
+	$(RM) -r requirements/etc
+	$(RM) -r requirements/include
+	$(RM) -r requirements/lib
+	$(RM) -r requirements/share
+	$(RM) -r requirements/Sources

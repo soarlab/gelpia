@@ -4,3 +4,12 @@
 __pycache__
 src/func/src/lib.rs
 **/target/**
+
+requirements/bin
+requirements/etc
+requirements/include
+requirements/lib
+requirements/share
+requirements/Sources
+
+bin/
