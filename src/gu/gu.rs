@@ -60,6 +60,7 @@ pub struct Quple {
     pub p: Flt,
     pub pf: u32,
     pub data: Vec<GI>,
+    pub fdata: GI
 }
 // Allow ordering of Quples
 impl PartialEq for Quple {

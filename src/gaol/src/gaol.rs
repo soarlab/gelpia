@@ -306,6 +306,7 @@ impl GI {
     pub fn width(&self) -> f64 {
         unsafe{width_g(&self.data) as f64}
     }
+
 }
 
 
@@ -433,6 +434,20 @@ pub fn eps_tol(widest: GI, tol: f64) -> bool {
     ww <= tol || ww <= d
 }
 
+pub fn widest_index(_x: &Vec<GI>) -> usize {
+    let mut w = NINF;
+    let mut w_index = 0;
+    for i in 0.._x.len() {
+        let wid = _x[i].width();
+        if wid > w {
+            w = wid;
+            w_index = i;
+        }
+    }  
+    w_index
+}
+
+
 pub fn width_box(_x: &Vec<GI>, tol: f64) -> bool {
     let mut w = NINF;
     let mut widest = GI::new_e();
@@ -454,9 +469,19 @@ pub fn midpoint_box(_x: &Vec<GI>) -> Vec<GI> {
     result
 }
 
+fn get_next_binade(current: f64) 
+                   -> f64 {
+    let float_bits: u64 = unsafe{mem::transmute(current)};
+    let osign = float_bits >> 63;
+    let oexp = (float_bits >> 52) & 0x7FF;
+    let sign = if oexp==0 && osign==1 { 0 } else { osign };
+    let exp = if sign==1 { oexp-1 } else { oexp+1 };
+    let bin = (sign << 63) | (exp << 52);
+    let d: f64 = unsafe{mem::transmute(bin)};
+    d
+}
+
 pub fn split_box(_x: &Vec<GI>) -> Vec<Vec<GI>> {
-    let mut a = _x.clone();
-    let mut b = _x.clone();
     let mut w = NINF;
     let mut w_ind: usize = 0;
     for i in 0.._x.len() {
@@ -467,7 +492,15 @@ pub fn split_box(_x: &Vec<GI>) -> Vec<Vec<GI>> {
         }
     }
     
-    _x[w_ind].split(&mut a[w_ind], &mut b[w_ind]);
+    let mut a = _x.clone();
+    let mut b = _x.clone();
+    let nb = get_next_binade(_x[w_ind].lower());
+    if nb < _x[w_ind].upper() {
+        a[w_ind] = GI::new_d(_x[w_ind].lower(), nb);
+        b[w_ind] = GI::new_d(nb, _x[w_ind].upper());
+    } else {
+        _x[w_ind].split(&mut a[w_ind], &mut b[w_ind]);
+    }
     
     vec![a, b]
 }

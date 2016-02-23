@@ -45,28 +45,28 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
     let mut f_best_low  = NINF;
     let mut best_x = x_0.clone();
 
-    let mut i: u32 = 0;
-    q.write().unwrap().push(Quple{p: INF, pf: i, data: x_0.clone()});
+    let mut i: u32 = 0;//binade_presplit(&f, &q, &x_0, e_x);
+    q.write().unwrap().push(Quple{p: INF, pf: 0, data: x_0.clone(), fdata: f.call(&x_0)});
+
     while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
         if sync.load(Ordering::Acquire) {
             // Ugly: Update the update thread's view of the best branch bound.
             *f_best_shared.write().unwrap() = f_best_low;
-            b1.wait();                                                           // Dead lock here
-            b2.wait();                                                           // Dead lock here?
+            b1.wait();
+            b2.wait();
         }
         // Take q as writable during an iteration
         let mut q = q.write().unwrap();
 
         f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
-        let v = q.pop();
-        let (ref x, e_fx) =
-            match v {
-                Some(y) => (y.data, y.p),
-                None    => panic!("wtf")
+
+        let (ref x, fx) = 
+            match q.pop() {
+                Some(y) => (y.data, y.fdata),
+                None    => unreachable!()
             };
-//        let xw = width_box(x);
-        let fx = f.call(x);
-//        let fw = fx.width();
+
+        //let fx = f.call(x);
 
         if fx.upper() < f_best_low ||
             width_box(x, e_x) ||
@@ -82,16 +82,17 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
             for sx in x_s {
                 let mid = midpoint_box(&sx);
                 let est_m = f.call(&mid);
-                let est_i = f.call(&sx);
-                let est_max = max!(est_m.lower(), est_i.lower());
-                if f_best_low < est_max  {
-                    f_best_low = est_max;
+                let fsx = f.call(&sx);
+                let est_max = if est_m.lower() > fsx.lower() {est_m} else {fsx};
+                if f_best_low < est_max.lower()  {
+                    f_best_low = est_max.lower();
                     *x_bestbb.write().unwrap() = sx.clone();
                 }
                 i += 1;
-                q.push(Quple{p: est_i.lower(),
+                q.push(Quple{p: est_max.upper(),
                              pf: i,
-                             data: sx});
+                             data: sx,
+                             fdata: fsx});
             }
         }
     }
@@ -176,7 +177,8 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
                 let fp = f.call(&pop[i].solution).lower();
                 if px < fp {
                     q[j] = Quple{p: fp, pf: q[j].pf, 
-                                 data: q[j].data.clone()}.clone();
+                                 data: q[j].data.clone(),
+                                 fdata: q[j].fdata }.clone();
                 }
             }
             else {

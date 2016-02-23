@@ -28,17 +28,17 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
     let mut q = BinaryHeap::new();
     let mut i: u32 = 0;
 
-    q.push(Quple{p: INF, pf: i, data: x_0.clone()});
+    q.push(Quple{p: INF, pf: i, data: x_0.clone(), fdata: f.call(x_0)});
     while q.len() != 0 {
         let v = q.pop();
-        let ref x =
+        let (ref x, fx) =
             match v {
-                Some(y) => y.data,
+                Some(y) => (y.data, y.fdata),
                 None => panic!("wtf")
             };
 
 //        let xw = width_box(x);
-        let fx = f.call(x);
+        //let fx = f.call(x);
 //        let fw = fx.width();
 
         if fx.upper() < f_best_low ||
@@ -61,7 +61,8 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
                 i += 1;
                 q.push(Quple{p: est.upper(),
                              pf: i,
-                             data: sx});
+                             data: sx.clone(),
+                             fdata: f.call(&sx)});
             }
         }
     }
@@ -100,7 +101,7 @@ fn main() {
     let func_string = matches.opt_str("f").unwrap();
 
     let args = proc_consts(&input_string.to_string());
-    let mut fo = FuncObj::new(&proc_consts(&const_string.to_string()),
+    let fo = FuncObj::new(&proc_consts(&const_string.to_string()),
                               &func_string.to_string(), false, "".to_string());
     
     // END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK

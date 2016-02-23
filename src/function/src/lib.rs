@@ -1,4 +1,3 @@
-#![feature(convert)]
 #![feature(asm)]
 
 //use std::dynamic_lib::DynamicLibrary;
