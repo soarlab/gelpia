@@ -25,6 +25,7 @@ def make_constant(exp):
     exp[1] = i
     del exp[2:]
 
+
 def lift_constants(exp):
     ''' Given an expression, recursively lifts constants from the expression,
     coalescing neighboring constants. Mutates the expression and returns True
@@ -57,7 +58,6 @@ def lift_constants(exp):
 
     print("Error constant lifting '{}'".format(exp))
     SYS.exit(-1)
-
 
 
 def runmain():

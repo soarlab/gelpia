@@ -5,29 +5,32 @@ export CPLUS_INCLUDE_PATH := $(CURDIR)/requirements/include:${CPLUS_INCLUDE_PATH
 export LIBRARY_PATH := $(CURDIR)/requirements/lib:${LIBRARY_PATH}
 
 
-all: bin/gelpia src/func/comp_comm.sh
+all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh
 	@cargo build --release
-
-debug: bin/gelpia src/func/comp_comm.sh
 	@cargo build
 
-bin/gelpia: src/frontend/gelpia
+bin/build_func.sh: src/scripts/build_func.sh
+	@cp src/scripts/build_func.sh bin/
+	@chmod +x bin/build_func.sh
+
+bin/gelpia: src/frontend/gelpia src/frontend/*.py
 	@cp src/frontend/*.py bin
 	@cp src/frontend/gelpia bin
+	@chmod +x bin/gelpia
 
 src/func/comp_comm.sh: src/func/src/lib_fillin.rs
 	@cd src/func/ && ./make_command
-	@mkdir -f .compiled
+	@mkdir -p .compiled
 
 .PHONY: clean
 clean:
+	$(RM) src/func/src/lib_generated_*
 	$(RM) libfunc.so 
 	$(RM) bin/*.py 
 	$(RM) bin/gelpia 
 	$(RM) bin/parser.out
 	$(RM) -r  bin/__pycache__ 
 	cargo clean
-	$(RM) -r .compiled
 	$(RM) src/func/comp_comm.sh
 	cd src/func && cargo clean
 

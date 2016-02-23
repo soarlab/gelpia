@@ -14,7 +14,7 @@ prefix_unary_functions = [
     'log',
     'sin',
     'tan',
-    'sqrt'
+    'sqrt',
 ]
 
 tokens = [

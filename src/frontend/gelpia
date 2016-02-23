@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 
-import ian_utils as IU
 import argparse as AP
 import time as T
 import sys as SYS
-import os.path as P
 import os as OS
+import os.path as PATH
 import ast as AST
 import re as RE
 import sys as SYS
 import subprocess as SP
-import time
+import collections as COL
+
+import ian_utils as IU
+
 
 def mk_file_hash(function):
     h  = hash(function)
-    h *= hash(time.time())
+    h *= hash(T.time())
     h *= OS.getpid()
     return hex(h % (1 << 48))[2:] # Trim 0x
+
 
 def parse_box2(box_string):
     #mark please comment this function
@@ -28,7 +31,7 @@ def parse_box2(box_string):
     # box_string = RE.sub(interval_re,
     #                     lambda m: '("{}", "{}")'.format(m.group(1), m.group(3)),
     #                     box_string[0])
-    python_box = AST.literal_eval(box_string)
+    python_box = COL.OrderedDict(sorted(AST.literal_eval(box_string).items(), key=lambda t: t[0]))
     variables = dict()
     index = 0
     box = []
@@ -48,7 +51,9 @@ def parse_box2(box_string):
                 SYS.exit()
             box.append(pair)
 
-        return (box, dimensions, variables)
+        return (box, 
+                dimensions, 
+                variables)
 
     except:
         IU.error("Improve this error 1")
@@ -70,10 +75,6 @@ def parse_args():
     # Verbosity level
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         type=int, default=0)
-    # All flags have descriptions
-#    parser.add_argument("-t", "--threads",
-#                        help="number of threads to use",
-#                        type=int, default=1)
     parser.add_argument("-ie", "--input-epsilon",
                         help="cuttoff for function input size",
                         type=float, default=.001)
@@ -81,28 +82,32 @@ def parse_args():
                         help="cuttoff for function output size",
                         type=float, default=.001)
     parser.add_argument("-i", "--input",
-                        help="Search space. Format is: {V1 : (inf(V1), sup(V1)), ...}",
+                        help="Search space. "
+                        "Format is: {V1 : (inf_V1, sup_V1), ...}"
+                        "Where V1 is the interval name, inf_V1 is the infimum, "
+                        "and sup_V1 is the supremum",
                         type=str, nargs='+', required=True,)
     parser.add_argument("-f", "--function",
                         help="the c++ interval arithmatic function to evaluate",
                         type=str, nargs='+', required=True,)
     parser.add_argument("-d", "--debug",
-                        help="Debug run of function. Makes the minimum verbosity "
-                        "level one. Runs a debug build of gelpia, with backtrace enabled.", action="store_true")
-
+                        help="Debug run of function. Makes the minimum verbosity"
+                        " level one. Runs a debug build of gelpia, "
+                        "with backtrace enabled.", action="store_true")
     parser.add_argument("-t", "--timeout",
                         help="Timeout for execution in seconds.",
                         default=0)
-
     parser.add_argument("-u", "--update",
                         help="Time between update thread executions.",
                         default=10)
                         
     # actually parse
     args = parser.parse_args()
+
     # set verbosity level
     if args.debug or args.verbose:
         IU.set_log_level(max(1, args.verbose))
+
     # grab function (this is required since the function may have spaces in it)
     # `input` is handled differently
     function = ' '.join(args.function)
@@ -116,120 +121,130 @@ def parse_args():
             "update"         : str(args.update)}
 
 
-def write_function_source(filename, function, variables):
-    """ Writes the given function to the given file as a rust function """
-    body = create_function_body(function, variables)
-    with open(filename, 'w') as f:
-        f.write('\n'.join(body))
-
-
 def make_X_0(box_list):
-    """ Makes a GU.box from the given python structure"""
+    """ Makes a box from the given python structure"""
     box = list()
     for i in range(len(box_list)):
         box.append(box_list[i][0], box_list[i][1])
     return box
 
 
+def append_to_environ(pathname, addition):
+    try:
+        OS.environ[pathname] += ":{}".format(addition)
+    except KeyError:
+        OS.environ[pathname] = addition
+
+
+def setup_requirements(base_dir):
+    # Add to paths used during runtime for requirements
+    path_addition = PATH.join(base_dir, "requirements/bin")
+    append_to_environ("PATH", path_addition)
+
+    ld_lib_addition = PATH.join(base_dir, "requirements/lib")
+    append_to_environ("LD_LIBRARY_PATH", ld_lib_addition)
+
+    lib_addition = PATH.join(base_dir, "requirements/lib")
+    append_to_environ("LIBRARY_PATH", lib_addition)
+
+    c_inc_addition = PATH.join(base_dir, "requirements/include")
+    append_to_environ("C_INCLUDE_PATH", c_inc_addition)
+
+    cplus_inc_addition = PATH.join(base_dir, "requirements/include")
+    append_to_environ("CPLUS_INCLUDE_PATH", cplus_inc_addition)
+
 
 
 def main():
+    parsing_start = T.time()
     arg_dict = parse_args()
 
     # Directory names used in this script
-    full_dir = P.abspath(P.dirname(SYS.argv[0])) # Directory for this script
-    base_dir = P.split(full_dir)[0] # One directory up
+    full_dir = PATH.abspath(PATH.dirname(SYS.argv[0])) # Directory for this file
+    base_dir = PATH.split(full_dir)[0] # One directory up
+    src_dir = PATH.join(base_dir, "src")
+    setup_requirements(base_dir)
 
-    # Assuming PATH is always defined
-    OS.environ["PATH"] = OS.environ["PATH"] + ":" +  base_dir + "/requirements/bin"
-
-    try:
-        OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/requirements/lib"
-    except KeyError:
-        OS.environ["LD_LIBRARY_PATH"] = base_dir + "/requirements/lib"
-
-    try:
-        OS.environ["LIBRARY_PATH"] = OS.environ["LIBRARY_PATH"] + ":" +  base_dir + "/requirements/lib"
-    except KeyError:
-        OS.environ["LIBRARY_PATH"] = base_dir + "/requirements/lib"
-    
-    try:
-        OS.environ["C_INCLUDE_PATH"] = OS.environ["C_INCLUDE_PATH"] + ":" +  base_dir + "/requirements/lib"
-    except KeyError:
-        OS.environ["C_INCLUDE_PATH"] = base_dir + "/requirements/lib"
-
-    try:
-        OS.environ["CPLUS_INCLUDE_PATH"] = OS.environ["CPLUS_INCLUDE_PATH"] + ":" +  base_dir + "/requirements/lib"
-    except KeyError:
-        OS.environ["CPLUS_INCLUDE_PATH"] = base_dir + "/requirements/lib"
-
+    # Add to paths used during runtime for our rust libs
     if arg_dict["debug"]:
-        OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/src/func/target/debug/"
-        OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/debug/deps"
-        OS.environ["RUST_BACKTRACE"] = "1" # Set debug mode in case of a crash
+        rust_ld_lib_addition = PATH.join(base_dir, "src/func/target/debug/")
+        rust_ld_lib_addition += ":" + PATH.join(base_dir, "target/debug/deps")
+        # Set debug mode in case of a crash
+        append_to_environ("RUST_BACKTRACE", "1")
     else:
-        OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/src/func/target/release/"
-        OS.environ["LD_LIBRARY_PATH"] = OS.environ["LD_LIBRARY_PATH"] + ":" +  base_dir + "/target/release/deps"
-
-    bin_dir = P.join(base_dir, "bin/") # Directories within that directroy
-    src_dir = P.join(base_dir, "src/")
-    include_dir = P.join(base_dir, "include/")
-    generated_dir = P.join(base_dir, "generated/")
+        rust_ld_lib_addition = PATH.join(base_dir, "src/func/target/release/")
+        rust_ld_lib_addition += ":" + PATH.join(base_dir, "target/release/deps")
+    append_to_environ("LD_LIBRARY_PATH", rust_ld_lib_addition)
 
     # Grab input interval variables, use them for the function translation,
     # and write them out to a rust file
     start_box, dimensions, variables = parse_box2(arg_dict["input"])
     import function_to_rust
-    (function, constants, part) = function_to_rust.translate(arg_dict["function"], variables)
+    tup = function_to_rust.translate(arg_dict["function"], variables)
+    (function, constants, part) = tup
 
     inputs = ["[{}, {}]".format(x[0], x[1]) for x in start_box]
     inputs = "|".join(inputs)
 
     file_id = mk_file_hash(arg_dict["function"])
-    
-    with open(P.join(src_dir, "func/src/lib_" + file_id + ".rs"), 'w') as f:
-        f.write(function)
+    function_filename = PATH.join(src_dir, 
+                                  "func/src/lib_generated_{}.rs".format(file_id))
+
     names = [None for i in range(len(variables))]
     for i in variables.keys():
         names[variables[i]] = i
+
     if arg_dict["debug"]:
-        executable = './target/debug/cooperative'
+        executable = PATH.join(base_dir, 'target/debug/cooperative')
     else:
-        executable = './target/release/cooperative'
+        executable = PATH.join(base_dir, 'target/release/cooperative')
 
     # Log output
-
-    command_base = [executable, '-c', constants,
-                    '-f', part,
-                    '-i', inputs,
-                    "-x", arg_dict["input_epsilon"],
-                    "-y", arg_dict["output_epsilon"],
-                    "-S", file_id, # Function file suffix
-                    "-n", ",".join(names),
-                    "-t", arg_dict["timeout"],
-                    "-u", arg_dict["update"],
-                    "-d" if arg_dict["debug"] else ""] # If a debug run
+    executable_args = ['-c', constants,
+                       '-f', part,
+                       '-i', inputs,
+                       "-x", arg_dict["input_epsilon"],
+                       "-y", arg_dict["output_epsilon"],
+                       "-S", "generated_"+file_id, # Function file suffix
+                       "-n", ",".join(names),
+                       "-t", arg_dict["timeout"],
+                       "-u", arg_dict["update"],
+                       "-d" if arg_dict["debug"] else ""] # If a debug run
     
     IU.log(1, IU.cyan("Interpreted: ") + part)
     IU.log(1, IU.cyan("Rust: ") + function)
     IU.log(1, IU.cyan("Domain: ") + inputs)
     IU.log(1, IU.cyan("Variables: ") + ", ".join(names))
-    IU.log(1, IU.cyan("Command: ") + str(" ".join(command_base)))
-    # Use try so that we can catch control-c easily
+    IU.log(1, IU.cyan("Command: ") + str(' '.join([executable]+executable_args)))
+
+    parsing_end = T.time()
+
+# Use try so that we can catch control-c easily
+    output = None
     try:
+        with open(function_filename, 'w') as f:
+            f.write(function)
+
         start = T.time()
         IU.log(1, IU.cyan("Running"))
-        SP.call(command_base) # If a debug run
+        output = IU.run(executable, executable_args)
+    except KeyboardInterrupt:
+        IU.warning("Caught ctrl-C, exiting now")
     finally:
+        OS.remove(function_filename)
+        try:
+            OS.remove(PATH.join(base_dir, "/.compiled/libfunc_"+file_id+".so"))
+        except:
+            pass
         end = T.time()
+    
+    if output:
+        print(output)
 
+    IU.log(0, IU.green("Parsing time: ")+str(parsing_end-parsing_start))
     IU.log(0, IU.green("Solver time: ")+str(end-start))
 
-    try:
-        OS.remove("src/func/src/lib_"+file_id+".rs")
-        OS.remove(".compiled/libfunc_"+file_id+".so")
-    except:
-        print("Could not delete temp files");
+
 
 
 if __name__ == "__main__":

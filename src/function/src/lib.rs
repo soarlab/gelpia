@@ -183,7 +183,7 @@ impl FuncObj {
     }
 
     fn compile(&self, debug: bool, suffix: &String) {
-        let mut process = Command::new("./build_func.sh");
+        let mut process = Command::new("build_func.sh");
         // if debug {
         //     process.arg("debug");
         // }
@@ -196,7 +196,7 @@ impl FuncObj {
         }
 
         DynamicLibrary::prepend_search_path(Path::new("./.compiled"));
-        let dylib: String = "libfunc_".to_string()+ suffix + ".so".into();
+        let dylib: String = "libfunc_".to_string() + suffix + ".so".into();
 
         let f = match DynamicLibrary::open(Some(Path::new(&dylib)))
         {

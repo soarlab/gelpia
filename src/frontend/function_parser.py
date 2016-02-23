@@ -105,12 +105,12 @@ def p_group_passthrough(t):
     '''group : LPAREN expression RPAREN'''
     t[0] = t[2]
 
-def p_func_uni(t):
+def p_func_uniop(t):
     '''func : UNIOP LPAREN expression RPAREN'''
     # Returns [operator, value]
     t[0] = [t[1], t[3]]
 
-def p_func_bi(t):
+def p_func_binop(t):
     '''func : BINOP LPAREN expression COMMA expression RPAREN'''
     if t[1] == 'pow' and t[5][0] == 'Integer':
         # special case for integer power

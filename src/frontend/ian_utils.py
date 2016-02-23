@@ -72,10 +72,12 @@ def log(level, *objs):
 
 # printing to stderr
 def error(*objs):
-    print(red("ERROR:"), *objs, file=SYS.stderr)
+    print(red("ERROR: "), *objs, file=SYS.stderr)
 
 def warning(*objs):
-    print(yellow("WARNING:"), *objs, file=SYS.stderr)
+    print(yellow("WARNING: "), *objs, file=SYS.stderr)
+
+
 
 
 
@@ -109,32 +111,34 @@ def comment_block(line_list, width):
 
 
 
-# popen wrappers
-def run(cmd, args_list, error_string):
-    command = [cmd]+args_list
-    with SP.Popen(cmd,
-                  stdout=SP.PIPE, stderr=SP.STDOUT) as proc:
-        output = proc.stdout.read().decode("utf-8")
-        proc.wait()
 
-        if proc.returncode != 0:
-            error(error_string)
-            error("Non-zero return code: {}".format(proc.returncode))
-            error("Command used: {}".format(command))
-            error("Trace:\n{}".format(output))
-            SYS.exit(proc.returncode)
+# popen wrappers
+def run(cmd, args_list, error_string="An Error has occured", expected_return=0):
+    command = [cmd]+args_list
+    should_exit = None
+    try:
+        with SP.Popen(command,
+                      stdout=SP.PIPE, stderr=SP.STDOUT) as proc:
+            output = proc.stdout.read().decode("utf-8")
+            proc.wait()
+            
+            if (expected_return != None) and (proc.returncode != expected_return):
+                error(error_string)
+                error("Return code: {}".format(proc.returncode))
+                error("Command used: {}".format(command))
+                error("Trace:\n{}".format(output))
+                should_exit = proc.returncode
+    except KeyboardInterrupt:
+        raise
+    except:
+        error("Unable to run given executable, does it exist?")
+        error("executable: {}".format(command))
+        SYS.exit(-1)
+
+    if (should_exit != None):
+        SYS.exit(should_exit)
 
     return output
-
-
-
-# catching sigint
-def sigint_handler(signal, frame):
-    print("", file=SYS.stderr)
-    warning("Program exiting without cleanup")
-    SYS.exit(0)
-
-SIG.signal(SIG.SIGINT, sigint_handler)
 
 
 
@@ -145,6 +149,7 @@ def time_func(function, *args):
     ret = function(*args)
     end = T.time()
     return (end-start, ret)
+
 
 
 
@@ -165,3 +170,4 @@ class IanArgumentParser(AP.ArgumentParser):
             error("Unable to parse argument string")
             error("given string: {}".format(line))
             SYS.exit(-1)
+
