@@ -195,7 +195,7 @@ impl FuncObj {
                    String::from_utf8(ignore.stderr).unwrap());                  
         }
 
-        DynamicLibrary::prepend_search_path(Path::new("./.compiled"));
+        //DynamicLibrary::prepend_search_path(Path::new("./.compiled"));
         let dylib: String = "libfunc_".to_string() + suffix + ".so".into();
 
         let f = match DynamicLibrary::open(Some(Path::new(&dylib)))

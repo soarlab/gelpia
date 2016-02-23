@@ -163,16 +163,19 @@ def main():
     full_dir = PATH.abspath(PATH.dirname(SYS.argv[0])) # Directory for this file
     base_dir = PATH.split(full_dir)[0] # One directory up
     src_dir = PATH.join(base_dir, "src")
+    bin_dir = PATH.join(base_dir, "bin")
     setup_requirements(base_dir)
 
     # Add to paths used during runtime for our rust libs
+    append_to_environ("PATH", bin_dir)
+    rust_ld_lib_addition = PATH.join(base_dir, ".compiled")
     if arg_dict["debug"]:
-        rust_ld_lib_addition = PATH.join(base_dir, "src/func/target/debug/")
+        rust_ld_lib_addition += ":" + PATH.join(base_dir, "src/func/target/debug/")
         rust_ld_lib_addition += ":" + PATH.join(base_dir, "target/debug/deps")
         # Set debug mode in case of a crash
         append_to_environ("RUST_BACKTRACE", "1")
     else:
-        rust_ld_lib_addition = PATH.join(base_dir, "src/func/target/release/")
+        rust_ld_lib_addition += ":" + PATH.join(base_dir, "src/func/target/release/")
         rust_ld_lib_addition += ":" + PATH.join(base_dir, "target/release/deps")
     append_to_environ("LD_LIBRARY_PATH", rust_ld_lib_addition)
 
