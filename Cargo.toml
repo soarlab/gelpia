@@ -1,7 +1,7 @@
 [package]
 name = "gelpia"
 version = "0.0.1"
-authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>", "Ian Briggs <ibriggs@comcast.net>"]
+authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>", "Ian Briggs <ianbriggsutah@gmail.com>"]
 
 [[bin]]
 name = "cooperative"
@@ -9,7 +9,7 @@ path = "src/bin/cooperative.rs"
 
 [[bin]]
 name = "serial"
-path = "src/main.rs"
+path = "src/bin/serial.rs"
 
 [dependencies.gelpia_utils]
 path = "src/gelpia_utils"
@@ -18,7 +18,6 @@ path = "src/gelpia_utils"
 path = "src/gaol"
 
 [dependencies]
-#threadpool = "0.1"
 getopts = "0.2.*"
 rand = "0.3.*"
 time = "*"

@@ -1,14 +1,14 @@
 #![feature(asm)]
 
-//use std::dynamic_lib::DynamicLibrary;
+// External libraries
+extern crate dylib;
+use dylib::DynamicLibrary;
+
 use std::path::Path;
 use std::mem::transmute;
 
 use std::process::Command;
 use std::thread;
-
-extern crate gr;
-use gr::*;
 
 use std::sync::atomic::{AtomicBool, Ordering, AtomicPtr};
 use std::option::Option;
@@ -17,8 +17,11 @@ use std::sync::{Arc, RwLock};
 use std::fmt;
 use std::io::Write;
 
-extern crate dylib;
-use dylib::DynamicLibrary;
+// Internal libraries
+extern crate gr;
+use gr::*;
+
+
 
 
 #[derive(Clone)]
