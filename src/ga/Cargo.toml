@@ -8,10 +8,10 @@ name = "ga"
 path = "algorithm.rs"
 
 [dependencies]
-rand = "0.3"
+rand = "0.3.*"
 time = "*"
 
-[dependencies.gu]
+[dependencies.gelpia_utils]
 path = "../.."
 
 [dependencies.gr]

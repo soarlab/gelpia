@@ -48,7 +48,7 @@ extern {
                        success: *mut c_char);
     // Creates a clone of a GAOL interval
 
-    fn make_interval_i(x: *const gaol_int, out: *mut gaol_int);
+    //fn make_interval_i(x: *const gaol_int, out: *mut gaol_int);
     
     // Returns the empty GAOL interval
 

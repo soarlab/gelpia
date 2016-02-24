@@ -1,11 +1,11 @@
 [package]
-name  = "gu"
+name  = "gelpia_utils"
 version = "0.0.1"
 authors = ["You"]
 
 [lib]
-name = "gu"
-path = "gu.rs"
+name = "gelpia_utils"
+path = "src/lib.rs"
 
 [dependencies.gr]
 path = "../.."
