@@ -134,7 +134,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
             thread::sleep(Duration::new(1, 0));
             if timeout > 0 && (time::get_time() - start).num_seconds() >= timeout as i64
                 && !stop.load(Ordering::Acquire) { // Check if we've already stopped
-                    writeln!(&mut std::io::stderr(), "Stopping early...");
+                    let _ = writeln!(&mut std::io::stderr(), "Stopping early...");
                     stop.store(true, Ordering::Release);
                     break 'out;
                 }
@@ -302,7 +302,7 @@ fn main() {
         let fo_c = fo.clone();
         let to = args.timeout.clone();
         let ui = args.update_interval.clone();
-        thread::Builder::new().name("Update".to_string()).spawn(move || {
+        let _ = thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(q, population, f_best_shared,
                    stop, sync, b1, b2, fo_c, ui, to)
         });};
