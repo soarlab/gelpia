@@ -2,7 +2,6 @@
 name = "gelpia"
 version = "0.0.0"
 authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>", "Ian Briggs <ibriggs@comcast.net>"]
-build = "build.rs"
 
 [[bin]]
 name = "cooperative"
