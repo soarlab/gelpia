@@ -67,22 +67,11 @@ fn dummy(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {
 impl FuncObj {
     pub fn call(&self, _x: &Vec<GI>) -> GI {
         if self.switched.load(Ordering::Acquire) {
-            let result = unsafe{
+            let real_func = unsafe{
                 std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->GI,
-                                               fn(&Vec<GI>, &Vec<GI>)->GI>(
-                    (self.function.load(Ordering::Acquire)))(_x, &self.constants)};
-            let mut interim: CInterval;
-            // The compiler doesn't seem to be generating the code here to
-            // retrieve the return value. This gets the result from the xmm0
-            // register and returns it to the caller.
-            unsafe{asm!("movapd %xmm0, $0"
-                        : "=x"(interim)
-                        : : :)};
-            let test_var = GI{data:
-                              gaol_int{data:
-                                       interim
-                              }};
-            test_var
+                                      fn(&Vec<GI>, &Vec<GI>)->GI>(
+                    (self.function.load(Ordering::Acquire)))};
+            real_func(_x, &self.constants)
         }
         else {
             self.interpreted(_x, &self.constants)
@@ -184,18 +173,18 @@ impl FuncObj {
 
     fn compile(&self, debug: bool, suffix: &String) {
         let mut process = Command::new("build_func.sh");
-        // if debug {
-        //     process.arg("debug");
-        // }
+        if debug {
+            println!("compile suffix: {}", suffix);
+        }
         let ignore = process.arg(suffix.clone()).output()
             .unwrap_or_else(|e| {panic!("Could not compile: {}", e)});
         
-        if !ignore.status.success() {                                           
+        if !ignore.status.success() {
             panic!("Could not compile: {}\n----\n{}", String::from_utf8(ignore.stdout).unwrap(),
                    String::from_utf8(ignore.stderr).unwrap());                  
         }
 
-        //DynamicLibrary::prepend_search_path(Path::new("./.compiled"));
+        DynamicLibrary::prepend_search_path(Path::new("./.compiled"));
         let dylib: String = "libfunc_".to_string() + suffix + ".so".into();
 
         let f = match DynamicLibrary::open(Some(Path::new(&dylib)))
