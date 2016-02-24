@@ -9,8 +9,8 @@ extern crate time;
 extern crate rand;
 use rand::{Rng};
 
-extern crate gu;
-use gu::{Parameters, INF, Flt};
+extern crate gelpia_utils;
+use gelpia_utils::{Parameters, INF, Flt};
 
 extern crate gr;
 use gr::{GI};
@@ -52,8 +52,8 @@ pub fn ea(x_0: Vec<GI>, params: Parameters,
         assert!(population_w.len() == params.population);
     }
 
-    let mut running: f64 = 0.0;
-    let mut iters: u64 = 0;
+    // let mut running: f64 = 0.0;
+    // let mut iters: u64 = 0;
 
     while !stop.load(AtOrd::Acquire) {
         if sync.load(AtOrd::Acquire) {

@@ -3,14 +3,16 @@
 */
 #![feature(float_extras)]
 
+// External libraries
 use std::cmp::{PartialOrd, Ordering, PartialEq, Ord};
 use std::f64::{NEG_INFINITY, INFINITY};
 
+// Internal libraries
 extern crate gr;
 use gr::GI;
 
+// Datatypes
 pub type Flt = f64;
-
 pub static INF:  Flt = INFINITY;
 pub static NINF: Flt = NEG_INFINITY;
 
@@ -38,14 +40,8 @@ macro_rules! min {
     }}
 }
 
-//derive(Debug, Copy, Clone)]
-//b struct Parameters {                                                         |
-//   population: usize,                                                          |
-//   selection: usize,                                                           |
-//   elitism: usize,                                                             |
-//   mutation: Flt,                                                              |
-//   crossover: Flt,
-//
+
+// Evolutionary algo
 #[derive(Debug, Copy, Clone)]
 pub struct Parameters {
     pub population:usize,
@@ -54,6 +50,9 @@ pub struct Parameters {
     pub mutation:    Flt,
     pub crossover:   Flt,
 }
+// Evolutionary algo end
+
+// Quple 
 // Data structure for insertion of a box into a priority queue
 #[derive(Clone)]
 pub struct Quple {
@@ -62,6 +61,7 @@ pub struct Quple {
     pub data: Vec<GI>,
     pub fdata: GI
 }
+
 // Allow ordering of Quples
 impl PartialEq for Quple {
     fn eq(&self, other: &Quple) -> bool {
@@ -102,9 +102,10 @@ impl Ord for Quple {
     }
 }
 // End Quple ordering.
+// End Quple
 
 pub fn eps_tol(x: f64, y: f64, tol: f64) -> bool {
     let (_,exp_x,_) = x.integer_decode();
     let xe = (2.0f64).powi(exp_x as i32);
-    return y - x <= max!(tol, xe);
+    return y - x <= tol.max(xe);
 }

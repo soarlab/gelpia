@@ -14,4 +14,4 @@ path = "../.."
 path = "../.."
 
 [dependencies]
-getopts = "0.2"
+getopts = "0.2.*"

@@ -4,13 +4,13 @@ use std::io::Write;
 extern crate rand;
 
 #[macro_use(max)]
-extern crate gu;
+extern crate gelpia_utils;
 extern crate ga;
 extern crate gr;
 
 use ga::{ea, Individual};
 
-use gu::{Quple, INF, NINF, Flt, Parameters};
+use gelpia_utils::{Quple, INF, NINF, Flt, Parameters};
 
 use gr::{GI, width_box, split_box, midpoint_box, eps_tol};
 
@@ -112,7 +112,7 @@ fn distance(p: &Vec<GI>, x: &Vec<GI>) -> Flt {
     let mut result = 0.0;
     for i in 0..x.len() {
         let dx = max!(x[i].lower() - p[i].lower(),
-                       0.0, &p[i].lower() - x[i].upper());
+                      0.0, &p[i].lower() - x[i].upper());
         result += dx*dx;
     }
     result.sqrt()
@@ -126,10 +126,10 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
           upd_interval: u32,
           timeout: u32) {  
     let start = time::get_time();
-
+    
     'out: while !stop.load(Ordering::Acquire) {
         // Timer code...
-        let mut last_update = time::get_time();
+        let last_update = time::get_time();
         while (time::get_time() - last_update).num_seconds() <= upd_interval as i64 {
             thread::sleep(Duration::new(1, 0));
             if timeout > 0 && (time::get_time() - start).num_seconds() >= timeout as i64
@@ -141,7 +141,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         }
         // Signal EA and IBBA threads.
         sync.store(true, Ordering::Release);
-
+        
         // Wait for EA and IBBA threads to stop.
         b1.wait();                                                               // Dead lock here?
         // Do update bizness.
@@ -152,7 +152,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         }
         let mut pop = population.write().unwrap();
         let fbest = f_best_shared.read().unwrap();
-
+        
         for i in 0..pop.len() {
             let mut d_min = INF;
             let mut j = 0;
@@ -186,7 +186,6 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
                 // Project it back into the nearest current search space.
                 project(&mut pop[i], &x_c, f.clone());
             }
-            last_update = time::get_time();
         }
         // Restore the q for the ibba thread.
         (*q_u) = BinaryHeap::from(q);
@@ -203,24 +202,24 @@ fn project(p: &mut Individual, x_c: &Vec<GI>, f: FuncObj) {
     for i in 0..x_c.len() {
         if p.solution[i].lower() < x_c[i].lower()
             || p.solution[i].lower() > x_c[i].upper() {
-            if x_c[i].upper() < p.solution[i].lower() 
+                if x_c[i].upper() < p.solution[i].lower() 
                 {p.solution[i] = GI::new_d(x_c[i].upper(),
                                            x_c[i].upper());}
-            else {p.solution[i] = GI::new_d(x_c[i].lower(),
-                                            x_c[i].lower());}
-        }
+                else {p.solution[i] = GI::new_d(x_c[i].lower(),
+                                                x_c[i].lower());}
+            }
     }
     p.fitness = f.call(&p.solution).lower();
 }
 
 fn main() {
     let args = process_args();
-
+    
     let ref x_0 = args.domain;
     let ref fo = args.function;
     let x_err = args.x_error;
     let y_err = args.y_error;
-
+    
     // Early out if there are no input variables...
     if x_0.len() == 0 {
         let result = fo.call(&x_0);
@@ -233,21 +232,21 @@ fn main() {
     
     let population_inner: Vec<Individual> = Vec::new();
     let population = Arc::new(RwLock::new(population_inner));
-
+    
     let b1 = Arc::new(Barrier::new(3));
     let b2 = Arc::new(Barrier::new(3));
     
     let sync = Arc::new(AtomicBool::new(false));
     let stop = Arc::new(AtomicBool::new(false));
-
+    
     let f_bestag: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
     let f_best_shared: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
-
+    
     let x_e = x_0.clone();
     let x_i = x_0.clone();
     
     let x_bestbb = Arc::new(RwLock::new(x_0.clone()));
-
+    
     let ibba_thread = 
     {
         let q = q.clone();
@@ -265,7 +264,7 @@ fn main() {
                  x_bestbb,
                  b1, b2, q, sync, stop, fo_c)
         })};
-
+    
     let ea_thread = 
     {
         let population = population.clone();
@@ -281,8 +280,8 @@ fn main() {
                                selection: 8, //4,
                                elitism: 5, //2,
                                mutation: 0.4_f64,//0.3_f64,
-                               crossover: 0.3_f64 // 0.5_f64},
-                               },
+                               crossover: 0.3_f64 // 0.5_f64
+            },
                population, 
                f_bestag, 
                x_bestbb,
@@ -290,7 +289,8 @@ fn main() {
                stop, sync, fo_c)
         })};
 
-    let update_thread = 
+    // pending finding out how to kill threads
+    //let update_thread = 
     {
         let q = q.clone();
         let population = population.clone();
@@ -305,11 +305,14 @@ fn main() {
         thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(q, population, f_best_shared,
                    stop, sync, b1, b2, fo_c, ui, to)
-        })};
-
-    let result = ibba_thread.unwrap().join();
-    ea_thread.unwrap().join();
+        });};
     
+    let result = ibba_thread.unwrap().join();
+    let ea_result = ea_thread.unwrap().join();
+    if !ea_result.is_ok() {
+        unreachable!();
+    }
+
     // Join EA and Update here pending stop signaling.
     if result.is_ok() {
         let (mut max, mut interval, completed) = result.unwrap();

@@ -4,8 +4,8 @@
 
 use std::collections::BinaryHeap;
 
-extern crate gu;
-use gu::{Quple, INF, NINF, Flt};
+extern crate gelpia_utils;
+use gelpia_utils::{Quple, INF, NINF, Flt};
 
 extern crate gr;
 use gr::{GI, width_box, split_box, midpoint_box, eps_tol};
