@@ -132,12 +132,15 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         let last_update = time::get_time();
         while (time::get_time() - last_update).num_seconds() <= upd_interval as i64 {
             thread::sleep(Duration::new(1, 0));
-            if timeout > 0 && (time::get_time() - start).num_seconds() >= timeout as i64
-                && !stop.load(Ordering::Acquire) { // Check if we've already stopped
+            if timeout > 0 &&
+                (time::get_time() - start).num_seconds() >= timeout as i64 { 
                     let _ = writeln!(&mut std::io::stderr(), "Stopping early...");
                     stop.store(true, Ordering::Release);
                     break 'out;
                 }
+            if stop.load(Ordering::Acquire) { // Check if we've already stopped
+                break 'out;
+            }
         }
         // Signal EA and IBBA threads.
         sync.store(true, Ordering::Release);
