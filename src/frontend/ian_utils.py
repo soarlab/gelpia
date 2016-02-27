@@ -140,6 +140,34 @@ def run(cmd, args_list, error_string="An Error has occured", expected_return=0):
 
     return output
 
+def run_async(cmd, args_list, error_string="An Error has occured", expected_return=0):
+    command = [cmd]+args_list
+    should_exit = None
+    try:
+        with SP.Popen(command, bufsize=1, universal_newlines=True,
+                      stdout=SP.PIPE, stderr=SP.STDOUT) as proc:
+            output = "entry"
+            while output != "":
+                output = proc.stdout.readline()
+                yield output
+
+            
+            if (expected_return != None) and (proc.returncode != expected_return):
+                error(error_string)
+                error("Return code: {}".format(proc.returncode))
+                error("Command used: {}".format(command))
+                error("Trace:\n{}".format(output))
+                should_exit = proc.returncode
+    except KeyboardInterrupt:
+        raise
+    except:
+        error("Unable to run given executable, does it exist?")
+        error("executable: {}".format(command))
+        SYS.exit(-1)
+
+    if (should_exit != None):
+        SYS.exit(should_exit)
+
 
 
 
