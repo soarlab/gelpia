@@ -151,7 +151,7 @@ def run_async(cmd, args_list, error_string="An Error has occured", expected_retu
                 output = proc.stdout.readline()
                 yield output
 
-            
+            proc.wait()            
             if (expected_return != None) and (proc.returncode != expected_return):
                 error(error_string)
                 error("Return code: {}".format(proc.returncode))
