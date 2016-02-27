@@ -34,6 +34,8 @@ clean:
 	cargo clean
 	$(RM) src/func/comp_comm.sh
 	cd src/func && cargo clean
+	$(RM) Cargo.lock
+	$(RM) src/func/Cargo.lock
 
 
 .PHONY: requirements
