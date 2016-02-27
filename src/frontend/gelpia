@@ -100,7 +100,9 @@ def parse_args():
     parser.add_argument("-u", "--update",
                         help="Time between update thread executions.",
                         default=10)
-                        
+    parser.add_argument("-L", "--logging",
+                        help="Enable solver logging to stderr",
+                        action="store_true")
     # actually parse
     args = parser.parse_args()
 
@@ -118,7 +120,8 @@ def parse_args():
             "function"       : function,
             "debug"          : args.debug,
             "timeout"        : str(args.timeout),
-            "update"         : str(args.update)}
+            "update"         : str(args.update),
+            "logging"        : args.logging}
 
 
 def make_X_0(box_list):
@@ -213,7 +216,8 @@ def main():
                        "-n", ",".join(names),
                        "-t", arg_dict["timeout"],
                        "-u", arg_dict["update"],
-                       "-d" if arg_dict["debug"] else ""] # If a debug run
+                       "-d" if arg_dict["debug"] else "",
+                       "-L" if arg_dict["logging"] else ""] # If a debug run
     
     IU.log(1, IU.cyan("Interpreted: ") + part)
     IU.log(1, IU.cyan("Rust: ") + function)
@@ -248,8 +252,6 @@ def main():
     IU.log(0, IU.green("Parsing time: ")+str(parsing_end-parsing_start))
     IU.log(0, IU.green("Solver time: ")+str(end-start))
 
-
-
-
+    
 if __name__ == "__main__":
     main()
