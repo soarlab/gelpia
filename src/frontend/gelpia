@@ -216,8 +216,8 @@ def main():
                        "-n", ",".join(names),
                        "-t", arg_dict["timeout"],
                        "-u", arg_dict["update"],
-                       "-d" if arg_dict["debug"] else "",
-                       "-L" if arg_dict["logging"] else ""] # If a debug run
+                       "-d" if arg_dict["debug"] else "", # If a debug run
+                       "-L" if arg_dict["logging"] else ""] 
     
     IU.log(1, IU.cyan("Interpreted: ") + part)
     IU.log(1, IU.cyan("Rust: ") + function)
@@ -235,7 +235,11 @@ def main():
 
         start = T.time()
         IU.log(1, IU.cyan("Running"))
-        output = IU.run(executable, executable_args)
+        for line in IU.run_async(executable, executable_args):
+            if line.startswith("Possible bound:"):
+                print(line.strip(), file=SYS.stderr)
+            else:
+                print(line.strip())
     except KeyboardInterrupt:
         IU.warning("Caught ctrl-C, exiting now")
     finally:
