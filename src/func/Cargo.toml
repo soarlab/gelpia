@@ -6,7 +6,7 @@ authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>"]
 [lib]
 name = "func_fillin"
 path = "src/lib_fillin.rs"
-#crate-type = ["dylib"]
+crate-type = ["dylib"]
 
 [dependencies.gr]
 path = "../.."

@@ -22,6 +22,7 @@ pub struct Args {
     pub iters: u64,
     pub names: Vec<String>,
     pub func_suffix: String,
+    pub logging: bool,
 }
 
 
@@ -77,7 +78,8 @@ pub fn process_args() -> Args {
     opts.optopt("m", "max_iters", "", "");
     opts.optopt("u", "update", "", "");
     opts.optflag("d", "debug", "Enable debugging");
-
+    opts.optflag("L", "logging", "Enable maximum logging to stderr");
+    
     // Check that the args are there
     let args: Vec<String> = env::args().collect();
     let matches = match opts.parse(&args[1..]) {
@@ -98,6 +100,7 @@ pub fn process_args() -> Args {
     let func_suffix = matches.opt_str("S").unwrap();
     let func_string = matches.opt_str("f").unwrap();
     let debug = matches.opt_present("d");
+    let logging = matches.opt_present("L");
     let fo = FuncObj::new(&consts, &func_string, debug, func_suffix.clone());
 
     // Grab out optional arguments
@@ -122,5 +125,6 @@ pub fn process_args() -> Args {
          iters: 0,
          names: names, 
          update_interval: ui, 
-         func_suffix: func_suffix}
+         func_suffix: func_suffix,
+         logging: logging}
 }

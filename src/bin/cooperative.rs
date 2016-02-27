@@ -14,7 +14,7 @@ use gelpia_utils::{Quple, INF, NINF, Flt, Parameters};
 
 use gr::{GI, width_box, split_box, midpoint_box, eps_tol};
 
-use std::sync::{Barrier, RwLock, Arc};
+use std::sync::{Barrier, RwLock, Arc, RwLockWriteGuard};
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -30,6 +30,18 @@ use args::{process_args};
 
 extern crate time;
 
+fn log_max(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
+           f_best_high: f64) {
+    let mut max = f_best_high;
+    let lq = q.clone();
+    for qi in lq.iter() {
+        max = max!{max, qi.fdata.upper()};
+    }
+    let _ = writeln!(&mut std::io::stderr(),
+                     "Possible bound: {}, guaranteed bound: {}", f_best_high,
+                     max);
+}
+
 // Returns the upper bound, the domain where this bound occurs and a status
 // flag indicating whether the answer is complete for the problem.
 fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, 
@@ -39,14 +51,16 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         b1: Arc<Barrier>, b2: Arc<Barrier>, 
         q: Arc<RwLock<BinaryHeap<Quple>>>, 
         sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
-        f: FuncObj) 
+        f: FuncObj,
+        logging: bool)
         -> (Flt, Vec<GI>, bool) {
     let mut f_best_high = NINF;
     let mut f_best_low  = NINF;
     let mut best_x = x_0.clone();
-
+    
     let mut i: u32 = 0;//binade_presplit(&f, &q, &x_0, e_x);
-    q.write().unwrap().push(Quple{p: INF, pf: 0, data: x_0.clone(), fdata: f.call(&x_0)});
+    q.write().unwrap().push(Quple{p: INF, pf: 0, data: x_0.clone(),
+                                  fdata: f.call(&x_0)});
 
     while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
         if sync.load(Ordering::Acquire) {
@@ -57,23 +71,26 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         }
         // Take q as writable during an iteration
         let mut q = q.write().unwrap();
-
+        let fbl_orig = f_best_low;
         f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
-
+        if fbl_orig != f_best_low {
+            log_max(&q, f_best_high);
+        }
         let (ref x, fx) = 
             match q.pop() {
                 Some(y) => (y.data, y.fdata),
                 None    => unreachable!()
             };
-
-        //let fx = f.call(x);
-
+        
         if fx.upper() < f_best_low ||
             width_box(x, e_x) ||
             eps_tol(fx, e_f) {
                 if f_best_high < fx.upper() {
                     f_best_high = fx.upper();
                     best_x = x.clone();
+                    if logging {
+                        log_max(&q, f_best_high);
+                    }
                 }
                 continue;
             }
@@ -261,14 +278,15 @@ fn main() {
         let sync = sync.clone();
         let stop = stop.clone();
         let fo_c = fo.clone();
+        let logging = args.logging;
         thread::Builder::new().name("IBBA".to_string()).spawn(move || {
             ibba(x_i, x_err, y_err,
                  f_bestag, f_best_shared,
                  x_bestbb,
-                 b1, b2, q, sync, stop, fo_c)
+                 b1, b2, q, sync, stop, fo_c, logging)
         })};
     
-    let ea_thread = 
+    let _ea_thread = 
     {
         let population = population.clone();
         let f_bestag = f_bestag.clone();
@@ -311,10 +329,10 @@ fn main() {
         });};
     
     let result = ibba_thread.unwrap().join();
-    let ea_result = ea_thread.unwrap().join();
+    /*let ea_result = ea_thread.unwrap().join();
     if !ea_result.is_ok() {
         unreachable!();
-    }
+    }*/
 
     // Join EA and Update here pending stop signaling.
     if result.is_ok() {
