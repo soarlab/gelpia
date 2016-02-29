@@ -31,6 +31,7 @@ use args::{process_args};
 extern crate time;
 
 fn log_max(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
+           f_best_low: f64,
            f_best_high: f64) {
     let mut max = f_best_high;
     let lq = q.clone();
@@ -38,7 +39,9 @@ fn log_max(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
         max = max!{max, qi.fdata.upper()};
     }
     let _ = writeln!(&mut std::io::stderr(),
-                     "Possible bound: {}, guaranteed bound: {}", f_best_high,
+                     "lb: {}, possible ub: {}, guaranteed ub: {}",
+                     f_best_low,
+                     f_best_high,
                      max);
 }
 
@@ -74,7 +77,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         let fbl_orig = f_best_low;
         f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
         if fbl_orig != f_best_low {
-            log_max(&q, f_best_high);
+            log_max(&q, f_best_low, f_best_high);
         }
         let (ref x, fx) = 
             match q.pop() {
@@ -89,7 +92,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
                     f_best_high = fx.upper();
                     best_x = x.clone();
                     if logging {
-                        log_max(&q, f_best_high);
+                        log_max(&q, f_best_low, f_best_high);
                     }
                 }
                 continue;
