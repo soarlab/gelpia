@@ -76,7 +76,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         let mut q = q.write().unwrap();
         let fbl_orig = f_best_low;
         f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
-        if fbl_orig != f_best_low {
+        if fbl_orig != f_best_low && logging {
             log_max(&q, f_best_low, f_best_high);
         }
         let (ref x, fx) = 
