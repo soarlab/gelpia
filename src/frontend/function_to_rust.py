@@ -27,7 +27,7 @@ VARIABLES = None
 
 def rewrite(exp):
     if exp[0] == 'Float':
-        return "{}".format(exp[1])
+        return "[{}]".format(exp[1])
     if exp[0] == 'Interval':
         return "[{}, {}]".format(exp[1], exp[2])
     if exp[0] == 'Input':
