@@ -40,6 +40,8 @@ Gaol:
 	    http://sourceforge.net/projects/gaol/
 
 	untar and cd to the source directory
+	apply gaol-4.2.0.patch from gelpia/documents:
+	  patch -p0 < gelpia/documents/gaol-4.2.0.patch
 	run `./configure  --with-mathlib=crlibm --enable-simd --disable-debug --disable-preserve-rounding --enable-optimize --disable-verbose-mode --prefix=<where you want gaol>`
 	run `make && make install`
 

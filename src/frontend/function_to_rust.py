@@ -67,8 +67,6 @@ def trans_const_r(expr):
     '''expr is a constant. We need to replace abs with sqrt(pow( '''
     if type(expr) != list:
         return expr
-    if expr[0] == 'abs':
-        return ['sqrt',['cpow', trans_const_r(expr[1]), ['Float', 2]]]
     if expr[0] == 'powi':
         return ['pow', trans_const_r(expr[1])]
     return [trans_const_r(e) for e in expr]
