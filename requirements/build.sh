@@ -34,7 +34,9 @@ export CPLUS_INCLUDE_PATH=$SCRIPT_LOCATION/include:$CPLUS_INCLUDE_PATH
 cd $SOURCE_LOCATION
 rm -f gaol.tar.gz
 wget http://downloads.sourceforge.net/project/gaol/gaol/4.2.0/gaol-4.2.0.tar.gz -O gaol.tar.gz
-mkdir -p gaol && tar -xf gaol.tar.gz -C gaol --strip-components 1
+tar xf gaol.tar.gz
+patch -p0 < $SCRIPT_LOCATION/../documents/gaol-4.2.0.patch
+mv gaol-4.2.0 gaol
 cd gaol
 ./configure  --with-mathlib=crlibm --enable-simd --disable-debug --disable-preserve-rounding --enable-optimize --disable-verbose-mode --prefix=$SCRIPT_LOCATION
 make
