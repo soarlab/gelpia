@@ -3,7 +3,7 @@
 *.so
 __pycache__
 
-
+/src/func/comp_comm.sh
 /requirements/bin
 /requirements/etc
 /requirements/include
