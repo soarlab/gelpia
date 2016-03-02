@@ -234,7 +234,6 @@ def main():
     logging = arg_dict["logging"];
 
     try:
-        print(function_filename);
         with open(function_filename, 'w') as f:
             f.write(function)
 
