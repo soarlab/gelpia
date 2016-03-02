@@ -258,11 +258,12 @@ def main():
     except KeyboardInterrupt:
         IU.warning("Caught ctrl-C, exiting now")
     finally:
-        OS.remove(function_filename)
-        try:
-            OS.remove(PATH.join(base_dir, "/.compiled/libfunc_"+file_id+".so"))
-        except:
-            pass
+        if not arg_dict["debug"]:
+            OS.remove(function_filename)
+            try:
+                OS.remove(PATH.join(base_dir, "/.compiled/libfunc_"+file_id+".so"))
+            except:
+                pass
         end = T.time()
     
     if output:
