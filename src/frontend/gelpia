@@ -103,6 +103,9 @@ def parse_args():
     parser.add_argument("-L", "--logging",
                         help="Enable solver logging to stderr",
                         action="store_true")
+    parser.add_argument("-F", "--logfile",
+                        help="Enable solver logging to file. Implies --logging",
+                        type=str)
     # actually parse
     args = parser.parse_args()
 
@@ -121,8 +124,8 @@ def parse_args():
             "debug"          : args.debug,
             "timeout"        : str(args.timeout),
             "update"         : str(args.update),
-            "logging"        : args.logging}
-
+            "logging"        : args.logging or args.logfile != None,
+            "logfile"        : args.logfile}
 
 def make_X_0(box_list):
     """ Makes a box from the given python structure"""
@@ -229,15 +232,29 @@ def main():
 
 # Use try so that we can catch control-c easily
     output = None
+    log_file = arg_dict["logfile"];
+    logging = arg_dict["logging"];
+
     try:
+        print(function_filename);
         with open(function_filename, 'w') as f:
             f.write(function)
 
+        if log_file is not None:
+            with open(log_file, 'w') as f2:
+                f2.write("")
+                f2.flush()
+            
         start = T.time()
         IU.log(1, IU.cyan("Running"))
         for line in IU.run_async(executable, executable_args):
-            if line.startswith("Possible bound:"):
+            if logging and line.startswith("lb:"): # Hacky
                 print(line.strip(), file=SYS.stderr)
+                if log_file is not None:
+                    with open(log_file, 'a') as f2:
+                        f2.write(line.strip())
+                        f2.write('\n')
+                        f2.flush()
             else:
                 print(line.strip())
     except KeyboardInterrupt:
