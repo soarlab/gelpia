@@ -102,10 +102,8 @@ def parse_args():
                         default=10)
     parser.add_argument("-L", "--logging",
                         help="Enable solver logging to stderr",
-                        action="store_true")
-    parser.add_argument("-F", "--logfile",
-                        help="Enable solver logging to file. Implies --logging",
-                        type=str)
+                        type=str, nargs='?', const=True, default=None)
+
     # actually parse
     args = parser.parse_args()
 
@@ -124,8 +122,8 @@ def parse_args():
             "debug"          : args.debug,
             "timeout"        : str(args.timeout),
             "update"         : str(args.update),
-            "logging"        : args.logging or args.logfile != None,
-            "logfile"        : args.logfile}
+            "logging"        : args.logging is not None,
+            "logfile"        : args.logging if isinstance(args.logging, str) else None}
 
 def make_X_0(box_list):
     """ Makes a box from the given python structure"""
