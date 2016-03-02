@@ -191,7 +191,7 @@ def main():
     tup = function_to_rust.translate(arg_dict["function"], variables)
     (function, constants, part) = tup
 
-    inputs = ["[{}, {}]".format(x[0], x[1]) for x in start_box]
+    inputs = ["[{},{}]".format(x[0], x[1]) for x in start_box]
     inputs = "|".join(inputs)
 
     file_id = mk_file_hash(arg_dict["function"])
@@ -224,7 +224,7 @@ def main():
     IU.log(1, IU.cyan("Rust: ") + function)
     IU.log(1, IU.cyan("Domain: ") + inputs)
     IU.log(1, IU.cyan("Variables: ") + ", ".join(names))
-    IU.log(1, IU.cyan("Command: ") + str(' '.join([executable]+executable_args)))
+    IU.log(1, IU.cyan("Command: ") + str.replace(str(' '.join([executable]+executable_args)), '|', '\\|'))
 
     parsing_end = T.time()
 

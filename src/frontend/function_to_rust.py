@@ -29,7 +29,7 @@ def rewrite(exp):
     if exp[0] == 'Float':
         return "[{}]".format(exp[1])
     if exp[0] == 'Interval':
-        return "[{}, {}]".format(exp[1], exp[2])
+        return "[{},{}]".format(exp[1], exp[2])
     if exp[0] == 'Input':
         if exp[1] not in VARIABLES.keys():
             raise "Unknown variable: {}".format(exp[1])
@@ -43,7 +43,7 @@ def rewrite(exp):
     if exp[0] == 'Assign':
         return rewrite(exp[3])
     if exp[0] in ops:
-        return "({} {} {})".format(rewrite(exp[1]), ops[exp[0]], rewrite(exp[2]))
+        return "({}{}{})".format(rewrite(exp[1]), ops[exp[0]], rewrite(exp[2]))
     if exp[0] in funcs:
         return "{}({})".format(funcs[exp[0]], rewrite(exp[1]))
     if exp[0] == 'abs':
@@ -51,12 +51,12 @@ def rewrite(exp):
     if exp[0] == 'Neg':
         return "-({})".format(rewrite(exp[1]))
     if exp[0] == 'pow':
-        return "powi({}, {})".format(rewrite(exp[1]), rewrite(exp[2]))
+        return "powi({},{})".format(rewrite(exp[1]), rewrite(exp[2]))
     if exp[0] == 'cpow':
-        return "pow({}, {})".format(rewrite(exp[1]), rewrite(exp[2]))
+        return "pow({},{})".format(rewrite(exp[1]), rewrite(exp[2]))
     if exp[0] == "ipow":
         c = GOBAL_CONSTANTS_LIST[exp[2][1]][1]
-        return "pow({}, {})".format(rewrite(exp[1]), c)
+        return "pow({},{})".format(rewrite(exp[1]), c)
     if exp[0] == "sqrt":
         return"sqrt({})".format(rewrite(exp[1]))
     print("Error rewriting '{}'".format(exp))
@@ -94,7 +94,7 @@ def translate(data, variables):
     GLOBAL_CONSTANTS_LIST = trans_const()
     constants = '|'.join(GLOBAL_CONSTANTS_LIST)
     part = rewrite_int(exp, variables)
-    part = ', '.join(part.split())
+    part = ','.join(part.split())
     function += '    {}'.format(rewrite(exp))
     function += '\n}\n'
     return (function, constants, part)
