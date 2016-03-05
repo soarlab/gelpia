@@ -5,6 +5,20 @@ import shlex as SHL
 import signal as SIG
 import sys as SYS
 import time as T
+import threading
+import queue
+
+class AsyncReader(threading.Thread):
+    def __init__(self, fil, q):
+        threading.Thread.__init__(self)
+        self.q = q;
+        self.fil = fil
+
+    def run(self):
+        output = "empty"
+        while output != "":
+            output = self.fil.readline()
+            self.q.put(output)        
 
 # optional color printing
 if SYS.stdout.isatty():
@@ -140,19 +154,40 @@ def run(cmd, args_list, error_string="An Error has occured", expected_return=0):
 
     return output
 
-def run_async(cmd, args_list, error_string="An Error has occured", expected_return=0):
+def run_async(cmd, args_list, term_time, error_string="An Error has occured", 
+              expected_return=0):
     command = [cmd]+args_list
     should_exit = None
     try:
         with SP.Popen(command, bufsize=1, universal_newlines=True,
                       stdout=SP.PIPE, stderr=SP.STDOUT) as proc:
-            output = "entry"
-            while output != "":
-                output = proc.stdout.readline()
-                yield output
+            start_time = T.time()
+
+            # Asynchronously collect messages
+            stdout_q = queue.Queue();
+            stdout_r = AsyncReader(proc.stdout, stdout_q);
+            stdout_r.start()
+
+            while proc.poll() is None:
+                if not stdout_q.empty():
+                    line = stdout_q.get()
+                    yield line
+
+                # Kill proc if timeout exceeded
+                if term_time is not None:
+                    if T.time() > term_time - 6:
+                        print("Killed")
+                        proc.kill()
+                T.sleep(0.1)
+
+            # Print remaining buffered messages
+            while stdout_r.is_alive() or not stdout_q.empty():
+                if not stdout_q.empty():
+                    yield stdout_q.get()
 
             proc.wait()            
-            if (expected_return != None) and (proc.returncode != expected_return):
+            if (expected_return != None) and (proc.returncode not in
+                                              (expected_return, -9)):
                 error(error_string)
                 error("Return code: {}".format(proc.returncode))
                 error("Command used: {}".format(command))

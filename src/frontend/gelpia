@@ -243,8 +243,12 @@ def main():
                 f2.flush()
             
         start = T.time()
+        term_time = None
+        if int(arg_dict["timeout"]) != 0:
+            term_time = start + int(arg_dict["timeout"]) + 5
+        
         IU.log(1, IU.cyan("Running"))
-        for line in IU.run_async(executable, executable_args):
+        for line in IU.run_async(executable, executable_args, term_time):
             if logging and line.startswith("lb:"): # Hacky
                 print(line.strip(), file=SYS.stderr)
                 if log_file is not None:
