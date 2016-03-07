@@ -15,7 +15,7 @@ path = "src/bin/serial.rs"
 path = "src/gelpia_utils"
 
 [dependencies.gr]
-path = "src/gaol"
+path = "src/gr"
 
 [dependencies]
 getopts = "0.2.*"
