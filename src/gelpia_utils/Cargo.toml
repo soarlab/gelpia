@@ -8,4 +8,4 @@ name = "gelpia_utils"
 path = "src/lib.rs"
 
 [dependencies.gr]
-path = "../.."
+path = "../gr"

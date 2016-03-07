@@ -12,11 +12,11 @@ rand = "0.3.*"
 time = "*"
 
 [dependencies.gelpia_utils]
-path = "../.."
+path = "../gelpia_utils"
 
 [dependencies.gr]
-path = "../.."
+path = "../gr"
 
 [dependencies.function]
-path = "../.."
+path = "../function"
 

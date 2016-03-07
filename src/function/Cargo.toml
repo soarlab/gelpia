@@ -8,7 +8,7 @@ name = "function"
 path = "src/lib.rs"
 
 [dependencies.gr]
-path = "../.."
+path = "../gr"
 
 [dependencies]
 dylib = "0.0.*"

@@ -9,4 +9,4 @@ path = "src/lib_fillin.rs"
 crate-type = ["dylib"]
 
 [dependencies.gr]
-path = "../.."
+path = "../gr"

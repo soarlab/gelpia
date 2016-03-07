@@ -7,11 +7,7 @@ authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>"]
 name = "args"
 path = "src/lib.rs"
 
-[dependencies.gr]
-path = "../.."
-
-[dependencies.function]
-path = "../.."
-
 [dependencies]
+gr = { path = "../gr" }
+function = { path = "../function" }
 getopts = "0.2.*"
