@@ -1,3 +1,4 @@
+# answer: 1000000
 -ie .01
 -oe .01
 -f "pow(x, 2)*pow(y, 4)"

@@ -1,3 +1,4 @@
+# answer: 6.9
 -ie .01
 -oe .01
 -f "log(x)"
