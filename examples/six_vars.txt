@@ -1,3 +1,4 @@
+# answer: 500.0
 -ie .01
 -oe .01
 -f "-y * z - x * a + y * b + z * c - b * c + x * (-x + y + z - a + b + c)"
