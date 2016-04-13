@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-from function_parser import *
-import sys as SYS
+from lexed_to_parsed import *
 
+import sys
+
+    
 # constants used in the expression
 GLOBAL_CONSTANTS_LIST = list()
+GLOBAL_INPUTS_LIST = list()
 
 # read only list of supported ops
 # base lists are taken from parser
@@ -14,7 +17,6 @@ uniops = prefix_unary_functions + ['Neg']
 def make_constant(exp):
     ''' Given a constant expression places it in the global const list
     and mutates it to represent that it is a constant '''
-    global GLOBAL_CONSTANTS_LIST
     # If the constant value is already in the list, don't recreate it
     try:
         i = GLOBAL_CONSTANTS_LIST.index(exp)
@@ -30,7 +32,11 @@ def lift_constants(exp):
     ''' Given an expression, recursively lifts constants from the expression,
     coalescing neighboring constants. Mutates the expression and returns True
     if the expression was completely constant '''
-    if exp[0] in ['Input', 'Variable']:
+    if exp[0] == 'Input':
+        if exp[1] not in GLOBAL_INPUTS_LIST:
+            GLOBAL_INPUTS_LIST.append(exp[1])
+        return False
+    if exp[0] == 'Variable':
         return False
     if exp[0] in ['Interval', 'Float', 'Integer']:
         return True
@@ -57,28 +63,30 @@ def lift_constants(exp):
         return lift_constants(exp[1])
 
     print("Error constant lifting '{}'".format(exp))
-    SYS.exit(-1)
+    sys.exit(-1)
 
 
 def runmain():
     ''' Wrapper to allow constant lifter to run with direct
     command line input '''
     try:
-        filename = SYS.argv[1]
-        f = open(filename)
-        data = f.read()
-        f.close()
+        filename = sys.argv[1]
+        with open(filename, 'r') as f:
+            data = f.read()
     except IndexError:
-        SYS.stdout.write('Reading from standard input (type EOF to end):\n')
-        data = SYS.stdin.read()
+        sys.stdout.write('Reading from standard input (type EOF to end):\n')
+        data = sys.stdin.read()
 
     exp = parser.parse(data)
     lift_constants(exp)
-    consts = ["{} : {}".format(i, c) for i, c in
-              enumerate(GLOBAL_CONSTANTS_LIST)]
-    print("consts: [{}]".format('\n '.join(consts)))
-    print("globals:", GLOBAL_NAMES)
-    print("expression:", exp)
+
+    print(exp)
+    print()
+    print(list(enumerate(GLOBAL_INPUTS_LIST)))
+    print()
+    print(list(enumerate(GLOBAL_CONSTANTS_LIST)))
+
+
 
 # On call run as a util, taking in text and printing the constant lifted version
 if __name__ == "__main__":

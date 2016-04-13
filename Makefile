@@ -13,7 +13,8 @@ bin/build_func.sh: src/scripts/build_func.sh
 	@cp src/scripts/build_func.sh bin/
 	@chmod +x bin/build_func.sh
 
-bin/gelpia: src/frontend/gelpia src/frontend/*.py
+bin/gelpia: src/frontend/gelpia src/frontend/*.py src/frontend/function_transforms/*.py bin
+	@cp src/frontend/function_transforms/*.py bin
 	@cp src/frontend/*.py bin
 	@cp src/frontend/gelpia bin
 	@chmod +x bin/gelpia
@@ -33,6 +34,8 @@ clean:
 	$(RM) -r  bin/__pycache__ 
 	cargo clean
 	$(RM) src/func/comp_comm.sh
+	$(RM) src/func/src/*generated*
+	$(RM) -r .compiled
 	cd src/func && cargo clean
 	$(RM) Cargo.lock
 	$(RM) src/func/Cargo.lock

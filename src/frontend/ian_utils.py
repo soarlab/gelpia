@@ -216,7 +216,7 @@ def time_func(function, *args):
 
 
 
-# nicer file paring for args
+# nicer file parsing for args
 class IanArgumentParser(AP.ArgumentParser):
     def __init__(self, *args, **kwargs):
         super(IanArgumentParser, self).__init__(*args, **kwargs)

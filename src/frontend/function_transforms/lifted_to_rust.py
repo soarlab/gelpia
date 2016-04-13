@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-from function_utils import *
-from function_to_interpreter import *
-import sys as SYS
-import random as R
-import subprocess
+from parsed_to_lifted import *
+
+import sys
+
 
 ops = {
     '+'      : '+',
@@ -23,19 +22,15 @@ funcs = {
     'sqrt'   : 'sqrt',
 }
 
-VARIABLES = None
-
 def rewrite(exp):
     if exp[0] == 'Float':
         return "[{}]".format(exp[1])
     if exp[0] == 'Interval':
         return "[{},{}]".format(exp[1], exp[2])
     if exp[0] == 'Input':
-        if exp[1] not in VARIABLES.keys():
-            raise "Unknown variable: {}".format(exp[1])
-        return "_x[{}]".format(VARIABLES[exp[1]])
+        return "_x[{}]".format(GLOBAL_INPUTS_LIST.index(exp[1]))
     if exp[0] == 'Bound':
-        return rewrite(GLOBAL_NAMES[exp[1]])
+        return rewrite(GLOBAL_BINDINGS[exp[1]])
     if exp[0] == 'Const':
         return "_c[{}]".format(exp[1])
     if exp[0] in ['Return']:
@@ -60,7 +55,7 @@ def rewrite(exp):
     if exp[0] == "sqrt":
         return"sqrt({})".format(rewrite(exp[1]))
     print("Error rewriting '{}'".format(exp))
-    SYS.exit(-1)
+    sys.exit(-1)
 
 
 def trans_const_r(expr):
@@ -79,42 +74,40 @@ def trans_const():
     return consts
 
 
-def translate(data, variables):
-    global VARIABLES
-    VARIABLES = variables
-    function = '\n'.join(["extern crate gr;",
-                          "use gr::*;",
-                          "",
-                          "#[no_mangle]",
-                          "pub extern \"C\"",
-                          "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {"])
-    exp = parser.parse(data)
-    lift_constants(exp)
-    global GLOBAL_CONSTANTS_LIST
-    GLOBAL_CONSTANTS_LIST = trans_const()
-    constants = '|'.join(GLOBAL_CONSTANTS_LIST)
-    part = rewrite_int(exp, variables)
-    part = ','.join(part.split())
-    function += '    {}'.format(rewrite(exp))
-    function += '\n}\n'
-    return (function, constants, part)
+def translate_rust(exp):
+    function = ["extern crate gr;",
+                "use gr::*;",
+                "",
+                "#[no_mangle]",
+                "pub extern \"C\"",
+                "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {"]
+
+    function.append('    {}'.format(rewrite(exp)))
+    function.extend(["}", ""])
+    function = '\n'.join(function)
+    var = GLOBAL_INPUTS_LIST
+    const = trans_const()
+    return (function, var, const)
     
 
 def runmain():
     ''' Wrapper to allow translater to run with direct command line input '''
     try:
-        filename = SYS.argv[1]
-        f = open(filename)
-        data = f.read()
-        f.close()
+        filename = sys.argv[1]
+        with open(filename, 'r') as f:
+            data = f.read()
     except IndexError:
-        SYS.stdout.write('Reading from standard input (type EOF to end):\n')
-        data = SYS.stdin.read()
-
-    (function, constants, part) = translate(data)
-    print("Function: ", function)
-    print("Constants: ", constants)
-    print("Part: ", part)
+        sys.stdout.write('Reading from standard input (type EOF to end):\n')
+        data = sys.stdin.read()
+    exp = parser.parse(data)
+    lift_constants(exp)
+    
+    function, var, const = translate_rust(exp)
+    print(function)
+    print()
+    print(list(enumerate(var)))
+    print()
+    print(list(enumerate(const)))
 
 
 if __name__ == "__main__":

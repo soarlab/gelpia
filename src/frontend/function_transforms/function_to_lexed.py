@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import ply.lex as LEX
-import sys as SYS
+import ply.lex as lex
+import sys
+
 
 prefix_binary_functions = [
     'pow',
@@ -90,15 +91,15 @@ def t_comment(t):
     pass
 
 def t_error(t):
-    print("Illegal character '{}'".format(t), file=SYS.stderr)
-    SYS.exit(-1)
+    print("Illegal character '{}'".format(t), file=sys.stderr)
+    sys.exit(-1)
 
 
 
 
 # Create lexer on call and import
-lexer = LEX.lex()
+lexer = lex.lex()
 
 # On call run as a util, taking in text and printing the lexed version
 if __name__ == "__main__":
-    LEX.runmain(lexer)
+    lex.runmain(lexer)
