@@ -152,7 +152,19 @@ def main():
         if not arg_dict["debug"]:
             os.remove(function_filename)
             try:
-                os.remove(path.join(base_dir, "/.compiled/libfunc_"+file_id+".so"))
+                os.remove(path.join(base_dir, ".compiled/libfunc_generated_"+file_id+".so"))
+            except:
+                pass
+
+            try:
+                p = path.join(src_dir, "func/target/release/libfunc_generated_"+file_id+".so")
+                os.remove(p)
+            except:
+                pass
+
+            try:
+                p = path.join(src_dir, "func/target/release/func_generated_"+file_id+".d")
+                os.remove(p)
             except:
                 pass
         end = time.time()

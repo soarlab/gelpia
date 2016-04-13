@@ -23,9 +23,15 @@ src/func/comp_comm.sh: src/func/src/lib_fillin.rs
 	@cd src/func/ && ./make_command
 	@mkdir -p .compiled
 
-.PHONY: clean
-clean:
+.PHONY: cl
+cl: #clean libs
 	$(RM) src/func/src/lib_generated_*
+	$(RM) -r .compiled
+	$(RM) src/func/target/release/*lib_generated_*
+	cd src/func && cargo clean
+
+.PHONY: clean
+clean: cl
 	$(RM) libfunc.so 
 	$(RM) bin/*.py 
 	$(RM) bin/gelpia 
@@ -34,9 +40,6 @@ clean:
 	$(RM) -r  bin/__pycache__ 
 	cargo clean
 	$(RM) src/func/comp_comm.sh
-	$(RM) src/func/src/*generated*
-	$(RM) -r .compiled
-	cd src/func && cargo clean
 	$(RM) Cargo.lock
 	$(RM) src/func/Cargo.lock
 
