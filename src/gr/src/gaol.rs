@@ -206,6 +206,10 @@ impl GI {
             Err(format!("Error evaluating expression: {}", x))
         }
     }
+
+    pub fn new_p(x: f64) -> GI {
+        GI::new_d(x, x)
+    }
     
     pub fn new_ss(inf: &str, sup: &str) -> Result<GI, String> {
         let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
@@ -494,7 +498,7 @@ pub fn split_box(_x: &Vec<GI>) -> Vec<Vec<GI>> {
     
     let mut a = _x.clone();
     let mut b = _x.clone();
-    let nb = get_next_binade(_x[w_ind].lower());
+    let nb = get_next_binade(_x[w_ind].midpoint().lower());
     if nb < _x[w_ind].upper() {
         a[w_ind] = GI::new_d(_x[w_ind].lower(), nb);
         b[w_ind] = GI::new_d(nb, _x[w_ind].upper());
