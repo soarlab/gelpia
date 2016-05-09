@@ -1,0 +1,14 @@
+[package]
+name = "function"
+version = "0.1.1"
+authors = ["Mark S. Baranowski <mark.s.baranowski@gmail.com>", "Ian Briggs <ibriggs@comcast.net>"]
+
+[lib]
+name = "function"
+path = "src/lib.rs"
+
+[dependencies.gr]
+path = "../gr"
+
+[dependencies]
+dylib = "0.0.*"

@@ -1,38 +1,60 @@
-# directories used
-IDIR = include
-INTDIR = interface
-ODIR = obj
-BDIR = bin
-TDIR = test
-SDIR = src
 
-# c++11 code, catch all warnings as errors
-CXXFLAGS += -std=c++11 -Wall -Werror -g -I$(IDIR)
-
-all: $(BDIR)/_optimizer_helpers.so
-
-$(BDIR)/_optimizer_helpers.so: $(ODIR)/optimizer_helpers.o $(ODIR)/optimizer_helpers_wrap.o
-	$(CXX) -bundle `python3-config --ldflags` $(ODIR)/optimizer_helpers.o $(ODIR)/optimizer_helpers_wrap.o -o $(BDIR)/_optimizer_helpers.so
-	mv $(INTDIR)/optimizer_helpers.py $(BDIR)
-
-$(ODIR)/optimizer_helpers.o: $(SDIR)/optimizer_helpers.cc $(INTDIR)/optimizer_helpers_wrap.cc
-	$(CXX) $(CXXFLAGS) -c $(SDIR)/optimizer_helpers.cc -o $(ODIR)/optimizer_helpers.o
-
-$(ODIR)/optimizer_helpers_wrap.o: $(SDIR)/optimizer_helpers.cc $(INTDIR)/optimizer_helpers_wrap.cc
-	$(CXX) $(CXXFLAGS) `python3-config --cflags` -c $(INTDIR)/optimizer_helpers_wrap.cc -o $(ODIR)/optimizer_helpers_wrap.o
-
-$(INTDIR)/optimizer_helpers_wrap.cc: $(IDIR)/optimizer_types.h $(IDIR)/optimizer_helpers.h $(INTDIR)/optimizer_helpers.i
-	swig -c++ -Wall -cppext cc -python -I$(IDIR) $(INTDIR)/optimizer_helpers.i
+# Set paths to point to locally built requirements first
+export PATH := ${CURDIR}/requirements/bin:${PATH}
+export LD_LIBRARY_PATH := $(CURDIR)/requirements/lib:${LD_LIBRARY_PATH}
+export CPLUS_INCLUDE_PATH := $(CURDIR)/requirements/include:${CPLUS_INCLUDE_PATH}
+export LIBRARY_PATH := $(CURDIR)/requirements/lib:${LIBRARY_PATH}
 
 
-.PHONY: test
-test: $(BDIR)/example_swig.py $(BDIR)/_optimizer_helpers.so
-	./$(BDIR)/example_swig.py
+all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh
+	@cargo build --release
+	@cargo build
 
-$(BDIR)/example_swig.py: $(TDIR)/example_swig.py
-	ln -f $(TDIR)/example_swig.py $(BDIR)/example_swig.py
+bin/build_func.sh: src/scripts/build_func.sh
+	@cp src/scripts/build_func.sh bin/
+	@chmod +x bin/build_func.sh
+
+bin/gelpia: src/frontend/gelpia src/frontend/*.py src/frontend/function_transforms/*.py bin
+	@cp src/frontend/function_transforms/*.py bin
+	@cp src/frontend/*.py bin
+	@cp src/frontend/gelpia bin
+	@chmod +x bin/gelpia
+
+src/func/comp_comm.sh: src/func/src/lib_fillin.rs
+	@cd src/func/ && ./make_command
+	@mkdir -p .compiled
+
+.PHONY: cl
+cl: #clean libs
+	$(RM) src/func/src/lib_generated_*
+	$(RM) -r .compiled
+	$(RM) src/func/target/release/*lib_generated_*
+	cd src/func && cargo clean
 
 .PHONY: clean
-clean:
-	rm -f $(ODIR)/*.o $(TDIR)/*.tester $(INTDIR)/*.py $(INTDIR)/*.cc
-	rm -rf $(BDIR)/*
+clean: cl
+	$(RM) libfunc.so 
+	$(RM) bin/*.py 
+	$(RM) bin/gelpia 
+	$(RM) bin/build_func.sh
+	$(RM) bin/parser.out
+	$(RM) -r  bin/__pycache__ 
+	cargo clean
+	$(RM) src/func/comp_comm.sh
+	$(RM) Cargo.lock
+	$(RM) src/func/Cargo.lock
+
+
+.PHONY: requirements
+requirements: requirements/build.sh
+	cd requirements && ./build.sh
+
+
+.PHONY: clean-requirements
+clean-requirements:
+	$(RM) -r requirements/bin
+	$(RM) -r requirements/etc
+	$(RM) -r requirements/include
+	$(RM) -r requirements/lib
+	$(RM) -r requirements/share
+	$(RM) -r requirements/Sources

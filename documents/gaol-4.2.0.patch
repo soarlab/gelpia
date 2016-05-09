@@ -1,0 +1,166 @@
+diff -Naur gaol-4.2.0-old/gaol/gaol_expression.cpp gaol-4.2.0/gaol/gaol_expression.cpp
+--- gaol-4.2.0-old/gaol/gaol_expression.cpp	2012-03-06 10:08:58.000000000 -0700
++++ gaol-4.2.0/gaol/gaol_expression.cpp	2016-02-29 22:53:30.201205729 -0700
+@@ -52,6 +52,7 @@
+   const unsigned pow_itv_node::precedence = prec_t::uminus_prec;
+   const unsigned nth_root_node::precedence = prec_t::uminus_prec;
+   const unsigned cos_node::precedence = prec_t::uminus_prec;
++  const unsigned abs_node::precedence = prec_t::uminus_prec;
+   const unsigned sin_node::precedence = prec_t::uminus_prec;
+   const unsigned tan_node::precedence = prec_t::uminus_prec;
+   const unsigned atan2_node::precedence = prec_t::uminus_prec;
+@@ -661,6 +662,42 @@
+   {
+     return precedence;
+   }
++
++  /*
++    abs_node
++  */
++  abs_node::abs_node(const expression& e) : e_abs(e.get_root())
++  {
++    e_abs->inc_refcount();
++    GAOL_DEBUG(3,std::cout << "abs_node created" << std::endl);
++  }
++
++  abs_node::~abs_node()
++  {
++    if (e_abs->dec_refcount() == 0) {
++      delete e_abs;
++    }
++    GAOL_DEBUG(3,std::cout << "abs_node destroyed" << std::endl);
++  }
++
++  std::ostream& abs_node::display(std::ostream& os) const
++  {
++    os << "abs(";
++    e_abs->display(os);
++    os.put(')');
++    return os;
++  }
++
++  expr_node* abs_node::clone() const
++  {
++    abs_node* e = new abs_node(*e_abs);
++    return e;
++  }
++
++  unsigned int abs_node::get_precedence() const
++  {
++    return precedence;
++  }
+ 
+   /*
+     sin_node
+diff -Naur gaol-4.2.0-old/gaol/gaol_expression.h gaol-4.2.0/gaol/gaol_expression.h
+--- gaol-4.2.0-old/gaol/gaol_expression.h	2012-03-06 10:08:58.000000000 -0700
++++ gaol-4.2.0/gaol/gaol_expression.h	2016-02-29 22:53:33.833205702 -0700
+@@ -394,6 +394,25 @@
+     expr_node *e_cos;
+   };
+ 
++  class abs_node : public expr_node {
++  public:
++    abs_node(const expression& e);
++    ~abs_node();
++    expr_node* clone() const;
++    std::ostream& display(std::ostream& os) const;
++    unsigned int get_precedence() const;
++    INLINE void accept(expr_visitor& visitor);
++    //! Accessors
++    //@{
++    INLINE expr_node* get_subexpr();
++    //@}
++
++  protected:
++    static const unsigned int precedence;
++  private:
++    expr_node *e_abs;
++  };
++
+ 
+   class sin_node : public expr_node {
+   public:
+@@ -926,6 +945,20 @@
+   }
+ 
+   /*
++    abs_node --
++  */
++  INLINE void abs_node::accept(expr_visitor& visitor)
++  {
++    GAOL_DEBUG(2,std::cout << "abs_node accepting visitor" << std::endl;);
++    visitor.visit(this);
++  }
++
++  INLINE expr_node* abs_node::get_subexpr()
++  {
++    return e_abs;
++  }
++
++  /*
+     sin_node --
+   */
+   INLINE void sin_node::accept(expr_visitor& visitor)
+diff -Naur gaol-4.2.0-old/gaol/gaol_expr_visitor.h gaol-4.2.0/gaol/gaol_expr_visitor.h
+--- gaol-4.2.0-old/gaol/gaol_expr_visitor.h	2009-03-01 06:53:01.000000000 -0700
++++ gaol-4.2.0/gaol/gaol_expr_visitor.h	2016-02-29 22:53:41.857205642 -0700
+@@ -46,6 +46,7 @@
+   class div_node;
+   class sin_node;
+   class cos_node;
++  class abs_node;
+   class tan_node;
+   class atan2_node;
+   class asin_node;
+@@ -116,6 +117,9 @@
+     virtual void visit(cos_node* node) {
+       error = true;
+     }
++    virtual void visit(abs_node* node) {
++      error = true;
++    }
+     virtual void visit(sin_node* node) {
+       error = true;
+     }
+diff -Naur gaol-4.2.0-old/gaol/gaol_interval_lexer.lpp gaol-4.2.0/gaol/gaol_interval_lexer.lpp
+--- gaol-4.2.0-old/gaol/gaol_interval_lexer.lpp	2012-03-06 10:08:58.000000000 -0700
++++ gaol-4.2.0/gaol/gaol_interval_lexer.lpp	2016-02-29 22:54:05.313205467 -0700
+@@ -62,6 +62,7 @@
+ "nth_root"	{ return NTH_ROOT_STR; }
+ "sqrt"		{ return SQRT_STR; }
+ "cos"		{ return COS_STR; }
++"abs"		{ return ABS_STR; }
+ "sin"		{ return SIN_STR; }
+ "tan"		{ return TAN_STR; }
+ "atan2"		{ return ATAN2_STR; }
+diff -Naur gaol-4.2.0-old/gaol/gaol_interval_parser.ypp gaol-4.2.0/gaol/gaol_interval_parser.ypp
+--- gaol-4.2.0-old/gaol/gaol_interval_parser.ypp	2012-03-06 10:08:58.000000000 -0700
++++ gaol-4.2.0/gaol/gaol_interval_parser.ypp	2016-02-29 22:53:57.025205529 -0700
+@@ -51,7 +51,7 @@
+ 
+ %token EMPTY_STR INFINITY_STR DMIN_STR DMAX_STR PI_STR
+ %token EXP_STR LOG_STR POW_STR NTH_ROOT_STR SQRT_STR
+-%token COS_STR SIN_STR TAN_STR ATAN2_STR
++%token COS_STR SIN_STR TAN_STR ATAN2_STR ABS_STR
+ %token COSH_STR SINH_STR TANH_STR
+ %token ACOS_STR ASIN_STR ATAN_STR
+ %token ACOSH_STR ASINH_STR ATANH_STR
+@@ -95,6 +95,8 @@
+ itv_function_call
+ 	: COS_STR '(' itv_expr_aux ')'						{ gaol_tmp_itv=cos(interval($3.l,$3.r));
+ 						  									$$.l=gaol_tmp_itv.left(); $$.r=gaol_tmp_itv.right(); }
++        | ABS_STR '(' itv_expr_aux ')'						{ gaol_tmp_itv=abs(interval($3.l,$3.r));
++						  									$$.l=gaol_tmp_itv.left(); $$.r=gaol_tmp_itv.right(); }
+ 	| SIN_STR '(' itv_expr_aux ')'						{ gaol_tmp_itv=sin(interval($3.l,$3.r));
+ 						  									$$.l=gaol_tmp_itv.left(); $$.r=gaol_tmp_itv.right(); }
+ 	| TAN_STR '(' itv_expr_aux ')'						{ gaol_tmp_itv=tan(interval($3.l,$3.r));
+@@ -218,6 +220,8 @@
+ function_call
+ 	: COS_STR '(' expression ')'					{ 	$$ = new cos_node(*$3);
+ 					  									$$->inc_refcount(); }
++        | ABS_STR '(' expression ')'					{ 	$$ = new abs_node(*$3);
++					  									$$->inc_refcount(); }
+ 	| SIN_STR '(' expression ')'  					{ 	$$ = new sin_node(*$3);
+ 					  									$$->inc_refcount(); }
+ 	| TAN_STR '(' expression ')'  					{ 	$$ = new tan_node(*$3);

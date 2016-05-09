@@ -1,0 +1,5 @@
+# answer: inf
+-ie .01
+-oe .01
+-f "tan(abs(x)) + sqrt(abs(2.0) + abs(tan(cos(interval(3.0, 4.0) + abs(interval(0.5, 1.0))))))"
+-i "{'x' : (1.01e-2,2e0)}"

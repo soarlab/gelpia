@@ -1,0 +1,22 @@
+[package]
+name  = "ga"
+version = "0.0.1"
+authors = ["Andy Schwartzmeyer (modified by Mark S. Baranowski)"]
+
+[lib]
+name = "ga"
+path = "algorithm.rs"
+
+[dependencies]
+rand = "0.3.*"
+time = "*"
+
+[dependencies.gelpia_utils]
+path = "../gelpia_utils"
+
+[dependencies.gr]
+path = "../gr"
+
+[dependencies.function]
+path = "../function"
+
