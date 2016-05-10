@@ -1,0 +1,15 @@
+*.[oa]
+*.lock
+*.so
+__pycache__
+
+/src/func/comp_comm.sh
+/requirements/bin
+/requirements/etc
+/requirements/include
+/requirements/lib
+/requirements/share
+/requirements/Sources
+
+/bin/*
+/target/*
