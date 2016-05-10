@@ -83,7 +83,7 @@ def main():
     # tup = function_to_rust.translate(arg_dict["function"], variables)
     # (function, constants, part) = tup
 
-    inputs = ["[{},{}]".format(x[0], x[1]) for x in [b[1] for b in arg_dict["inputs"]]]
+    inputs = [tup[1] for tup in arg_dict['inputs']]
     inputs = "|".join(inputs)
 
     file_id = mk_file_hash(arg_dict["rust_function"])

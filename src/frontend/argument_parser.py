@@ -4,9 +4,12 @@ import argparse
 import ast
 
 import ian_utils as iu
+
+from parsed_input_lift_pass import *
+from parsed_constant_lift_pass import *
+
 from lifted_to_rust import *
 from lifted_to_interpreter import *
-
 
 def parse_args():
     """ Command line argument parser. Returns a dict from arg name to value"""
@@ -59,20 +62,24 @@ def parse_args():
     function = ' '.join(args.function)
     inputs = ' '.join(args.input)
 
-    exp = parser.parse(function)
-    lift_constants(exp)
+    start = parse_input_box(inputs)
 
-    rust_func, _, __, = translate_rust(exp)
-    interp_func, var, const = translate_interp(exp)
-    parse_input_box(inputs)
+    print(start+'\n'+function)
+    exp = parser.parse(start+'\n'+function)
+    inputs = lift_inputs(exp)
+    consts = lift_constants(exp)
+    
+    rust_func, new_inputs, iconsts = translate_rust(exp, consts, inputs)
+    interp_func, _, __ = translate_interp(exp, consts, inputs)
+    
                      
     return {"input_epsilon"   : args.input_epsilon,
             "output_epsilon"  : args.output_epsilon,
-            "inputs"          : [(name, GLOBAL_BINDINGS[name]) for name in GLOBAL_INPUTS_LIST],
-            "constants"       : '|'.join(const),
+            "inputs"          : new_inputs,
+            "constants"       : '|'.join([tup[1] for tup in iconsts]),
             "rust_function"   : rust_func,
             "interp_function" : interp_func,
-            "bindings"        : {k:v for k,v in GLOBAL_BINDINGS.items() if type(v) != tuple},
+            "expression"      : exp,
             "debug"           : args.debug,
             "timeout"         : args.timeout,
             "update"          : args.update,
@@ -81,5 +88,8 @@ def parse_args():
 
 def parse_input_box(box_string):
     inputs = ast.literal_eval(box_string)
-    for k in [k for k,v in GLOBAL_BINDINGS.items() if v == None]:
-        GLOBAL_BINDINGS[k] = inputs[k]
+    reformatted = list()
+    for k,v in inputs.items():
+        reformatted.append("{} = [{},{}];".format(k, *v))
+    return '\n'.join(reformatted)
+    

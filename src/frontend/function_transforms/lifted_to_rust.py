@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from parsed_to_lifted import *
+from parsed_constant_lift_pass import *
+from parsed_input_lift_pass import *
 
 import sys
 
@@ -22,40 +23,51 @@ funcs = {
     'sqrt'   : 'sqrt',
 }
 
-def rewrite(exp):
-    if exp[0] == 'Float':
-        return "[{}]".format(exp[1])
-    if exp[0] == 'Interval':
-        return "[{},{}]".format(exp[1], exp[2])
-    if exp[0] == 'Input':
-        return "_x[{}]".format(GLOBAL_INPUTS_LIST.index(exp[1]))
-    if exp[0] == 'Bound':
-        return rewrite(GLOBAL_BINDINGS[exp[1]])
-    if exp[0] == 'Const':
-        return "_c[{}]".format(exp[1])
-    if exp[0] in ['Return']:
-        return rewrite(exp[1])
-    if exp[0] == 'Assign':
-        return rewrite(exp[3])
-    if exp[0] in ops:
-        return "({}{}{})".format(rewrite(exp[1]), ops[exp[0]], rewrite(exp[2]))
-    if exp[0] in funcs:
-        return "{}({})".format(funcs[exp[0]], rewrite(exp[1]))
-    if exp[0] == 'abs':
-        return "abs({})".format(rewrite(exp[1]))
-    if exp[0] == 'Neg':
-        return "-({})".format(rewrite(exp[1]))
-    if exp[0] == 'pow':
-        return "powi({},{})".format(rewrite(exp[1]), rewrite(exp[2]))
-    if exp[0] == 'cpow':
-        return "pow({},{})".format(rewrite(exp[1]), rewrite(exp[2]))
-    if exp[0] == "ipow":
-        c = GOBAL_CONSTANTS_LIST[exp[2][1]][1]
-        return "pow({},{})".format(rewrite(exp[1]), c)
-    if exp[0] == "sqrt":
-        return"sqrt({})".format(rewrite(exp[1]))
-    print("Error rewriting '{}'".format(exp))
-    sys.exit(-1)
+def rewrite_rust(exp, consts, inputs):
+
+    def _rewrite_rust(exp):
+        if type(exp[0]) is list:
+            return "{}\n{}".format(_rewrite_rust(exp[0]),
+                                   _rewrite_rust(exp[1]))
+        if exp[0] in ['Float', 'Integer']:
+            return "[{}]".format(exp[1])
+        if exp[0] in ['Interval', 'InputInterval']:
+            l = _rewrite_rust(exp[1]).replace('[','').replace(']','')
+            r = _rewrite_rust(exp[2]).replace('[','').replace(']','')
+            return "[{},{}]".format(l,r)
+        if exp[0] == 'Input':
+            return "_x[{}]".format(input_names.index(exp[1]))
+        if exp[0] == 'Variable':
+            return exp[1]
+        if exp[0] == 'Const':
+            return "_c[{}]".format(const_names.index(exp[1]))
+        if exp[0] in ['Return']:
+            return _rewrite_rust(exp[1])
+        if exp[0] == 'Assign':
+            return "{} = {};".format(exp[1][0], _rewrite_rust(exp[2]))
+        if exp[0] in ops:
+            return "({}{}{})".format(_rewrite_rust(exp[1]), ops[exp[0]], _rewrite_rust(exp[2]))
+        if exp[0] in funcs:
+            return "{}({})".format(funcs[exp[0]], _rewrite_rust(exp[1]))
+        if exp[0] == 'abs':
+            return "abs({})".format(_rewrite_rust(exp[1]))
+        if exp[0] == 'Neg':
+            return "-({})".format(_rewrite_rust(exp[1]))
+        if exp[0] == 'pow':
+            return "powi({},{})".format(_rewrite_rust(exp[1]), _rewrite_rust(exp[2]))
+        if exp[0] == 'cpow':
+            return "pow({},{})".format(_rewrite_rust(exp[1]), _rewrite_rust(exp[2]))
+        if exp[0] == "ipow":
+            c = consts[const_names.index(exp[2][1])][1][1]
+            return "pow({},{})".format(_rewrite_rust(exp[1]), c)
+        if exp[0] == "sqrt":
+            return"sqrt({})".format(_rewrite_rust(exp[1]))
+        print("Error rewriting '{}'".format(exp))
+        sys.exit(-1)
+
+    input_names = [tup[0] for tup in inputs]
+    const_names = [tup[0] for tup in consts]
+    return _rewrite_rust(exp)
 
 
 def trans_const_r(expr):
@@ -67,14 +79,14 @@ def trans_const_r(expr):
     return [trans_const_r(e) for e in expr]
     
 
-def trans_const():
-    consts = list()
-    for expr in GLOBAL_CONSTANTS_LIST:
-        consts.append(rewrite(trans_const_r(expr)))
-    return consts
+def trans_const(consts):
+    new_consts = list()
+    for tup in consts:
+        new_consts.append((tup[0], rewrite_rust(trans_const_r(tup[1]), list(), list())))
+    return new_consts
 
 
-def translate_rust(exp):
+def translate_rust(exp, consts, inputs):
     function = ["extern crate gr;",
                 "use gr::*;",
                 "",
@@ -82,12 +94,12 @@ def translate_rust(exp):
                 "pub extern \"C\"",
                 "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {"]
 
-    function.append('    {}'.format(rewrite(exp)))
+    function.append('    {}'.format(rewrite_rust(exp, consts, inputs)))
     function.extend(["}", ""])
     function = '\n'.join(function)
-    var = GLOBAL_INPUTS_LIST
-    const = trans_const()
-    return (function, var, const)
+    new_inputs = trans_const(inputs)
+    new_consts = trans_const(consts)
+    return (function, new_inputs, new_consts)
     
 
 def runmain():
@@ -101,13 +113,23 @@ def runmain():
         data = sys.stdin.read()
     exp = parser.parse(data)
     lift_constants(exp)
+
+    exp = parser.parse(data)
+    inputs = lift_inputs(exp)
+    consts = lift_constants(exp)
     
-    function, var, const = translate_rust(exp)
+    function, new_inputs, new_consts = translate_rust(exp, consts, inputs)
+    print("function:")
     print(function)
     print()
-    print(list(enumerate(var)))
+    print("constants:")
+    for c in new_consts:
+        print(c)
     print()
-    print(list(enumerate(const)))
+    print("inputs:")
+    for i in new_inputs:
+        print(i)
+
 
 
 if __name__ == "__main__":

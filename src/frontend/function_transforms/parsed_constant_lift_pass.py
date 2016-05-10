@@ -4,67 +4,64 @@ from lexed_to_parsed import *
 
 import sys
 
-    
-# constants used in the expression
-GLOBAL_CONSTANTS_LIST = list()
-GLOBAL_INPUTS_LIST = list()
+from parsed_passes import BINOPS, UNIOPS
 
-# read only list of supported ops
-# base lists are taken from parser
-binops = prefix_binary_functions + ['+', '-', '*', '/', 'ipow']
-uniops = prefix_unary_functions + ['Neg']
 
-def make_constant(exp):
+def make_constant(exp, consts):
     ''' Given a constant expression places it in the global const list
     and mutates it to represent that it is a constant '''
     # If the constant value is already in the list, don't recreate it
     try:
-        i = GLOBAL_CONSTANTS_LIST.index(exp)
+        i = consts.index(exp)
     except ValueError:
-        i = len(GLOBAL_CONSTANTS_LIST)
-        GLOBAL_CONSTANTS_LIST.append(exp[:])
+        i = len(consts)
+        consts.append(exp[:])
     exp[0] = 'Const'
-    exp[1] = i
+    exp[1] = 'Constant_{}'.format(i)
     del exp[2:]
 
 
-def lift_constants(exp):
+def _lift_constants(exp, consts):
     ''' Given an expression, recursively lifts constants from the expression,
     coalescing neighboring constants. Mutates the expression and returns True
     if the expression was completely constant '''
-    if exp[0] == 'Input':
-        if exp[1] not in GLOBAL_INPUTS_LIST:
-            GLOBAL_INPUTS_LIST.append(exp[1])
+    if type(exp[0]) is list:
+        _lift_constants(exp[0], consts)
+        _lift_constants(exp[1], consts)
         return False
-    if exp[0] == 'Variable':
+    if exp[0] in ['InputInterval', 'Variable', 'Input']:
         return False
     if exp[0] in ['Interval', 'Float', 'Integer']:
         return True
     if exp[0] == 'Return':
-        if lift_constants(exp[1]):
-            make_constant(exp[1])
+        if _lift_constants(exp[1], consts):
+            make_constant(exp[1], consts)
         return False
     if exp[0] == 'Assign':
-        if lift_constants(exp[2]):
-            make_constant(exp[2])
-        lift_constants(exp[3])
+        if _lift_constants(exp[2], consts):
+            make_constant(exp[2], consts)
         return False
-    if exp[0] in binops:
-        first = lift_constants(exp[1])
-        second = lift_constants(exp[2])
+    if exp[0] in BINOPS:
+        first = _lift_constants(exp[1], consts)
+        second = _lift_constants(exp[2], consts)
         if first and second:
             return True
         if first:
-            make_constant(exp[1])
+            make_constant(exp[1], consts)
         if second:
-            make_constant(exp[2])
+            make_constant(exp[2], consts)
         return False
-    if exp[0] in uniops:
-        return lift_constants(exp[1])
+    if exp[0] in UNIOPS:
+        return _lift_constants(exp[1], consts)
 
     print("Error constant lifting '{}'".format(exp))
     sys.exit(-1)
 
+def lift_constants(exp):
+    consts = list()
+    _lift_constants(exp, consts)
+    return [("Constant_{}".format(i), c) for i,c in enumerate(consts)]
+    
 
 def runmain():
     ''' Wrapper to allow constant lifter to run with direct
@@ -78,13 +75,17 @@ def runmain():
         data = sys.stdin.read()
 
     exp = parser.parse(data)
-    lift_constants(exp)
+    consts = lift_constants(exp)
 
+    print("expresions:")
+    while type(exp[0]) is list:
+        print(exp[0])
+        exp = exp[1]
     print(exp)
     print()
-    print(list(enumerate(GLOBAL_INPUTS_LIST)))
-    print()
-    print(list(enumerate(GLOBAL_CONSTANTS_LIST)))
+    print("constants:")
+    for c in consts:
+        print(c)
 
 
 

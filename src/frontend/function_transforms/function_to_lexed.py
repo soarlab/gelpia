@@ -4,86 +4,123 @@ import ply.lex as lex
 import sys
 
 
-prefix_binary_functions = [
-    'pow',
-]
-
-prefix_unary_functions = [
-    'abs',
-    'cos',
-    'exp',
-    'log',
-    'sin',
-    'tan',
-    'sqrt',
-]
-
 tokens = [
     # Operators
-    'PLUS',
-    'MINUS',
-    'TIMES',
-    'DIVIDE',
-    'BINOP',
-    'UNIOP',
+    "PLUS",
+    "MINUS",
+    "TIMES",
+    "DIVIDE",
+    "P_BINOP",
+    "I_BINOP",
+    "UNIOP",
 
     # Assignment
-    'EQUALS',
+    "EQUALS",
 
     # Variables
-    'VARIABLE',
+    "NAME",
 
     # Literals
-    'INTEGER',
-    'FLOAT',
-    'INTERVAL',
+    "INTEGER",
+    "FLOAT",
+    "INTERVAL",
 
     # Deliminators
-    'LPAREN',
-    'RPAREN',
-    'COMMA',
-    'SEMICOLON',
+    "LPAREN",
+    "RPAREN",
+    "LBRACE",
+    "RBRACE",
+    "COMMA",
+    "SEMICOLON",
 ]
 
-t_PLUS   = r'\+'
-t_MINUS  = r'-'
-t_TIMES  = r'\*'
-t_DIVIDE = r'/'
-t_BINOP  = "({})".format(")|(".join(prefix_binary_functions))
-t_UNIOP  = "({})".format(")|(".join(prefix_unary_functions))
-t_EQUALS = r'='
 
-r_float     = ''.join((r'((',                # First match a number base
-                       r'(\d+(\.\d*)?)',     #     <num.>, <num.num>
-                       r'|',                 #     or
-                       r'(\.\d+)',           #     <.num>
-                       r')'                  # Then match an exponent
-                       r'((e|E)(\+|-)?\d+)', #     <exponent>
-                       r'?'                  #     optionally
+# Operators
+t_PLUS    = '\+'
+
+t_MINUS   = '-'
+
+t_TIMES   = '\*'
+
+t_DIVIDE  = '/'
+
+prefix_binary_operations = ['pow']
+t_P_BINOP = "({})".format(")|(".join(prefix_binary_operations))
+
+infix_binary_operations = ['\^']
+t_I_BINOP = "({})".format(")|(".join(infix_binary_operations))
+
+unary_operations = ['abs', 'cos', 'exp', 'log', 'sin', 'tan', 'sqrt']
+t_UNIOP   = "({})".format(")|(".join(unary_operations))
+
+
+
+
+# Assignment
+t_EQUALS  = r'='
+
+
+
+
+# Variables
+def t_NAME(t):
+    r'([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*'
+    if t.value in prefix_binary_operations:
+        t.type = 'P_BINOP'
+    elif t.value in infix_binary_operations:
+        t.type = 'I_BINOP'
+    elif t.value in unary_operations:
+        t.type = 'UNIOP'
+    elif t.value == 'interval':
+        t.type = 'INTERVAL'
+    else:
+        t.type = 'NAME'
+
+    return t
+
+
+
+
+# Literals
+r_float     = ''.join((r'(',                 # match all floats
+                       r'(',                 #  match float with '.'
+                       r'(',                 #   match a number base
+                       r'(\d+\.\d+)',        #    <num.num>
+                       r'|',                 #    or
+                       r'(\d+\.)',           #    <num.>
+                       r'|',                 #    or
+                       r'(\.\d+)',           #    <.num>
+                       r')',                 #
+                       r'(',                 #   then match an exponent
+                       r'(e|E)(\+|-)?\d+',   #    <exponent>
+                       r')?',                #    optionally
+                       r')',                 #
+                       r'|',                 #  or
+                       r'(',                 #  match float without '.'
+                       r'\d+',               #   <num>
+                       r'((e|E)(\+|-)?\d+)', #   <exponent>
+                       r')',                 #
                        r')'))
 t_FLOAT     = r_float
 
 t_INTEGER   = r'\d+'
 
-def t_VARIABLE(t):
-    r'([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*'
-    if t.value in prefix_binary_functions:
-        t.type = 'BINOP'
-    elif t.value in prefix_unary_functions:
-        t.type = 'UNIOP'
-    elif t.value == 'interval':
-        t.type = 'INTERVAL'
-    else:
-        t.type = 'VARIABLE'
-    return t
-
-
-
 t_INTERVAL  = 'interval'
+
+
+
+
+# Deliminators
 t_LPAREN    = r'\('
 t_RPAREN    = r'\)'
-t_COMMA     = r","
+t_LBRACE    = r'\['
+t_RBRACE    = r'\]'
+t_COMMA     = r','
 t_SEMICOLON = r';'
+
+
+
+# Non-emmitting
 t_ignore    = (' \t\n\r')
 
 def t_comment(t):
@@ -97,9 +134,39 @@ def t_error(t):
 
 
 
+
+
+
+
 # Create lexer on call and import
-lexer = lex.lex()
+function_lexer = lex.lex() #, optimize=1) #used when stable
+
+def lex_function(text, lexer=function_lexer):
+    lexer.input(text)
+    lexed = [list()]
+    for t in lexer:
+        lexed[-1].append(t)
+        if t.type == "SEMICOLON":
+            if lexed[-1] != list():
+                lexed.append(list())
+
+    return lexed
+
+def runmain_lexer(lexer):
+    ''' Wrapper to allow parser to run with direct command line input '''
+    try:
+        filename = sys.argv[1]
+        with open(filename, 'r') as f:
+            data = f.read()
+    except IndexError:
+        sys.stdout.write('Reading from standard input (type EOF to end):\n')
+        data = sys.stdin.read()
+
+    statements = lex_function(data, lexer)
+
+    for s in statements:
+        print(s)
 
 # On call run as a util, taking in text and printing the lexed version
 if __name__ == "__main__":
-    lex.runmain(lexer)
+    runmain_lexer(function_lexer)

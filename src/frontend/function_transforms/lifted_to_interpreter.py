@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-from parsed_to_lifted import *
+from parsed_constant_lift_pass import *
+from parsed_input_lift_pass import *
+
 from lifted_to_rust import *
 
 import sys
@@ -26,40 +28,53 @@ funcs_interpreter = {
 
 INT_VARIABLES = None
 
-def rewrite_interpreter(exp):
-    if exp[0] == 'Input':
-        return "i{} ".format(GLOBAL_INPUTS_LIST.index(exp[1]))
-    if exp[0] == 'Bound':
-        return rewrite_interpreter(GLOBAL_BINDINGS[exp[1]])
-    if exp[0] == 'Const':
-        return "c{} ".format(exp[1])
-    if exp[0] in ['Return']:
-        return rewrite_interpreter(exp[1])
-    if exp[0] == 'Assign':
-        return rewrite_interpreter(exp[3])
-    if exp[0] in ops_interpreter:
-        return "{} {} o{}".format(rewrite_interpreter(exp[1]),
-                                 rewrite_interpreter(exp[2]),
-                                 ops_interpreter[exp[0]])
-    if exp[0] in funcs_interpreter:
-        return "{} f{}".format(rewrite_interpreter(exp[1]),
-                              funcs_interpreter[exp[0]])
-    if exp[0] == 'abs':
-        return "{} fabs".format(rewrite_interpreter(exp[1]))
-    if exp[0] == 'sqrt':
-        return "{} fsqrt".format(rewrite_interpreter(exp[1]))
-    if exp[0] == "ipow":
-        c = GOBAL_CONSTANTS_LIST[exp[2][1]][1]
-        return "{} p{}".format(rewrite_interpreter(exp[1]), c)
-    print("Error rewriting_interpreter '{}'".format(exp))
-    sys.exit(-1)
+def rewrite_interpreter(exp, consts, inputs):
+
+    def _rewrite_interpreter(exp):
+        if exp[0] == 'Input':
+            return "i{} ".format(input_names.index(exp[1]))
+        if exp[0] == 'Variable':
+            return _rewrite_interpreter(bindings[exp[1]])
+        if exp[0] == 'Const':
+            return "c{} ".format(const_names.index(exp[1]))
+        if exp[0] in ['Return']:
+            return _rewrite_interpreter(exp[1])
+        if exp[0] == 'Assign':
+            return _rewrite_interpreter(exp[3])
+        if exp[0] in ops_interpreter:
+            return "{} {} o{}".format(_rewrite_interpreter(exp[1]),
+                                      _rewrite_interpreter(exp[2]),
+                                      ops_interpreter[exp[0]])
+        if exp[0] in funcs_interpreter:
+            return "{} f{}".format(_rewrite_interpreter(exp[1]),
+                                   funcs_interpreter[exp[0]])
+        if exp[0] == 'abs':
+            return "{} fabs".format(_rewrite_interpreter(exp[1]))
+        if exp[0] == 'sqrt':
+            return "{} fsqrt".format(_rewrite_interpreter(exp[1]))
+        if exp[0] == "ipow":
+            c = consts[const_names.index(exp[2][1])][1][1]
+            return "{} p{}".format(_rewrite_interpreter(exp[1]), c)
+        print("Error rewriting_interpreter '{}'".format(exp))
+        sys.exit(-1)
+
+    input_names = [tup[0] for tup in inputs]
+    const_names = [tup[0] for tup in consts]
+
+    bindings = dict()
+    while type(exp[0]) is list:
+        if exp[0][1][0] == 'Variable':
+            bindings[exp[0][1][1]] = exp[0][2]
+        exp = exp[1]
+    
+    return _rewrite_interpreter(exp)
 
 
-def translate_interp(exp):
-    function = ','.join(rewrite_interpreter(exp).split())
-    var = GLOBAL_INPUTS_LIST
-    const = trans_const()
-    return (function, var, const)
+def translate_interp(exp, consts, inputs):
+    function = ','.join(rewrite_interpreter(exp, consts, inputs).split())
+    new_inputs = trans_const(inputs)
+    new_consts = trans_const(consts)
+    return (function, new_inputs, new_consts)
 
 
 def runmain():
@@ -74,15 +89,20 @@ def runmain():
         data = sys.stdin.read()
 
     exp = parser.parse(data)
-    lift_constants(exp)
+    inputs = lift_inputs(exp)
+    consts = lift_constants(exp)
     
-    function, var, const = translate_interp(exp)
+    function, iconst = translate_interp(exp, consts, inputs)
+    print("function:")
     print(function)
     print()
-    print(list(enumerate(var)))
+    print("constants:")
+    for c in iconsts:
+        print(c)
     print()
-    print(list(enumerate(const)))
-
+    print("inputs:")
+    for i in inputs:
+        print(i)
     
 if __name__ == '__main__':
     runmain()

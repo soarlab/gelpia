@@ -1,6 +1,6 @@
 diff -Naur gaol-4.2.0-old/gaol/gaol_expression.cpp gaol-4.2.0/gaol/gaol_expression.cpp
 --- gaol-4.2.0-old/gaol/gaol_expression.cpp	2012-03-06 10:08:58.000000000 -0700
-+++ gaol-4.2.0/gaol/gaol_expression.cpp	2016-02-29 22:53:30.201205729 -0700
++++ gaol-4.2.0/gaol/gaol_expression.cpp	2016-05-09 18:54:12.151646669 -0600
 @@ -52,6 +52,7 @@
    const unsigned pow_itv_node::precedence = prec_t::uminus_prec;
    const unsigned nth_root_node::precedence = prec_t::uminus_prec;
@@ -54,7 +54,7 @@ diff -Naur gaol-4.2.0-old/gaol/gaol_expression.cpp gaol-4.2.0/gaol/gaol_expressi
      sin_node
 diff -Naur gaol-4.2.0-old/gaol/gaol_expression.h gaol-4.2.0/gaol/gaol_expression.h
 --- gaol-4.2.0-old/gaol/gaol_expression.h	2012-03-06 10:08:58.000000000 -0700
-+++ gaol-4.2.0/gaol/gaol_expression.h	2016-02-29 22:53:33.833205702 -0700
++++ gaol-4.2.0/gaol/gaol_expression.h	2016-05-09 18:54:12.151646669 -0600
 @@ -394,6 +394,25 @@
      expr_node *e_cos;
    };
@@ -104,7 +104,7 @@ diff -Naur gaol-4.2.0-old/gaol/gaol_expression.h gaol-4.2.0/gaol/gaol_expression
    INLINE void sin_node::accept(expr_visitor& visitor)
 diff -Naur gaol-4.2.0-old/gaol/gaol_expr_visitor.h gaol-4.2.0/gaol/gaol_expr_visitor.h
 --- gaol-4.2.0-old/gaol/gaol_expr_visitor.h	2009-03-01 06:53:01.000000000 -0700
-+++ gaol-4.2.0/gaol/gaol_expr_visitor.h	2016-02-29 22:53:41.857205642 -0700
++++ gaol-4.2.0/gaol/gaol_expr_visitor.h	2016-05-09 18:54:12.151646669 -0600
 @@ -46,6 +46,7 @@
    class div_node;
    class sin_node;
@@ -123,9 +123,20 @@ diff -Naur gaol-4.2.0-old/gaol/gaol_expr_visitor.h gaol-4.2.0/gaol/gaol_expr_vis
      virtual void visit(sin_node* node) {
        error = true;
      }
+diff -Naur gaol-4.2.0-old/gaol/gaol_interval.h gaol-4.2.0/gaol/gaol_interval.h
+--- gaol-4.2.0-old/gaol/gaol_interval.h	2015-05-21 01:00:45.000000000 -0600
++++ gaol-4.2.0/gaol/gaol_interval.h	2016-05-09 18:55:22.799646142 -0600
+@@ -30,6 +30,7 @@
+ #ifndef __gaol_interval_h__
+ #define __gaol_interval_h__
+ 
++#include <ios>
+ #include <cmath>
+ #include <iosfwd>
+ #include <string>
 diff -Naur gaol-4.2.0-old/gaol/gaol_interval_lexer.lpp gaol-4.2.0/gaol/gaol_interval_lexer.lpp
 --- gaol-4.2.0-old/gaol/gaol_interval_lexer.lpp	2012-03-06 10:08:58.000000000 -0700
-+++ gaol-4.2.0/gaol/gaol_interval_lexer.lpp	2016-02-29 22:54:05.313205467 -0700
++++ gaol-4.2.0/gaol/gaol_interval_lexer.lpp	2016-05-09 18:54:12.151646669 -0600
 @@ -62,6 +62,7 @@
  "nth_root"	{ return NTH_ROOT_STR; }
  "sqrt"		{ return SQRT_STR; }
@@ -136,7 +147,7 @@ diff -Naur gaol-4.2.0-old/gaol/gaol_interval_lexer.lpp gaol-4.2.0/gaol/gaol_inte
  "atan2"		{ return ATAN2_STR; }
 diff -Naur gaol-4.2.0-old/gaol/gaol_interval_parser.ypp gaol-4.2.0/gaol/gaol_interval_parser.ypp
 --- gaol-4.2.0-old/gaol/gaol_interval_parser.ypp	2012-03-06 10:08:58.000000000 -0700
-+++ gaol-4.2.0/gaol/gaol_interval_parser.ypp	2016-02-29 22:53:57.025205529 -0700
++++ gaol-4.2.0/gaol/gaol_interval_parser.ypp	2016-05-09 18:54:12.151646669 -0600
 @@ -51,7 +51,7 @@
  
  %token EMPTY_STR INFINITY_STR DMIN_STR DMAX_STR PI_STR
