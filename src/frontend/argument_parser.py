@@ -64,7 +64,6 @@ def parse_args():
 
     start = parse_input_box(inputs)
 
-    print(start+'\n'+function)
     exp = parser.parse(start+'\n'+function)
     inputs = lift_inputs(exp)
     consts = lift_constants(exp)
