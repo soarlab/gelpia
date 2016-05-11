@@ -6,7 +6,7 @@ export CPLUS_INCLUDE_PATH := $(CURDIR)/requirements/include:${CPLUS_INCLUDE_PATH
 export LIBRARY_PATH := $(CURDIR)/requirements/lib:${LIBRARY_PATH}
 
 
-all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh
+all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh bin/gaol_repl
 	@cargo build --release
 	@cargo build
 
@@ -23,6 +23,10 @@ bin/gelpia: src/frontend/gelpia src/frontend/*.py src/frontend/function_transfor
 src/func/comp_comm.sh: src/func/src/lib_fillin.rs
 	@cd src/func/ && ./make_command
 	@mkdir -p .compiled
+
+bin/gaol_repl: src/gaol_repl.cc
+	@clang++ -msse3 -O2 src/gaol_repl.cc -o bin/gaol_repl -lgaol -lcrlibm -lgdtoa
+
 
 .PHONY: cl
 cl: #clean libs
