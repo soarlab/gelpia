@@ -44,7 +44,7 @@ def rewrite_rust(exp, consts, inputs):
         if exp[0] in ['Return']:
             return _rewrite_rust(exp[1])
         if exp[0] == 'Assign':
-            return "{} = {};".format(exp[1][0], _rewrite_rust(exp[2]))
+            return "let {} = {};".format(exp[1][1], _rewrite_rust(exp[2]))
         if exp[0] in ops:
             return "({}{}{})".format(_rewrite_rust(exp[1]), ops[exp[0]], _rewrite_rust(exp[2]))
         if exp[0] in funcs:
