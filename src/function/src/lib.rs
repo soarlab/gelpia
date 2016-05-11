@@ -15,7 +15,6 @@ use std::option::Option;
 
 use std::sync::{Arc, RwLock};
 use std::fmt;
-use std::io::Write;
 
 // Internal libraries
 extern crate gr;
