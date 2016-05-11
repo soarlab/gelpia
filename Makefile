@@ -14,10 +14,10 @@ bin/build_func.sh: src/scripts/build_func.sh
 	@cp src/scripts/build_func.sh bin/
 	@chmod +x bin/build_func.sh
 
-bin/gelpia: src/frontend/gelpia src/frontend/*.py src/frontend/function_transforms/*.py bin
+bin/gelpia: src/frontend/gelpia.py src/frontend/*.py src/frontend/function_transforms/*.py bin
 	@cp src/frontend/function_transforms/*.py bin
 	@cp src/frontend/*.py bin
-	@cp src/frontend/gelpia bin
+	@cp src/frontend/gelpia.py bin/gelpia
 	@chmod +x bin/gelpia
 
 src/func/comp_comm.sh: src/func/src/lib_fillin.rs
