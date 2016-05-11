@@ -179,7 +179,7 @@ def p_error(t):
 
 
 # Create parser on call and import
-parser = yacc.yacc(debug=0, write_tables=0)
+function_parser = yacc.yacc(debug=0, write_tables=0)
 
 def runmain_parser(parser):
     ''' Wrapper to allow parser to run with direct command line input '''
@@ -199,4 +199,4 @@ def runmain_parser(parser):
     
 # On call run as a util, taking in text and printing the parsed version
 if __name__ == "__main__":
-    runmain_parser(parser)
+    runmain_parser(function_parser)

@@ -120,6 +120,7 @@ t_SEMICOLON = r';'
 
 
 
+
 # Non-emmitting
 t_ignore    = (' \t\n\r')
 
@@ -141,32 +142,6 @@ def t_error(t):
 # Create lexer on call and import
 function_lexer = lex.lex() #, optimize=1) #used when stable
 
-def lex_function(text, lexer=function_lexer):
-    lexer.input(text)
-    lexed = [list()]
-    for t in lexer:
-        lexed[-1].append(t)
-        if t.type == "SEMICOLON":
-            if lexed[-1] != list():
-                lexed.append(list())
-
-    return lexed
-
-def runmain_lexer(lexer):
-    ''' Wrapper to allow parser to run with direct command line input '''
-    try:
-        filename = sys.argv[1]
-        with open(filename, 'r') as f:
-            data = f.read()
-    except IndexError:
-        sys.stdout.write('Reading from standard input (type EOF to end):\n')
-        data = sys.stdin.read()
-
-    statements = lex_function(data, lexer)
-
-    for s in statements:
-        print(s)
-
 # On call run as a util, taking in text and printing the lexed version
 if __name__ == "__main__":
-    runmain_lexer(function_lexer)
+    lex.runmain(function_lexer)

@@ -7,6 +7,7 @@ import ian_utils as iu
 
 from parsed_input_lift_pass import *
 from parsed_constant_lift_pass import *
+from parsed_div_zero_pass import *
 
 from lifted_to_rust import *
 from lifted_to_interpreter import *
@@ -64,25 +65,30 @@ def parse_args():
 
     start = parse_input_box(inputs)
 
-    exp = parser.parse(start+'\n'+function)
+    exp = function_parser.parse(start+'\n'+function)
     inputs = lift_inputs(exp)
-    consts = lift_constants(exp)
+    consts = lift_constants(exp, inputs)
     
-    rust_func, new_inputs, iconsts = translate_rust(exp, consts, inputs)
+    rust_func, new_inputs, new_consts = translate_rust(exp, consts, inputs)
     interp_func, _, __ = translate_interp(exp, consts, inputs)
+
+    divides_by_zero = div_by_zero(exp, new_inputs, new_consts)
     
+    if divides_by_zero:
+        print("[inf, {\nunknown}]")
+        sys.exit(-2)
                      
     return {"input_epsilon"   : args.input_epsilon,
             "output_epsilon"  : args.output_epsilon,
             "inputs"          : new_inputs,
-            "constants"       : '|'.join([tup[1] for tup in iconsts]),
+            "constants"       : '|'.join(new_consts),
             "rust_function"   : rust_func,
             "interp_function" : interp_func,
             "expression"      : exp,
             "debug"           : args.debug,
             "timeout"         : args.timeout,
             "update"          : args.update,
-            "logfile"         : args.logging}
+            "logfile"         : args.logging,}
 
 
 def parse_input_box(box_string):

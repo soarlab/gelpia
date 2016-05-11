@@ -40,7 +40,7 @@ def rewrite_rust(exp, consts, inputs):
         if exp[0] == 'Variable':
             return exp[1]
         if exp[0] == 'Const':
-            return "_c[{}]".format(const_names.index(exp[1]))
+            return "_c[{}]".format(exp[1])
         if exp[0] in ['Return']:
             return _rewrite_rust(exp[1])
         if exp[0] == 'Assign':
@@ -58,11 +58,11 @@ def rewrite_rust(exp, consts, inputs):
         if exp[0] == 'cpow':
             return "pow({},{})".format(_rewrite_rust(exp[1]), _rewrite_rust(exp[2]))
         if exp[0] == "ipow":
-            c = consts[const_names.index(exp[2][1])][1][1]
+            c = consts[int(exp[2][1])]
             return "pow({},{})".format(_rewrite_rust(exp[1]), c)
         if exp[0] == "sqrt":
             return"sqrt({})".format(_rewrite_rust(exp[1]))
-        print("Error rewriting '{}'".format(exp))
+        print("Error rewriting for rust '{}'".format(exp))
         sys.exit(-1)
 
     input_names = [tup[0] for tup in inputs]
@@ -81,9 +81,16 @@ def trans_const_r(expr):
 
 def trans_const(consts):
     new_consts = list()
-    for tup in consts:
-        new_consts.append((tup[0], rewrite_rust(trans_const_r(tup[1]), list(), list())))
+    for c in consts:
+        new_consts.append(rewrite_rust(trans_const_r(c), list(), list()))
     return new_consts
+
+
+def trans_input(inputs):
+    new_inputs = list()
+    for tup in inputs:
+        new_inputs.append((tup[0], rewrite_rust(trans_const_r(tup[1]), list(), list())))
+    return new_inputs
 
 
 def translate_rust(exp, consts, inputs):
@@ -97,7 +104,7 @@ def translate_rust(exp, consts, inputs):
     function.append('    {}'.format(rewrite_rust(exp, consts, inputs)))
     function.extend(["}", ""])
     function = '\n'.join(function)
-    new_inputs = trans_const(inputs)
+    new_inputs = trans_input(inputs)
     new_consts = trans_const(consts)
     return (function, new_inputs, new_consts)
     

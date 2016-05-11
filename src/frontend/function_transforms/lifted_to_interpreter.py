@@ -36,7 +36,7 @@ def rewrite_interpreter(exp, consts, inputs):
         if exp[0] == 'Variable':
             return _rewrite_interpreter(bindings[exp[1]])
         if exp[0] == 'Const':
-            return "c{} ".format(const_names.index(exp[1]))
+            return "c{} ".format(exp[1])
         if exp[0] in ['Return']:
             return _rewrite_interpreter(exp[1])
         if exp[0] == 'Assign':
@@ -53,13 +53,13 @@ def rewrite_interpreter(exp, consts, inputs):
         if exp[0] == 'sqrt':
             return "{} fsqrt".format(_rewrite_interpreter(exp[1]))
         if exp[0] == "ipow":
-            c = consts[const_names.index(exp[2][1])][1][1]
+            c = consts[int(exp[2][1])]
+            c = c.replace('[','').replace(']','')
             return "{} p{}".format(_rewrite_interpreter(exp[1]), c)
-        print("Error rewriting_interpreter '{}'".format(exp))
+        print("Error rewriting interpreter '{}'".format(exp))
         sys.exit(-1)
 
     input_names = [tup[0] for tup in inputs]
-    const_names = [tup[0] for tup in consts]
 
     bindings = dict()
     while type(exp[0]) is list:
@@ -71,9 +71,9 @@ def rewrite_interpreter(exp, consts, inputs):
 
 
 def translate_interp(exp, consts, inputs):
-    function = ','.join(rewrite_interpreter(exp, consts, inputs).split())
-    new_inputs = trans_const(inputs)
+    new_inputs = trans_input(inputs)
     new_consts = trans_const(consts)
+    function = ','.join(rewrite_interpreter(exp, new_consts, new_inputs).split())
     return (function, new_inputs, new_consts)
 
 

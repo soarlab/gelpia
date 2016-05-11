@@ -5,7 +5,6 @@ import sys
 import os
 import os.path as path
 
-
 import ian_utils as iu
 import argument_parser as ap
 
@@ -50,18 +49,19 @@ def setup_requirements(base_dir):
     append_to_environ("CPLUS_INCLUDE_PATH", cplus_inc_addition)
 
 
+# Directory names used in this script
+full_dir = path.abspath(path.dirname(sys.argv[0])) # Directory for this file
+base_dir = path.split(full_dir)[0] # One directory up
+src_dir = path.join(base_dir, "src")
+bin_dir = path.join(base_dir, "bin")
+assert(full_dir == bin_dir)
+
 
 def main():
+    setup_requirements(base_dir)
+
     parsing_start = time.time()
     arg_dict = ap.parse_args()
-
-    # Directory names used in this script
-    full_dir = path.abspath(path.dirname(sys.argv[0])) # Directory for this file
-    base_dir = path.split(full_dir)[0] # One directory up
-    src_dir = path.join(base_dir, "src")
-    bin_dir = path.join(base_dir, "bin")
-    assert(full_dir == bin_dir)
-    setup_requirements(base_dir)
 
     # Add to paths used during runtime for our rust libs
     append_to_environ("PATH", bin_dir)
@@ -75,6 +75,7 @@ def main():
         rust_ld_lib_addition += ":" + path.join(base_dir, "src/func/target/release/")
         rust_ld_lib_addition += ":" + path.join(base_dir, "target/release/deps")
     append_to_environ("LD_LIBRARY_PATH", rust_ld_lib_addition)
+
 
     # Grab input interval variables, use them for the function translation,
     # and write them out to a rust file
