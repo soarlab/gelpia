@@ -187,7 +187,7 @@ def p_error(t):
 
 
 # Create parser on call and import
-function_parser = yacc.yacc(debug=0, tabmodule="function_parser", write_tables=1)
+function_parser = yacc.yacc(debug=0, write_tables=0)
 
 def runmain_parser(parser):
     ''' Wrapper to allow parser to run with direct command line input '''
