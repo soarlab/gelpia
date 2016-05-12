@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from os import path
 from multiprocessing.pool import ThreadPool
@@ -6,7 +6,6 @@ import multiprocessing
 import os
 import signal
 import logging
-import yaml
 import argparse
 from os import path
 import subprocess
@@ -62,7 +61,10 @@ def compare_result(result, expected):
   if result < expected*1.2:
     return 'CLOSE'
   else:
-    return 'FAR'
+    if result == float("inf") and expected == float("inf"):
+      return 'CLOSE'
+    else:
+      return 'FAR'
   
 
 # integer constants
@@ -80,6 +82,8 @@ def process_test(cmd, test, expected, log_file):
   t0 = time.time()
   p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   out, err  = p.communicate()
+  out = out.decode('utf-8')
+  err = err.decode('utf-8')
   elapsed = time.time() - t0
 
   # get the test results
@@ -87,11 +91,15 @@ def process_test(cmd, test, expected, log_file):
   if type(result) == type(float()):
     state = compare_result(result, expected)
     if state == 'UNKNOWN':
-      str_result += yellow('UNKNOWN', log_file)
+      str_result += red('UNKNOWN', log_file)
     elif state == 'FAILED':
       str_result += red('FAILED', log_file)
-    else:
+    elif state == 'FAR':
+      str_result += yellow('FAR', log_file)
+    elif state == 'CLOSE':
       str_result += green(state, log_file)
+    else:
+      str_result += state
   else:
     str_result += red('FAILED', log_file)
 
