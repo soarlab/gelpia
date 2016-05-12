@@ -25,7 +25,7 @@ src/func/comp_comm.sh: src/func/src/lib_fillin.rs
 	@mkdir -p .compiled
 
 bin/gaol_repl: src/gaol_repl.cc
-	@clang++ -msse3 -O2 src/gaol_repl.cc -o bin/gaol_repl -lgaol -lcrlibm -lgdtoa
+	@${CXX} ${CXXFLAGS} -msse3 -O2 src/gaol_repl.cc -o bin/gaol_repl -lgaol -lcrlibm -lgdtoa
 
 
 .PHONY: cl
