@@ -55,10 +55,8 @@ def rewrite_rust(exp, consts, inputs):
             return "-({})".format(_rewrite_rust(exp[1]))
         if exp[0] == 'pow':
             return "powi({},{})".format(_rewrite_rust(exp[1]), _rewrite_rust(exp[2]))
-        if exp[0] == 'cpow':
-            return "pow({},{})".format(_rewrite_rust(exp[1]), _rewrite_rust(exp[2]))
         if exp[0] == "ipow":
-            c = consts[int(exp[2][1])]
+            c = consts[int(exp[2][1])][1]
             return "pow({},{})".format(_rewrite_rust(exp[1]), c)
         if exp[0] == "sqrt":
             return"sqrt({})".format(_rewrite_rust(exp[1]))
@@ -94,6 +92,8 @@ def trans_input(inputs):
 
 
 def translate_rust(exp, consts, inputs):
+    new_inputs = trans_input(inputs)
+    new_consts = trans_const(consts)
     function = ["extern crate gr;",
                 "use gr::*;",
                 "",
@@ -101,11 +101,10 @@ def translate_rust(exp, consts, inputs):
                 "pub extern \"C\"",
                 "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {"]
 
-    function.append('    {}'.format(rewrite_rust(exp, consts, inputs)))
+    function.append('    {}'.format(rewrite_rust(exp, new_consts, new_inputs)))
     function.extend(["}", ""])
     function = '\n'.join(function)
-    new_inputs = trans_input(inputs)
-    new_consts = trans_const(consts)
+
     return (function, new_inputs, new_consts)
     
 

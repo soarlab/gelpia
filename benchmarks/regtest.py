@@ -141,6 +141,7 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--threads", action="store", dest="n_threads", default=num_cpus, type=int,
                       help="execute regressions using the selected number of threads in parallel")
+  parser.add_argument("--exe", type=str, help="What executable to run")
   parser.add_argument("--log", action="store", dest="log_level", default="DEBUG", type=str,
                       help="sets the logging level (DEBUG, INFO, WARNING)")
   parser.add_argument("--output-log", action="store", dest="log_path", type=str,
@@ -152,6 +153,18 @@ def main():
   log_format = ''
   log_level = logging.DEBUG
 
+  # change mode
+  if not args.exe:
+    exe = "gelpia"
+    exten = ".txt"
+  else:
+    exe = args.exe
+    if path.basename(args.exe) == "dop_gelpia":
+      exten = ".dop"
+    else:
+      exten = ".txt"
+
+  
   # add more log levels later (if needed)
   if args.log_level.upper() == "INFO":
     log_level = logging.INFO
@@ -174,7 +187,7 @@ def main():
 
     # start processing the tests.
     results = []
-    tests = sorted(glob.glob(os.path.join(args.benchmark_dir,"*.txt")))
+    tests = sorted(glob.glob(os.path.join(args.benchmark_dir,"*"+exten)))
     total = len(tests)
 
     logging.info("{} benchmarks to process".format(total))
@@ -182,7 +195,8 @@ def main():
     for test in tests:
       
       # build up the subprocess command
-      cmd = ['gelpia', "@{}".format(test), "-t 60"]
+      filename = ("" if path.basename(exe)=="dop_gelpia" else '@')+test
+      cmd = [exe, filename, "-t 60"]
       expected = get_expected(test)
 
       if False:#"bad hack ian should remove":

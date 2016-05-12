@@ -1,4 +1,4 @@
-
+\
 # Set paths to point to locally built requirements first
 export PATH := ${CURDIR}/requirements/bin:${PATH}
 export LD_LIBRARY_PATH := $(CURDIR)/requirements/lib:${LD_LIBRARY_PATH}
@@ -19,6 +19,8 @@ bin/gelpia: src/frontend/gelpia.py src/frontend/*.py src/frontend/function_trans
 	@cp src/frontend/*.py bin
 	@cp src/frontend/gelpia.py bin/gelpia
 	@chmod +x bin/gelpia
+	@cp src/frontend/gelpia.py bin/dop_gelpia
+	@chmod +x bin/dop_gelpia
 
 src/func/comp_comm.sh: src/func/src/lib_fillin.rs
 	@cd src/func/ && ./make_command

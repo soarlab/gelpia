@@ -24,9 +24,9 @@ def runmain():
         sys.stdout.write('Reading from standard input (type EOF to end):\n')
         data = sys.stdin.read()
 
-    exp = parser.parse(data)
+    exp = function_parser.parse(data)
     inputs = lift_inputs(exp)
-    consts = lift_constants(exp)
+    consts = lift_constants(exp, inputs)
 
     print("expresions:")
     while type(exp[0]) is list:

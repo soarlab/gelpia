@@ -161,13 +161,13 @@ def p_func_prefix_binop(t):
 
 def p_func_infix_binop(t):
     '''func : expression I_BINOP expression'''
-    if t[1] == '^':
-        if is_integer(t[5]):
-            t[0] = ['ipow', t[3], t[5]]
+    if t[2] == '^':
+        if is_integer(t[3]):
+            t[0] = ['ipow', t[1], t[3]]
         else:
-            t[0] = ['pow', t[3], t[5]]
+            t[0] = ['pow', t[1], t[3]]
     else:
-        t[0] = [t[1], t[3], t[5]]
+        t[0] = [t[2], t[1], t[3]]
 
 
         

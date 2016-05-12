@@ -38,8 +38,6 @@ def flatten(root, exp, inputs, consts):
         if exp[0] == 'Neg':
             return "-({})".format(_flatten(exp[1]))
         if exp[0] == 'pow':
-            return "powi({},{})".format(_flatten(exp[1]), _flatten(exp[2]))
-        if exp[0] == 'cpow':
             return "pow({},{})".format(_flatten(exp[1]), _flatten(exp[2]))
         if exp[0] == "ipow":
             c = consts[int(exp[2][1])]
