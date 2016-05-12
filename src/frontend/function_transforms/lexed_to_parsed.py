@@ -20,7 +20,11 @@ def is_integer(t):
         return True
     return False
 
-
+precedence = (
+    ('left', 'PLUS', 'MINUS'),
+    ('left', 'TIMES', 'DIVIDE'),
+    ('right', 'BINPOW')
+    )
 
 
 def p_function_assign(t):
@@ -50,14 +54,27 @@ def p_expression_passthrough(t):
 
 
 def p_term(t):
-    '''term : term TIMES uniop
-            | term DIVIDE uniop'''
+    '''term : term TIMES binary_pow
+            | term DIVIDE binary_pow'''
     t[0] = [t[2], t[1], t[3]]
 
 def p_term_passthrough(t):
-    '''term : uniop'''
+    '''term : binary_pow'''
     t[0] = t[1]
 
+
+
+
+def p_binary_pow(t):
+    '''binary_pow : binary_pow BINPOW binary_pow'''
+    if is_integer(t[3]):
+        t[0] = ['ipow', t[1], t[3]]
+    else:
+        t[0] = ['pow', t[1], t[3]]
+
+def p_binary_pow_passthrouh(t):
+    '''binary_pow : uniop'''
+    t[0] = t[1]
 
 
 
@@ -153,21 +170,12 @@ def p_func_uniop(t):
     t[0] = [t[1], t[3]]
 
 def p_func_prefix_binop(t):
-    '''func : P_BINOP LPAREN expression COMMA expression RPAREN'''
+    '''func : BINOP LPAREN expression COMMA expression RPAREN'''
     if t[1] == 'pow' and is_integer(t[5]):
         t[0] = ['ipow', t[3], t[5]]
     else:
         t[0] = [t[1], t[3], t[5]]
 
-def p_func_infix_binop(t):
-    '''func : expression I_BINOP expression'''
-    if t[2] == '^':
-        if is_integer(t[3]):
-            t[0] = ['ipow', t[1], t[3]]
-        else:
-            t[0] = ['pow', t[1], t[3]]
-    else:
-        t[0] = [t[2], t[1], t[3]]
 
 
         
@@ -179,7 +187,7 @@ def p_error(t):
 
 
 # Create parser on call and import
-function_parser = yacc.yacc(debug=0, write_tables=0)
+function_parser = yacc.yacc(debug=0, tabmodule="function_parser", write_tables=1)
 
 def runmain_parser(parser):
     ''' Wrapper to allow parser to run with direct command line input '''

@@ -1,0 +1,9 @@
+# NOT WORKING
+
+var:
+[1, 4] x;
+[1, 2] y;
+
+cost:
+2 * sqrt(x);
+x * (1 - y) + 5;

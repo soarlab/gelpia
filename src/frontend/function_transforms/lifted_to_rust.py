@@ -56,7 +56,7 @@ def rewrite_rust(exp, consts, inputs):
         if exp[0] == 'pow':
             return "powi({},{})".format(_rewrite_rust(exp[1]), _rewrite_rust(exp[2]))
         if exp[0] == "ipow":
-            c = consts[int(exp[2][1])][1]
+            c = int(exp[2][1])
             return "pow({},{})".format(_rewrite_rust(exp[1]), c)
         if exp[0] == "sqrt":
             return"sqrt({})".format(_rewrite_rust(exp[1]))

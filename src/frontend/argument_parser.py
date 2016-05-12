@@ -31,7 +31,7 @@ def parse_gelpia_args():
                                   "on branch and bound for noncontinuous "
                                   "functions.",
                                   fromfile_prefix_chars='@')
-    # Verbosity level
+    arg_parser.add_argument("--dreal", action='store_const', const=True, default=False)
     arg_parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         type=int, default=0)
     arg_parser.add_argument("-ie", "--input-epsilon",
@@ -75,6 +75,8 @@ def parse_gelpia_args():
 
     # grab function (this is required since the function may have spaces in it)
     function = ' '.join(args.function)
+    if args.dreal:
+        function = "-({})".format(function)
     inputs = ' '.join(args.input)
 
     start = parse_input_box(inputs)
@@ -104,7 +106,8 @@ def parse_gelpia_args():
             "timeout"         : args.timeout,
             "grace"           : args.grace,
             "update"          : args.update,
-            "logfile"         : args.logging,}
+            "logfile"         : args.logging,
+            "dreal"           : args.dreal}
 
 
 def parse_input_box(box_string):
@@ -118,6 +121,7 @@ def parse_input_box(box_string):
 def parse_dop_args():
     arg_parser = argparse.ArgumentParser(description="Gelpia which reads a subset of the dop query format")
     arg_parser.add_argument("query_file",type=str)
+    arg_parser.add_argument("--dreal", action='store_const', const=True, default=False)
     arg_parser.add_argument("-d", "--debug",
                         help="Debug run of function. Makes the minimum verbosity"
                         " level one. Runs a debug build of gelpia, "
@@ -185,6 +189,8 @@ def parse_dop_args():
             break
         function.append("({})".format(line.replace(';','')))
     function = '+'.join(function)
+    if args.dreal:
+        function = "-({})".format(function)
     
     # constraints
     try:
@@ -198,17 +204,16 @@ def parse_dop_args():
             if ':' in line:
                 break
             constraints.append(line)
-        print("Can we handle these constraints?")
-        for c in constraints:
-            print(c)
+        print("Gelpia does not currently handle constraints")
         sys.exit(-1)
 
     constraints = '\n'.join(constraints)
 
     # combining and parsing
     reformatted_query = '\n'.join((var_lines, constraints, function))
-    print(reformatted_query)
+
     exp = function_parser.parse(reformatted_query)
+
     inputs = lift_inputs(exp)
     consts = lift_constants(exp, inputs)
     
@@ -233,6 +238,7 @@ def parse_dop_args():
             "timeout"         : args.timeout,
             "grace"           : args.grace,
             "update"          : args.update,
-            "logfile"         : args.logging,}
+            "logfile"         : args.logging,
+            "dreal"           : args.dreal}
 
     

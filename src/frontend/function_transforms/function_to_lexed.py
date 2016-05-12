@@ -10,8 +10,8 @@ tokens = [
     "MINUS",
     "TIMES",
     "DIVIDE",
-    "P_BINOP",
-    "I_BINOP",
+    "BINPOW",
+    "BINOP",
     "UNIOP",
 
     # Assignment
@@ -44,11 +44,10 @@ t_TIMES   = '\*'
 
 t_DIVIDE  = '/'
 
-prefix_binary_operations = ['pow']
-t_P_BINOP = "({})".format(")|(".join(prefix_binary_operations))
+t_BINPOW  = '\^'
 
-infix_binary_operations = ['\^']
-t_I_BINOP = "({})".format(")|(".join(infix_binary_operations))
+prefix_binary_operations = ['pow']
+t_BINOP   = "({})".format(")|(".join(prefix_binary_operations))
 
 unary_operations = ['abs', 'cos', 'exp', 'log', 'sin', 'tan', 'sqrt']
 t_UNIOP   = "({})".format(")|(".join(unary_operations))
@@ -66,9 +65,7 @@ t_EQUALS  = r'='
 def t_NAME(t):
     r'([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*'
     if t.value in prefix_binary_operations:
-        t.type = 'P_BINOP'
-    elif t.value in infix_binary_operations:
-        t.type = 'I_BINOP'
+        t.type = 'BINOP'
     elif t.value in unary_operations:
         t.type = 'UNIOP'
     elif t.value == 'interval':

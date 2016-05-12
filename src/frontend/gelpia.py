@@ -2,6 +2,7 @@
 
 import time
 import sys
+import re
 import os
 import os.path as path
 
@@ -149,6 +150,10 @@ def main():
                         f2.write('\n')
                         f2.flush()
             else:
+                if arg_dict['dreal']:
+                    match = re.search("\[([^,]+),(.*)", line)
+                    if match:
+                        line = "[{},{}".format(-float(match.group(1)), match.group(2))
                 print(line.strip())
     except KeyboardInterrupt:
         iu.warning("Caught ctrl-C, exiting now")
