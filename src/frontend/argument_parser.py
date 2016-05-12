@@ -73,14 +73,15 @@ def parse_args():
     consts = lift_constants(exp, inputs)
     
     rust_func, new_inputs, new_consts = translate_rust(exp, consts, inputs)
-    interp_func, _, __ = translate_interp(exp, consts, inputs)
 
     divides_by_zero = div_by_zero(exp, new_inputs, new_consts)
     
     if divides_by_zero:
         print("[inf, {\nunknown}]")
         sys.exit(-2)
-                     
+
+    interp_func, _, __ = translate_interp(exp, consts, inputs)
+    
     return {"input_epsilon"   : args.input_epsilon,
             "output_epsilon"  : args.output_epsilon,
             "inputs"          : new_inputs,

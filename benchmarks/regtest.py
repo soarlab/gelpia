@@ -135,7 +135,7 @@ def main():
   global skipped, total
   
   t0 = time.time()
-  num_cpus = multiprocessing.cpu_count()
+  num_cpus = multiprocessing.cpu_count()//2
 
   # configure the CLI
   parser = argparse.ArgumentParser()
