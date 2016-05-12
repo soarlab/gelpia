@@ -45,6 +45,9 @@ def parse_args():
     arg_parser.add_argument("-t", "--timeout",
                         type=int, help="Timeout for execution in seconds.",
                         default=0)
+    arg_parser.add_argument("-g", "--grace",
+                        type=int, help="Grace period for timeout option. Defaults to twice the supplied timeout",
+                        default=0)
     arg_parser.add_argument("-u", "--update",
                         type=int, help="Time between update thread executions.",
                         default=10)
@@ -87,6 +90,7 @@ def parse_args():
             "expression"      : exp,
             "debug"           : args.debug,
             "timeout"         : args.timeout,
+            "grace"           : args.grace,
             "update"          : args.update,
             "logfile"         : args.logging,}
 

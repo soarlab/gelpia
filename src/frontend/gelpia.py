@@ -134,7 +134,10 @@ def main():
         start = time.time()
         term_time = None
         if arg_dict["timeout"] != 0:
-            term_time = start + arg_dict["timeout"] + 5
+            if arg_dict["grace"] == 0:
+                term_time = start + arg_dict["timeout"]*2
+            else:
+                term_time = start + arg_dict["grace"]
         
         iu.log(1, iu.cyan("Running"))
         for line in iu.run_async(executable, executable_args, term_time):
