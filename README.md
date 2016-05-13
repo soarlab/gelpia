@@ -1,24 +1,33 @@
 Global Extrema Locator Parallelization for Interval Arithmetic
 
-Currently known to build on Ubuntu 14.04
+Currently known to build on Ubuntu 14.04 through 16.04
 
-Requires:
-rust 1.0
-gaol (4.2.0)
+Requirements:
+  Not included:
+    python3
+      -ply
+    bison
+    flex
+    c++ compiler
+    c compiler
+  Included:
+    rust nightly
+    gaol
+    crlibm
 
-For automatic building of requirements run /requirements/build.sh
+For automatic building of included requirements run `make requirements`
 For building by hand see documents/BuildingRequirements
 
 
-Once requirements are met gelpia may be made by running make in the git's root
-directory. This runs rust's cargo build system as well as it adds the correct
+Once requirements are met gelpia may be made by running `make`
+This runs rust's cargo build system as well as adding the correct
 files to bin for execution.
 
 
 Gelpia may then be ran, it is an executable in the bin directory.
 It has a built in help system for argument clarification.
-A file may be specified which has arguments in it, one per line, this name
-must be preceded by an @ symbol. The examples directory has many of these
+A file may be specified which has arguments in it, one per line, this filename
+must be preceded by an @ symbol. The benchmarks/fptaylor_generated directory has many of these
 files. Additional arguments, or overwiting arguments, may be specified after the
 file.
 
