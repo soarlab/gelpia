@@ -10,7 +10,7 @@ mkdir -p $SOURCE_LOCATION
 # Rust
 cd $SOURCE_LOCATION
 rm -f rust_nightly.tar.gz
-wget http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz -O rust_nightly.tar.gz
+wget http://static.rust-lang.org/dist/2016-05-12/rust-nightly-x86_64-unknown-linux-gnu.tar.gz -O rust_nightly.tar.gz
 mkdir -p rust_nightly && tar -xf rust_nightly.tar.gz -C rust_nightly --strip-components 1
 cd rust_nightly
 ./install.sh --prefix=$SCRIPT_LOCATION
