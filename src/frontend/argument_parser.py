@@ -90,7 +90,7 @@ def parse_gelpia_args():
     divides_by_zero = div_by_zero(exp, new_inputs, new_consts)
     
     if divides_by_zero:
-        print("[inf, {\nunknown}]")
+        print("ERROR: Division by zero")
         sys.exit(-2)
 
     interp_func, _, __ = translate_interp(exp, consts, inputs)
@@ -222,7 +222,7 @@ def parse_dop_args():
     divides_by_zero = div_by_zero(exp, new_inputs, new_consts)
     
     if divides_by_zero:
-        print("[inf, {\nunknown}]")
+        print("ERROR: Division by zero")
         sys.exit(-2)
 
     interp_func, _, __ = translate_interp(exp, consts, inputs)
