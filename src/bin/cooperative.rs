@@ -83,7 +83,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         let mut q = q.write().unwrap();
         let fbl_orig = f_best_low;
         f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
-        if (iters % 1024 == 0) && iters != 0 {
+        
+        if iters % 2048 == 0 {
             let guaranteed_bound = get_upper_bound(&q, f_best_high);
             if (guaranteed_bound - f_best_high).abs() < e_f {
                 f_best_high = guaranteed_bound;
