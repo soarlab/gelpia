@@ -30,14 +30,21 @@ use args::{process_args};
 
 extern crate time;
 
+/// Returns the guaranteed upperbound for the algorithm
+/// from the queue.
+fn get_upper_bound(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
+                   f_best_high: f64) -> f64{
+    let mut max = f_best_high;
+    for qi in q.iter() {
+        max = max!{max, qi.fdata.upper()};
+    }
+    max
+}
+              
 fn log_max(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
            f_best_low: f64,
            f_best_high: f64) {
-    let mut max = f_best_high;
-    let lq = q.clone();
-    for qi in lq.iter() {
-        max = max!{max, qi.fdata.upper()};
-    }
+    let max = get_upper_bound(q, f_best_high);
     let _ = writeln!(&mut std::io::stderr(),
                      "lb: {}, possible ub: {}, guaranteed ub: {}",
                      f_best_low,
@@ -61,7 +68,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
     let mut f_best_low  = NINF;
     let mut best_x = x_0.clone();
     
-    let mut i: u32 = 0;//binade_presplit(&f, &q, &x_0, e_x);
+    let mut iters: u32 = 0;
     q.write().unwrap().push(Quple{p: INF, pf: 0, data: x_0.clone(),
                                   fdata: f.call(&x_0)});
 
@@ -76,9 +83,19 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         let mut q = q.write().unwrap();
         let fbl_orig = f_best_low;
         f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
+        if (iters % 1024 == 0) && iters != 0 {
+            let guaranteed_bound = get_upper_bound(&q, f_best_high);
+            if (guaranteed_bound - f_best_high).abs() < e_f {
+                f_best_high = guaranteed_bound;
+                break;
+            }
+
+        }
+        
         if fbl_orig != f_best_low && logging {
             log_max(&q, f_best_low, f_best_high);
         }
+        
         let (ref x, fx) = 
             match q.pop() {
                 Some(y) => (y.data, y.fdata),
@@ -108,9 +125,9 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
                     f_best_low = est_max.lower();
                     *x_bestbb.write().unwrap() = sx.clone();
                 }
-                i += 1;
+                iters += 1;
                 q.push(Quple{p: est_max.upper(),
-                             pf: i,
+                             pf: iters,
                              data: sx,
                              fdata: fsx});
             }
