@@ -39,16 +39,18 @@ cl: #clean libs
 
 .PHONY: clean
 clean: cl
-	$(RM) libfunc.so 
-	$(RM) bin/*.py 
-	$(RM) bin/gelpia 
+	$(RM) libfunc.so
+	$(RM) bin/*.py
+	$(RM) bin/gelpia
+	$(RM) bin/dop_gelpia
 	$(RM) bin/build_func.sh
 	$(RM) bin/parser.out
-	$(RM) -r  bin/__pycache__ 
+	$(RM) -r  bin/__pycache__
 	cargo clean
 	$(RM) src/func/comp_comm.sh
 	$(RM) Cargo.lock
 	$(RM) src/func/Cargo.lock
+	$(RM) bin/gaol_repl
 
 
 .PHONY: requirements
