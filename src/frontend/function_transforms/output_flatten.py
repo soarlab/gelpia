@@ -11,11 +11,16 @@ def flatten(root, exp, inputs, consts, assign):
   cm = [',']
   lb = ['[']
   rb = [']']
+
+  infix = {'+', '-', '*', '/'}
   
   def _flatten(exp):
     if type(exp[0]) is list:
       return _flatten(exp[1])
 
+    if exp[0] in infix:
+      return lp + _flatten(exp[1]) + [exp[0]] + _flatten(exp[2]) + rp
+    
     if exp[0] in BINOPS:
       return [exp[0]] + lp + _flatten(exp[1]) + cm + _flatten(exp[2]) + rp
 
@@ -27,7 +32,7 @@ def flatten(root, exp, inputs, consts, assign):
 
     if exp[0] in {"InputInterval"}:
       inside = _flatten(exp[1]) + cm + _flatten(exp[2])
-      inside = [part for part in inside if part != lb and part != rb]
+      inside = [part for part in inside if part != ']' and part != '[']
       return lb + inside + rb
 
     if exp[0] in {"Const"}:

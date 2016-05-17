@@ -53,7 +53,7 @@ def div_by_zero(exp, inputs, consts, assign):
       return contains_zero(exp[2]) or _div_by_zero(exp[1]) or _div_by_zero(exp[2])
 
     if exp[0] in {"pow"}:
-      temp = True
+      temp = False
       if less_than_zero(exp[2]):
         temp = contains_zero(exp[1])
       return temp or _div_by_zero(exp[1]) or _div_by_zero(exp[2])
@@ -103,7 +103,7 @@ def runmain():
   print()
   print_consts(consts)
   print()
-  prtnt_assign(assign)
+  print_assign(assign)
 
 if __name__ == "__main__":
   try:
