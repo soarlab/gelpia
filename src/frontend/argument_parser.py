@@ -66,7 +66,7 @@ def parse_gelpia_args():
                         help="Enable solver logging to stderr",
                         type=str, nargs='?', const=True, default=None)
     arg_parser.add_argument("-z", "--skip-div-zero",
-                            action=store_true, help="Skip division by zero check")
+                            action="store_true", help="Skip division by zero check")
     
     # actually parse
     args = arg_parser.parse_args()
@@ -89,7 +89,7 @@ def parse_gelpia_args():
     
     rust_func, new_inputs, new_consts = translate_rust(exp, consts, inputs)
 
-    if args.z:
+    if not args.skip_div_zero:
         if div_by_zero(exp, new_inputs, new_consts):
             print("ERROR: Division by zero")
             sys.exit(-2)
@@ -142,7 +142,7 @@ def parse_dop_args():
     arg_parser.add_argument("-v", "--verbose", help="increase output verbosity",
                             type=int, default=0)
     arg_parser.add_argument("-z", "--skip-div-zero",
-                            action=store_true, help="Skip division by zero check")
+                            action="store_true", help="Skip division by zero check")
     
     args = arg_parser.parse_args()
     with open(args.query_file, 'r') as f:
@@ -222,7 +222,7 @@ def parse_dop_args():
     
     rust_func, new_inputs, new_consts = translate_rust(exp, consts, inputs)
 
-    if args.z:
+    if not args.skip_div_zero:
         if div_by_zero(exp, new_inputs, new_consts):
             print("ERROR: Division by zero")
             sys.exit(-2)
