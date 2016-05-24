@@ -72,3 +72,6 @@ Gelpia's dOp mode cannot currently handle constraints as constraint propogation 
 Gelpia may outlive the supplied time limit. This is because it goes through the remaining branches in the priority queue – this can sometimes be a lengthy process. This is why we have a **grace** option which is an additional grace period after the supplied timeout before gelpia is killed hard.  
 
 When used for minimization, Gelpia will report a guaranteed lower bound on the global minimum.
+
+## Authors
+Gelpia is authored by Mark S. Baranowski and Ian Briggs
