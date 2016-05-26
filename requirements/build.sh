@@ -38,6 +38,7 @@ tar xf gaol.tar.gz
 patch -p0 < $SCRIPT_LOCATION/../documents/gaol-4.2.0.patch
 mv gaol-4.2.0 gaol
 cd gaol
+export CFLAGS=" -msse3 "; export CXXFLAGS=" -msse3 ";
 ./configure  --with-mathlib=crlibm --enable-simd --disable-debug --disable-preserve-rounding --enable-optimize --disable-verbose-mode --prefix=$SCRIPT_LOCATION
 make
 make install
