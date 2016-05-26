@@ -2,15 +2,20 @@
 
 import argparse
 import ast
+import os.path as path
+import sys
+import re
 
 import ian_utils as iu
 
-from parsed_input_lift_pass import *
-from parsed_constant_lift_pass import *
-from parsed_div_zero_pass import *
-
-from lifted_to_rust import *
-from lifted_to_interpreter import *
+from lexed_to_parsed import parse_function
+from pass_lift_inputs import lift_inputs
+from pass_lift_consts import lift_consts
+from pass_lift_assign import lift_assign
+from pass_pow import pow_replacement
+from pass_div_zero import div_by_zero
+from output_rust import to_rust
+from output_interp import to_interp
 
 def parse_args():
     exe = path.basename(sys.argv[0])
@@ -81,19 +86,20 @@ def parse_gelpia_args():
 
     start = parse_input_box(inputs)
 
-    exp = function_parser.parse(start+'\n'+function)
+    exp = parse_function(start+'\n'+function)
     inputs = lift_inputs(exp)
-    consts = lift_constants(exp, inputs)
-    
-    rust_func, new_inputs, new_consts = translate_rust(exp, consts, inputs)
+    consts = lift_consts(exp, inputs)
+    assign = lift_assign(exp, inputs, consts)
+    pow_replacement(exp, inputs, consts, assign)
 
-    divides_by_zero = div_by_zero(exp, new_inputs, new_consts)
+    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
     if divides_by_zero:
         print("ERROR: Division by zero")
         sys.exit(-2)
 
-    interp_func, _, __ = translate_interp(exp, consts, inputs)
+    rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
+    interp_func = to_interp(exp, consts, inputs, assign)
     
     return {"input_epsilon"   : args.input_epsilon,
             "output_epsilon"  : args.output_epsilon,
@@ -212,20 +218,20 @@ def parse_dop_args():
     # combining and parsing
     reformatted_query = '\n'.join((var_lines, constraints, function))
 
-    exp = function_parser.parse(reformatted_query)
-
+    exp = parse_function(reformatted_query)
     inputs = lift_inputs(exp)
-    consts = lift_constants(exp, inputs)
-    
-    rust_func, new_inputs, new_consts = translate_rust(exp, consts, inputs)
-
-    divides_by_zero = div_by_zero(exp, new_inputs, new_consts)
+    consts = lift_consts(exp, inputs)
+    assign = lift_assign(exp, inputs, consts)
+    pow_replacement(exp, inputs, consts, assign)
+    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
     if divides_by_zero:
         print("ERROR: Division by zero")
         sys.exit(-2)
 
-    interp_func, _, __ = translate_interp(exp, consts, inputs)
+    rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
+    interp_func = to_interp(exp, consts, inputs, assign)
+
     
     return {"input_epsilon"   : prec,
             "output_epsilon"  : prec,

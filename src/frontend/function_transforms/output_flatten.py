@@ -11,23 +11,24 @@ def flatten(root, exp, inputs, consts, assign):
   cm = [',']
   lb = ['[']
   rb = [']']
-
-  infix = {'+', '-', '*', '/'}
   
   def _flatten(exp):
     if type(exp[0]) is list:
       return _flatten(exp[1])
 
-    if exp[0] in infix:
+    if exp[0] in INFIX:
       return lp + _flatten(exp[1]) + [exp[0]] + _flatten(exp[2]) + rp
-    
+
+    if exp[0] in {"ipow"}:
+      return ["pow"] + lp + _flatten(exp[1]) + cm + _flatten(exp[2]) + rp
+  
     if exp[0] in BINOPS:
       return [exp[0]] + lp + _flatten(exp[1]) + cm + _flatten(exp[2]) + rp
 
     if exp[0] in UNIOPS:
       return [exp[0]] + lp + _flatten(exp[1]) + rp
 
-    if exp[0] in {"ConstantInterval", "Integer", "Float"}:
+    if exp[0] in {"Integer", "Float"}:
       return lb + [exp[1]] + rb
 
     if exp[0] in {"InputInterval"}:
@@ -44,10 +45,10 @@ def flatten(root, exp, inputs, consts, assign):
     if exp[0] in {"Variable"}:
       return _flatten(assign[exp[1]])
 
-    if exp[0] in {"Return"}:
+    if exp[0] in {"Return", "ConstantInterval"}:
       return _flatten(exp[1])
 
-    print("lift_assigns error unknown: '{}'".format(exp))
+    print("flatten error unknown: '{}'".format(exp))
     sys.exit(-1)
 
     
@@ -57,6 +58,8 @@ def flatten(root, exp, inputs, consts, assign):
 
                                 
                                 
+
+
 
 def runmain():
   from lexed_to_parsed import parse_function

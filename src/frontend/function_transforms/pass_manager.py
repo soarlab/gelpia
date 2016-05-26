@@ -6,6 +6,7 @@ from lexed_to_parsed import BINOPS, UNIOPS
 
 BINOPS.update({'+', '-', '*', '/', 'ipow'})
 UNIOPS.update({'Neg'})
+INFIX = {'+', '-', '*', '/'}
 
 def print_exp(exp):
   print("expressions:")

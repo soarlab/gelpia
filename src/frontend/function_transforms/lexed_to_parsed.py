@@ -36,7 +36,9 @@ def p_expression(t):
                  | expression INFIX_POW expression
                  | negation '''
   if len(t) == 4:
-    if t[2] == '^':
+    if t[2] == '^' and t[3][0] == "Integer":
+      t[0] = ["ipow", t[1], t[3]]
+    elif t[2] == '^':
       t[0] = ["pow", t[1], t[3]]
     else:
       t[0] = [t[2], t[1], t[3]]
@@ -159,7 +161,10 @@ def p_func(t):
   ''' func : BINOP LPAREN expression COMMA expression RPAREN
            | UNIOP LPAREN expression RPAREN '''
   if len(t) == 7:
-    t[0] = [t[1], t[3], t[5]]
+    if t[1] == "pow" and t[5][0] == "Integer":
+      t[0] = ["ipow", t[3], t[5]]
+    else:
+      t[0] = [t[1], t[3], t[5]]
   elif len(t) == 5:
     t[0] = [t[1], t[3]]
   else:
@@ -172,16 +177,17 @@ def p_error(t):
   sys.exit(-1)
 
 
-
-
-
-
-
-
 _function_parser = yacc.yacc(debug=0, write_tables=1, optimize=1)
 
 def parse_function(text):
   return _function_parser.parse(text, lexer=_function_lexer)
+
+
+
+
+
+
+
 
 def runmain():
   data = get_runmain_input()

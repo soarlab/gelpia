@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-from pass_manager import *
-from output_flatten import flatten
-
 try:
   from gelpia import bin_dir
 except:
   print("gelpia not found, gaol_repl must be in your PATH")
-  bin_dir = ""
-    
+  bin_dir = ""    
+
+from pass_manager import *
+from output_flatten import flatten
+
 import re
 import sys
 import subprocess
@@ -32,32 +32,48 @@ def div_by_zero(exp, inputs, consts, assign):
       l = float(match.group(1))
       r = float(match.group(2))
     except:
-      print("query was: {}".format(flat_exp))
-      print("unable to match: {}".format(result))
-      sys.exit()
+      print("Fatal error in gaol_eval")
+      print("       query was: '{}'".format(flat_exp))
+      print(" unable to match: '{}'".format(result))
+      sys.exit(-1)
     return l,r
-    
+
+  
   def contains_zero(exp):
     l,r = gaol_eval(exp)
     return l<=0 and 0<=r
 
+  
   def less_than_zero(exp):
     l,r = gaol_eval(exp)
     return l<0
-    
-  def _div_by_zero(exp):    
-    if exp[0] in {'Float', 'Integer', 'ConstantInterval', 'InputInterval', 'Input'}:
+
+  
+  def _div_by_zero(exp):
+    if type(exp[0]) is list:
+      print(exp)
+      assert(0)
+    if exp[0] in {'Float', 'Integer', 'ConstantInterval',
+                  'InputInterval', 'Input'}:
       return False
 
     if exp[0] in {'/'}:
-      return contains_zero(exp[2]) or _div_by_zero(exp[1]) or _div_by_zero(exp[2])
+      return (contains_zero(exp[2]) or
+              _div_by_zero(exp[1]) or
+              _div_by_zero(exp[2]))
 
     if exp[0] in {"pow"}:
       temp = False
       if less_than_zero(exp[2]):
         temp = contains_zero(exp[1])
       return temp or _div_by_zero(exp[1]) or _div_by_zero(exp[2])
-    
+
+    if exp[0] in {"ipow"}:
+      temp = False
+      if int(exp[2][1]) < 0:
+        temp = contains_zero(exp[1])
+      return temp or _div_by_zero(exp[1])
+
     if exp[0] in BINOPS:
       return _div_by_zero(exp[1]) or _div_by_zero(exp[2])
 
@@ -73,7 +89,7 @@ def div_by_zero(exp, inputs, consts, assign):
     if exp[0] in {'Return'}:
       return _div_by_zero(exp[1])
     
-    print("Error rewriting '{}'".format(exp))
+    print("div_by_zero error unknown: '{}'".format(exp))
     sys.exit(-1)
     
   result = _div_by_zero(exp)
@@ -81,17 +97,25 @@ def div_by_zero(exp, inputs, consts, assign):
   return result
 
 
+
+
+
+
+
+
 def runmain():
   from lexed_to_parsed import parse_function
   from pass_lift_inputs import lift_inputs
   from pass_lift_consts import lift_consts
   from pass_lift_assign import lift_assign
+  from pass_pow import pow_replacement
   
   data = get_runmain_input()
   exp = parse_function(data)
   inputs = lift_inputs(exp)
   consts = lift_consts(exp, inputs)
   assign = lift_assign(exp, inputs, consts)
+  pow_replacement(exp, inputs, consts, assign)
   has_div_zero = div_by_zero(exp, inputs, consts, assign)
 
   print("divides by zero:")

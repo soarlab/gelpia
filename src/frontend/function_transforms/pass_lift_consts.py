@@ -24,9 +24,12 @@ def lift_consts(exp, inputs):
       _lift_consts(exp[0])
       _lift_consts(exp[1])
       return False
-    
+
+    if exp[0] in UNIOPS.union({"ipow"}):
+      return _lift_consts(exp[1])
+      
     if exp[0] in BINOPS:
-      first = _lift_consts(exp[1])
+      first  = _lift_consts(exp[1])
       second = _lift_consts(exp[2])
       if first and second:
         return True
@@ -34,11 +37,8 @@ def lift_consts(exp, inputs):
         make_constant(exp[1])
       elif second:
         make_constant(exp[2])
-      return False
-      
-    if exp[0] in UNIOPS:
-      return _lift_consts(exp[1])
-      
+      return False      
+
     if exp[0] in {"InputInterval", "Variable", "Input"}:
       return False
     

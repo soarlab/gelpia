@@ -1,142 +1,109 @@
 #!/usr/bin/env python3
 
-from parsed_constant_lift_pass import *
-from parsed_input_lift_pass import *
+from pass_manager import *
 
+import collections
 import sys
 
 
-ops = {
-    '+'      : '+',
-    '-'      : '-',
-    '*'      : '*',
-    '/'      : '/',
-}
+def to_rust(exp, consts, inputs, assign):
+  let = "    let {} = {};\n"
+  lp = ['(']
+  rp = [')']
+  lb = ['[']
+  rb = [']']
+  cm = [',']
+  function = ["extern crate gr;\n"
+              "use gr::*;\n"
+              "\n"
+              "#[no_mangle]\n"
+              "pub extern \"C\"\n"
+              "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {\n"]
+  input_names = [name for name in inputs]
+  
+  def _to_rust(exp):
+    if exp[0] in {"ipow"}:
+      return ["pow"] + lp + _to_rust(exp[1]) + cm + [exp[2][1]] + rp
 
-funcs = {
-#   'abs' ommitted due to special handling in rewrite_rust
-    'cos'    : 'cos',
-    'exp'    : 'exp',
-    'log'    : 'log',
-    'sin'    : 'sin',
-    'tan'    : 'tan',
-    'sqrt'   : 'sqrt',
-}
-
-def rewrite_rust(exp, consts, inputs):
-
-    def _rewrite_rust(exp):
-        if type(exp[0]) is list:
-            return "{}\n{}".format(_rewrite_rust(exp[0]),
-                                   _rewrite_rust(exp[1]))
-        if exp[0] in ['Float', 'Integer']:
-            return "[{}]".format(exp[1])
-        if exp[0] in ['Interval', 'InputInterval']:
-            l = _rewrite_rust(exp[1]).replace('[','').replace(']','')
-            r = _rewrite_rust(exp[2]).replace('[','').replace(']','')
-            return "[{},{}]".format(l,r)
-        if exp[0] == 'Input':
-            return "_x[{}]".format(input_names.index(exp[1]))
-        if exp[0] == 'Variable':
-            return exp[1]
-        if exp[0] == 'Const':
-            return "_c[{}]".format(exp[1])
-        if exp[0] in ['Return']:
-            return _rewrite_rust(exp[1])
-        if exp[0] == 'Assign':
-            return "let {} = {};".format(exp[1][1], _rewrite_rust(exp[2]))
-        if exp[0] in ops:
-            return "({}{}{})".format(_rewrite_rust(exp[1]), ops[exp[0]], _rewrite_rust(exp[2]))
-        if exp[0] in funcs:
-            return "{}({})".format(funcs[exp[0]], _rewrite_rust(exp[1]))
-        if exp[0] == 'abs':
-            return "abs({})".format(_rewrite_rust(exp[1]))
-        if exp[0] == 'Neg':
-            return "-({})".format(_rewrite_rust(exp[1]))
-        if exp[0] == 'pow':
-            return "powi({},{})".format(_rewrite_rust(exp[1]), _rewrite_rust(exp[2]))
-        if exp[0] == "ipow":
-            c = int(exp[2][1])
-            return "pow({},{})".format(_rewrite_rust(exp[1]), c)
-        if exp[0] == "sqrt":
-            return"sqrt({})".format(_rewrite_rust(exp[1]))
-        print("Error rewriting for rust '{}'".format(exp))
-        sys.exit(-1)
-
-    input_names = [tup[0] for tup in inputs]
-    const_names = [tup[0] for tup in consts]
-    return _rewrite_rust(exp)
-
-
-def trans_const_r(expr):
-    '''expr is a constant. We need to replace abs with sqrt(pow( '''
-    if type(expr) != list:
-        return expr
-    if expr[0] == 'powi':
-        return ['pow', trans_const_r(expr[1])]
-    return [trans_const_r(e) for e in expr]
+    if exp[0]in {"pow"}:
+      return ["powi"] + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
     
+    if exp[0] in {"Neg"}:
+      return ['-'] + lp + _to_rust(exp[1]) + rp    
 
-def trans_const(consts):
-    new_consts = list()
-    for c in consts:
-        new_consts.append(rewrite_rust(trans_const_r(c), list(), list()))
-    return new_consts
+    if exp[0] in INFIX:
+      return lp + _to_rust(exp[1]) + [exp[0]] + _to_rust(exp[2]) + rp
 
+    if exp[0] in BINOPS:
+      return [exp[0]] + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
+      
+    if exp[0] in UNIOPS:
+      return [exp[0]] + lp + _to_rust(exp[1]) + rp
 
-def trans_input(inputs):
-    new_inputs = list()
-    for tup in inputs:
-        new_inputs.append((tup[0], rewrite_rust(trans_const_r(tup[1]), list(), list())))
-    return new_inputs
+    if exp[0] in {"Integer", "Float"}:
+      return lb + [exp[1]] + rb
 
+    if exp[0] in {"InputInterval"}:
+      inside = _to_rust(exp[1]) + cm + _to_rust(exp[2])
+      inside = [part for part in inside if part != ']' and part != '[']
+      return lb + inside + rb
 
-def translate_rust(exp, consts, inputs):
-    new_inputs = trans_input(inputs)
-    new_consts = trans_const(consts)
-    function = ["extern crate gr;",
-                "use gr::*;",
-                "",
-                "#[no_mangle]",
-                "pub extern \"C\"",
-                "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {"]
-
-    function.append('    {}'.format(rewrite_rust(exp, new_consts, new_inputs)))
-    function.extend(["}", ""])
-    function = '\n'.join(function)
-
-    return (function, new_inputs, new_consts)
+    if exp[0] in {"Const"}:
+      return ["_c[{}]".format(exp[1])]
     
+    if exp[0] in {"Input"}:
+      return ["_x[{}]".format(input_names.index(exp[1]))]
+
+    if exp[0] in {"Variable"}:
+      return _to_rust(assign[exp[1]])
+
+    if exp[0] in {"Return", "ConstantInterval"}:
+      return _to_rust(exp[1])
+                                          
+    print("to_rust error unknown: '{}'".format(exp))
+    sys.exit(-1)
+
+
+  function += [let.format(n, ''.join(_to_rust(v))) for n,v in assign.items()]
+  function += ["    "] + _to_rust(exp) + ["\n}\n"]
+
+  new_inputs = [(n, ''.join(_to_rust(v))) for n,v in inputs.items()]
+  new_inputs = collections.OrderedDict(new_inputs)
+
+  new_consts = [''.join(_to_rust(c)) for c in consts]
+    
+  return ''.join(function), new_inputs, new_consts
+
+ 
+
+
+
+
+
 
 def runmain():
-    ''' Wrapper to allow translater to run with direct command line input '''
-    try:
-        filename = sys.argv[1]
-        with open(filename, 'r') as f:
-            data = f.read()
-    except IndexError:
-        sys.stdout.write('Reading from standard input (type EOF to end):\n')
-        data = sys.stdin.read()
-    exp = parser.parse(data)
-    lift_constants(exp)
+  from lexed_to_parsed import parse_function
+  from pass_lift_inputs import lift_inputs
+  from pass_lift_consts import lift_consts
+  from pass_lift_assign import lift_assign
+  
+  data = get_runmain_input()
+  exp = parse_function(data)
+  inputs = lift_inputs(exp)
+  consts = lift_consts(exp, inputs)
+  assign = lift_assign(exp, inputs, consts)
+  function, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
 
-    exp = parser.parse(data)
-    inputs = lift_inputs(exp)
-    consts = lift_constants(exp)
-    
-    function, new_inputs, new_consts = translate_rust(exp, consts, inputs)
-    print("function:")
-    print(function)
-    print()
-    print("constants:")
-    for c in new_consts:
-        print(c)
-    print()
-    print("inputs:")
-    for i in new_inputs:
-        print(i)
-
-
-
+  print("-Rust Version-")
+  print("function:")
+  print(function)
+  print()
+  print_inputs(new_inputs)
+  print()
+  print_consts(new_consts)
+  
 if __name__ == "__main__":
+  try:
     runmain()
+  except KeyboardInterrupt:
+    print("\nGoodbye")

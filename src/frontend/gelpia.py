@@ -85,7 +85,7 @@ def main():
     # tup = function_to_rust.translate(arg_dict["function"], variables)
     # (function, constants, part) = tup
 
-    inputs = [tup[1] for tup in arg_dict['inputs']]
+    inputs = arg_dict['inputs'].values()
     inputs = "|".join(inputs)
 
     file_id = mk_file_hash(arg_dict["rust_function"])
@@ -104,7 +104,7 @@ def main():
                        "-x", str(arg_dict["input_epsilon"]),
                        "-y", str(arg_dict["output_epsilon"]),
                        "-S", "generated_"+file_id, # Function file suffix
-                       "-n", ",".join(b[0] for b in arg_dict["inputs"]),
+                       "-n", ",".join(arg_dict["inputs"]),
                        "-t", str(arg_dict["timeout"]),
                        "-u", str(arg_dict["update"]),
                        "-d" if arg_dict["debug"] else "", # If a debug run
