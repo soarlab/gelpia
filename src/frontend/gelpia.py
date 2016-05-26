@@ -59,11 +59,14 @@ assert(full_dir == bin_dir)
 
 
 def main():
+    log_level = 0
     setup_requirements(base_dir)
 
     parsing_start = time.time()
     arg_dict = ap.parse_args()
-
+    # For FPTaylor 
+    if arg_dict['fptaylor']:
+        log_level = 1
     # Add to paths used during runtime for our rust libs
     append_to_environ("PATH", bin_dir)
     rust_ld_lib_addition = path.join(base_dir, ".compiled")
@@ -119,7 +122,7 @@ def main():
     parsing_end = time.time()
 
 # Use try so that we can catch control-c easily
-    output = None
+    output = ""
     logging = bool(arg_dict["logfile"])
     log_file = arg_dict["logfile"] if type(arg_dict["logfile"]) is str else None
     
@@ -142,19 +145,21 @@ def main():
         
         iu.log(1, iu.cyan("Running"))
         for line in iu.run_async(executable, executable_args, term_time):
-            if logging and line.startswith("lb:"): # Hacky
-                print(line.strip(), file=sys.stderr)
-                if log_file:
-                    with open(log_file, 'a') as f2:
-                        f2.write(line.strip())
-                        f2.write('\n')
-                        f2.flush()
+            if line.startswith("lb:"): # Hacky
+                if logging:
+                    print(line.strip(), file=sys.stderr)
+                    if log_file:
+                        with open(log_file, 'a') as f2:
+                            f2.write(line.strip())
+                            f2.write('\n')
+                            f2.flush()
             else:
                 if arg_dict['dreal']:
                     match = re.search("\[([^,]+),(.*)", line)
                     if match:
                         line = "[{},{}".format(-float(match.group(1)), match.group(2))
-                print(line.strip())
+                # print(line.strip())
+                output += line.strip()
     except KeyboardInterrupt:
         iu.warning("Caught ctrl-C, exiting now")
     finally:
@@ -177,12 +182,19 @@ def main():
             except:
                 pass
         end = time.time()
-    
     if output:
-        print(output)
+        if not arg_dict["fptaylor"]:
+            print(output)
+        else:
+            # We're crashing in compilation for some reason. Will need to
+            # investigate
+            idx = output.find('[')
+            output = output[idx:]
+            result = eval(output) 
+            print("Maximum: {}".format(result[0]))
 
-    iu.log(0, iu.green("Parsing time: ")+str(parsing_end-parsing_start))
-    iu.log(0, iu.green("Solver time: ")+str(end-start))
+    iu.log(log_level, iu.green("Parsing time: ")+str(parsing_end-parsing_start))
+    iu.log(log_level, iu.green("Solver time: ")+str(end-start))
 
     
 if __name__ == "__main__":

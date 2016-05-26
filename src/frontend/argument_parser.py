@@ -53,6 +53,8 @@ def parse_gelpia_args():
                         help="Debug run of function. Makes the minimum verbosity"
                         " level one. Runs a debug build of gelpia, "
                         "with backtrace enabled.", action="store_true")
+    arg_parser.add_argument("-T", "--fptaylor",
+                        help="Makes gelpia simply emit the global maximum, for FPTaylor compatibility.", action="store_true")
     arg_parser.add_argument("-t", "--timeout",
                         type=int, help="Timeout for execution in seconds.",
                         default=0)
@@ -108,7 +110,8 @@ def parse_gelpia_args():
             "grace"           : args.grace,
             "update"          : args.update,
             "logfile"         : args.logging,
-            "dreal"           : args.dreal}
+            "dreal"           : args.dreal,
+            "fptaylor"        : args.fptaylor,}
 
 
 def parse_input_box(box_string):
