@@ -12,7 +12,6 @@ def pow_replacement(exp, inputs, consts, assign):
       if exp[0] == "ipow":
         expo = int(exp[2][1])
         if expo > 0:
-          print("HERE")
           return [exp[1] for _ in range(expo)]
       return [exp]
         
