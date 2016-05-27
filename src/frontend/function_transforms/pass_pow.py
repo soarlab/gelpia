@@ -12,6 +12,7 @@ def pow_replacement(exp, inputs, consts, assign):
       if exp[0] == "ipow":
         expo = int(exp[2][1])
         if expo > 0:
+          print("HERE")
           return [exp[1] for _ in range(expo)]
       return [exp]
         
@@ -55,6 +56,11 @@ def pow_replacement(exp, inputs, consts, assign):
         new_exp = ["*", temp, compress(mul_list)]
       exp[1] = new_exp[1]
       exp[2] = new_exp[2]
+      return
+
+    if exp[0] in {"ipow"} and int(exp[2][1]) == 1:
+      for i,e in enumerate(exp[1][:]):
+        exp[i] = e
       return
     
     if exp[0] in BINOPS:
