@@ -10,7 +10,7 @@ mkdir -p $SOURCE_LOCATION
 # Rust
 cd $SOURCE_LOCATION
 rm -f rust_nightly.tar.gz
-wget http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz -O rust_nightly.tar.gz
+wget http://static.rust-lang.org/dist/2016-05-12/rust-nightly-x86_64-unknown-linux-gnu.tar.gz -O rust_nightly.tar.gz
 mkdir -p rust_nightly && tar -xf rust_nightly.tar.gz -C rust_nightly --strip-components 1
 cd rust_nightly
 ./install.sh --prefix=$SCRIPT_LOCATION
@@ -38,6 +38,7 @@ tar xf gaol.tar.gz
 patch -p0 < $SCRIPT_LOCATION/../documents/gaol-4.2.0.patch
 mv gaol-4.2.0 gaol
 cd gaol
+export CFLAGS=" -msse3 "; export CXXFLAGS=" -msse3 ";
 ./configure  --with-mathlib=crlibm --enable-simd --disable-debug --disable-preserve-rounding --enable-optimize --disable-verbose-mode --prefix=$SCRIPT_LOCATION
 make
 make install
