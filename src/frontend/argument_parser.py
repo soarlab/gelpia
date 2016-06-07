@@ -71,9 +71,11 @@ def parse_gelpia_args():
                         help="Enable solver logging to stderr",
                         type=str, nargs='?', const=True, default=None)
     arg_parser.add_argument("-T", "--fptaylor",
-                        help="Enable FPTaylor compatibility mode",
+                        help="FPTaylor compatibility",
                             type=str, nargs='?', const=True, default=False)
-
+    arg_parser.add_argument("-z", "--skip-div-zero",
+                            action="store_true", help="Skip division by zero check")
+    
     # actually parse
     args = arg_parser.parse_args()
 
