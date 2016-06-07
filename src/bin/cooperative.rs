@@ -62,7 +62,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
         q: Arc<RwLock<BinaryHeap<Quple>>>, 
         sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
         f: FuncObj,
-        logging: bool)
+        logging: bool, max_iters: u32)
         -> (Flt, Vec<GI>, bool) {
     let mut f_best_high = NINF;
     let mut f_best_low  = NINF;
@@ -72,7 +72,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt,
     q.write().unwrap().push(Quple{p: INF, pf: 0, data: x_0.clone(),
                                   fdata: f.call(&x_0)});
 
-    while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
+    while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire)
+          && iters < max_iters {
         if sync.load(Ordering::Acquire) {
             // Ugly: Update the update thread's view of the best branch bound.
             *f_best_shared.write().unwrap() = f_best_low;
@@ -300,11 +301,12 @@ fn main() {
         let stop = stop.clone();
         let fo_c = fo.clone();
         let logging = args.logging;
+        let iters= args.iters;
         thread::Builder::new().name("IBBA".to_string()).spawn(move || {
             ibba(x_i, x_err, y_err,
                  f_bestag, f_best_shared,
                  x_bestbb,
-                 b1, b2, q, sync, stop, fo_c, logging)
+                 b1, b2, q, sync, stop, fo_c, logging, iters)
         })};
     
     let _ea_thread = 
