@@ -61,6 +61,9 @@ def parse_gelpia_args():
     arg_parser.add_argument("-t", "--timeout",
                         type=int, help="Timeout for execution in seconds.",
                         default=0)
+    arg_parser.add_argument("-M", "--maxiters",
+                        type=int, help="Maximum IBBA iterations.",
+                        default=0)
     arg_parser.add_argument("-g", "--grace",
                         type=int, help="Grace period for timeout option. Defaults to twice the supplied timeout",
                         default=0)
@@ -119,7 +122,8 @@ def parse_gelpia_args():
             "update"          : args.update,
             "logfile"         : args.logging,
             "dreal"           : args.dreal,
-            "fptaylor"          : args.fptaylor}
+            "fptaylor"        : args.fptaylor,
+            "iters"           : args.maxiters}
 
 
 def parse_input_box(box_string):

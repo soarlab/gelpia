@@ -111,7 +111,8 @@ def main():
                        "-t", str(arg_dict["timeout"]),
                        "-u", str(arg_dict["update"]),
                        "-d" if arg_dict["debug"] else "", # If a debug run
-                       "-L" if arg_dict["logfile"] else ""] 
+                       "-L" if arg_dict["logfile"] else "",
+                       "-M" arg_dict["iters"]] 
     
     iu.log(1, iu.cyan("Interpreted: ") + arg_dict["interp_function"])
     iu.log(1, iu.cyan("Rust: ") + arg_dict["rust_function"])

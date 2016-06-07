@@ -19,7 +19,7 @@ pub struct Args {
     pub y_error: f64,
     pub timeout: u32,
     pub update_interval: u32,
-    pub iters: u64,
+    pub iters: u32,
     pub names: Vec<String>,
     pub func_suffix: String,
     pub logging: bool,
@@ -75,7 +75,7 @@ pub fn process_args() -> Args {
 
     // Optional
     opts.optopt("t", "time_out", "", "");
-    opts.optopt("m", "max_iters", "", "");
+    opts.optopt("M", "max_iters", "", "");
     opts.optopt("u", "update", "", "");
     opts.optflag("d", "debug", "Enable debugging");
     opts.optflag("L", "logging", "Enable maximum logging to stderr");
@@ -115,6 +115,12 @@ pub fn process_args() -> Args {
     } else {
         10 as u32
     };
+    
+    let a_iters = if matches.opt_present("M") {
+        matches.opt_str("M").unwrap().parse::<u32>().unwrap()
+    } else {
+        0 as u32
+    };
 
     // Return parsed information in a struct
     Args{domain: x_0, 
@@ -122,7 +128,7 @@ pub fn process_args() -> Args {
          x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
          y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), 
          timeout: to, 
-         iters: 0,
+         iters: a_iters,
          names: names, 
          update_interval: ui, 
          func_suffix: func_suffix,
