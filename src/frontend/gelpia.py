@@ -112,7 +112,7 @@ def main():
                        "-u", str(arg_dict["update"]),
                        "-d" if arg_dict["debug"] else "", # If a debug run
                        "-L" if arg_dict["logfile"] else "",
-                       "-M" arg_dict["iters"]] 
+                       "-M", str(arg_dict["iters"])] 
     
     iu.log(1, iu.cyan("Interpreted: ") + arg_dict["interp_function"])
     iu.log(1, iu.cyan("Rust: ") + arg_dict["rust_function"])
@@ -192,7 +192,8 @@ def main():
             idx = output.find('[')
             output = output[idx:]
             result = eval(output) 
-            print("Maximum: {}".format(result[0]))
+            print("Maximum: {}".format(result[0][1]) + "\n" +
+                  "Minimum: {}".format(result[0][0]))
 
     iu.log(log_level, iu.green("Parsing time: ")+str(parsing_end-parsing_start))
     iu.log(log_level, iu.green("Solver time: ")+str(end-start))

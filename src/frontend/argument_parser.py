@@ -98,7 +98,7 @@ def parse_gelpia_args():
     inputs = lift_inputs(exp)
     consts = lift_consts(exp, inputs)
     assign = lift_assign(exp, inputs, consts)
-    pow_replacement(exp, inputs, consts, assign)
+#    pow_replacement(exp, inputs, consts, assign)
 
     divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
