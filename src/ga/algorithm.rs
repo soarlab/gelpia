@@ -1,7 +1,7 @@
 
 use std::sync::{Barrier, RwLock, Arc, RwLockWriteGuard};
 use std::sync::atomic::{AtomicBool, Ordering};
-
+use std::sync::atomic::Ordering as AtOrd;
 extern crate rand;
 use rand::{ThreadRng, Rng};
 use rand::distributions::{IndependentSample, Range};
@@ -15,6 +15,7 @@ use gelpia_utils::{Quple, INF, NINF, Flt, Parameters};
 
 extern crate function;
 use function::FuncObj;
+
 
 #[derive(Clone)]
 pub struct Individual {
@@ -35,14 +36,18 @@ pub fn ea(x_e: Vec<GI>,
           fo_c: FuncObj) -> (Flt, Vec<GI>, bool) {
 
     let ref mut population = population.write().unwrap();
-    let input = ea_core(&x_e, &param, population, &fo_c);
+    let input = ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
+                        &x_bestbb, population, &fo_c);
     let ans = fo_c.call(&input).upper();
 
     (ans, input, true)
 }
 
 
-fn ea_core(x_e: &Vec<GI>, param: &Parameters,
+fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
+           sync: &Arc<AtomicBool>, b1: &Arc<Barrier>, b2: &Arc<Barrier>,
+           f_bestag: &Arc<RwLock<Flt>>,
+           x_bestbb: &Arc<RwLock<Vec<GI>>>,
            population: &mut Vec<Individual>, fo_c: &FuncObj)
            -> (Vec<GI>) {
     let mut rng = rand::thread_rng();
@@ -52,42 +57,81 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters,
         ranges.push(Range::new(g.lower(), g.upper()));
     }
 
-    let mut times = Vec::new();
-    for i in 0..100 {
-        population.truncate(0);
-        sample(param.population, population, fo_c, &ranges, &mut rng);
-        let mut flag = true;
-        for iteration in 0..10000 {
-            population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+    while !stop.load(AtOrd::Acquire) {
+        if sync.load(AtOrd::Acquire) {
+            b1.wait();
+            b2.wait();
+        }
 
-            //let unfit = population.split_off(param.elitism);
+        sample(param.population, population, fo_c, &ranges, &mut rng);
+
+        population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+
+        for iteration in 0..100 {
             population.truncate(param.elitism);
 
-            if population[0].fitness > 200000_f64 {
-                times.push(iteration);
-                flag = false;
-                break;
-            }
-            //println!("iteration: {} best fitness: {}", iteration, population[0].fitness);
-            // for d in population[0].solution.clone() {
-            //     print!("{} ", d.to_string());
-            // }
-            // println!("");
 
             for _ in 0..param.selection {
-                //population.push(rng.choose(&unfit).unwrap().clone());
                 population.push(rand_individual(fo_c, &ranges, &mut rng));
             }
+
             next_generation(param.population, population, fo_c, param.mutation,
                             param.crossover, &dimension, &ranges, &mut rng);
-        }
-        
-        assert!(flag == false);
-        println!("{}", times.iter().fold(0, |mut sum, &val| {sum += val; sum})/times.len());
-    }
+            population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
 
-    println!("Average: {}", times.iter().fold(0, |mut sum, &val| {sum += val; sum})/times.len());
-    population[0].solution.clone()
+            // Report fittest of the fit.
+            {
+                let mut fbest = f_bestag.write().unwrap();
+                
+                *fbest =
+                    if *fbest < population[0].fitness { population[0].fitness }
+                else { *fbest };
+            }
+            
+            // Kill worst of the worst
+            let mut ftg = Vec::new();
+            {
+                let bestbb = x_bestbb.read().unwrap();
+                // From The Gods
+                for i in 0..bestbb.len() {
+                    ftg.push(Range::new(bestbb[i].lower(), bestbb[i].upper()));
+                }
+            }
+            let worst_ind = population.len() - 1;
+            population[worst_ind] = rand_individual(fo_c,
+                                                    &ftg,
+                                                    &mut rng);
+            population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+        }
+
+        // Report fittest of the fit
+/*        {
+            let mut fbest = f_bestag.write().unwrap();
+
+            *fbest =
+                if *fbest < population[0].fitness { population[0].fitness }
+            else { *fbest };
+        }
+
+        // Kill worst of the worst
+        let mut ftg = Vec::new();
+        {
+            let bestbb = x_bestbb.read().unwrap();
+            // From The Gods
+            for i in 0..bestbb.len() {
+                ftg.push(Range::new(bestbb[i].lower(), bestbb[i].upper()));
+            }
+        }
+        let worst_ind = population.len() - 1;
+        population[worst_ind] = rand_individual(fo_c,
+                                                &ftg,
+                                                &mut rng);
+        population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());*/
+    }
+    let result = population[0].solution.clone();
+    
+    
+    result
 }
 
 
@@ -160,19 +204,11 @@ fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
 
 fn breed(parent1: &Individual, parent2: &Individual, fo_c: &FuncObj,
          dimention: &Range<usize>, rng: &mut ThreadRng) -> (Individual) {
-    // let mut child = parent1.clone();
-    // let crossover_point = dimention.ind_sample(rng);
-    // child.solution.truncate(crossover_point);
-    // let mut rest = parent2.clone().solution.split_off(crossover_point);
-    // child.solution.append(&mut rest);
-    // child.fitness = fo_c.call(&child.solution).lower();
-    // child
-    let (dumb_parent, smart_parent) = if parent1.fitness < parent2.fitness
-    {(parent1, parent2)}else{(parent2, parent1)};
-
-    let child = smart_parent.solution.iter().zip(dumb_parent.solution.iter()).map(|(&sm, &du)| GI::new_p(2)*sm-du).collect();
-    
-    let fitness = fo_c.call(&child).lower();
-    
-    Individual{solution: child, fitness: fitness}
+    let mut child = parent1.clone();
+    let crossover_point = dimention.ind_sample(rng);
+    child.solution.truncate(crossover_point);
+    let mut rest = parent2.clone().solution.split_off(crossover_point);
+    child.solution.append(&mut rest);
+    child.fitness = fo_c.call(&child.solution).lower();
+    child
 }
