@@ -35,7 +35,6 @@ pub fn ea(x_e: Vec<GI>,
           sync: Arc<AtomicBool>,
           fo_c: FuncObj) -> (Flt, Vec<GI>, bool) {
 
-    let ref mut population = population.write().unwrap();
     let input = ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
                         &x_bestbb, population, &fo_c);
     let ans = fo_c.call(&input).upper();
@@ -48,7 +47,7 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
            sync: &Arc<AtomicBool>, b1: &Arc<Barrier>, b2: &Arc<Barrier>,
            f_bestag: &Arc<RwLock<Flt>>,
            x_bestbb: &Arc<RwLock<Vec<GI>>>,
-           population: &mut Vec<Individual>, fo_c: &FuncObj)
+           population: Arc<RwLock<Vec<Individual>>>, fo_c: &FuncObj)
            -> (Vec<GI>) {
     let mut rng = rand::thread_rng();
     let dimension = Range::new(0, x_e.len());
@@ -62,14 +61,13 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
             b1.wait();
             b2.wait();
         }
-
+        let ref mut population = *population.write().unwrap();
         sample(param.population, population, fo_c, &ranges, &mut rng);
 
         population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
 
         for iteration in 0..100 {
             population.truncate(param.elitism);
-
 
             for _ in 0..param.selection {
                 population.push(rand_individual(fo_c, &ranges, &mut rng));
@@ -103,34 +101,10 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
                                                     &mut rng);
             population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
         }
-
-        // Report fittest of the fit
-/*        {
-            let mut fbest = f_bestag.write().unwrap();
-
-            *fbest =
-                if *fbest < population[0].fitness { population[0].fitness }
-            else { *fbest };
-        }
-
-        // Kill worst of the worst
-        let mut ftg = Vec::new();
-        {
-            let bestbb = x_bestbb.read().unwrap();
-            // From The Gods
-            for i in 0..bestbb.len() {
-                ftg.push(Range::new(bestbb[i].lower(), bestbb[i].upper()));
-            }
-        }
-        let worst_ind = population.len() - 1;
-        population[worst_ind] = rand_individual(fo_c,
-                                                &ftg,
-                                                &mut rng);
-        population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());*/
     }
+    let ref population = *population.read().unwrap();
     let result = population[0].solution.clone();
-    
-    
+        
     result
 }
 
