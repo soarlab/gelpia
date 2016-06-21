@@ -1,4 +1,3 @@
-
 use std::sync::{Barrier, RwLock, Arc, RwLockWriteGuard};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::atomic::Ordering as AtOrd;
@@ -34,7 +33,10 @@ pub fn ea(x_e: Vec<GI>,
           stop: Arc<AtomicBool>,
           sync: Arc<AtomicBool>,
           fo_c: FuncObj) -> (Flt, Vec<GI>, bool) {
-
+    // Constant function
+    if x_e.len() == 0 {
+        return (0, x_e, true);
+    }
     let input = ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
                         &x_bestbb, population, &fo_c);
     let ans = fo_c.call(&input).upper();
@@ -177,9 +179,9 @@ fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
 
 
 fn breed(parent1: &Individual, parent2: &Individual, fo_c: &FuncObj,
-         dimention: &Range<usize>, rng: &mut ThreadRng) -> (Individual) {
+         dimension: &Range<usize>, rng: &mut ThreadRng) -> (Individual) {
     let mut child = parent1.clone();
-    let crossover_point = dimention.ind_sample(rng);
+    let crossover_point = dimension.ind_sample(rng);
     child.solution.truncate(crossover_point);
     let mut rest = parent2.clone().solution.split_off(crossover_point);
     child.solution.append(&mut rest);
