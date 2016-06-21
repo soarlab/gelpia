@@ -13,7 +13,7 @@ from pass_lift_inputs import lift_inputs
 from pass_lift_consts import lift_consts
 from pass_lift_assign import lift_assign
 from pass_pow import pow_replacement
-from pass_div_zero import div_by_zero
+#from pass_div_zero import div_by_zero
 from output_rust import to_rust
 from output_interp import to_interp
 
@@ -100,11 +100,11 @@ def parse_gelpia_args():
     assign = lift_assign(exp, inputs, consts)
 #    pow_replacement(exp, inputs, consts, assign)
 
-    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
+#    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
-    if divides_by_zero:
-        print("ERROR: Division by zero")
-        sys.exit(-2)
+#    if divides_by_zero:
+#        print("ERROR: Division by zero")
+#        sys.exit(-2)
 
     rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
     interp_func = to_interp(exp, consts, inputs, assign)
@@ -233,11 +233,11 @@ def parse_dop_args():
     consts = lift_consts(exp, inputs)
     assign = lift_assign(exp, inputs, consts)
     pow_replacement(exp, inputs, consts, assign)
-    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
+#    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
-    if divides_by_zero:
-        print("ERROR: Division by zero")
-        sys.exit(-2)
+#    if divides_by_zero:
+#        print("ERROR: Division by zero")
+#        sys.exit(-2)
 
     rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
     interp_func = to_interp(exp, consts, inputs, assign)
