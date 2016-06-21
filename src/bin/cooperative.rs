@@ -313,7 +313,7 @@ for i in 0..pop.len() {
                                    b1, b2, q, sync, stop, fo_c, logging, iters)
                           })};
                       
-                      let _ea_thread = 
+                      let ea_thread = 
                       {
                           let population = population.clone();
                           let f_bestag = f_bestag.clone();
@@ -356,10 +356,8 @@ for i in 0..pop.len() {
                           });};
                       
                       let result = ibba_thread.unwrap().join();
-                      /*let ea_result = ea_thread.unwrap().join();
-                      if !ea_result.is_ok() {
-                      unreachable!();
-                  }*/
+                      let ea_result = ea_thread.unwrap().join();
+
 
                       // Join EA and Update here pending stop signaling.
                       if result.is_ok() {
