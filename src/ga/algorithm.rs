@@ -1,123 +1,21 @@
-// A genetic algorithm in Rust, for testing of stochastic methods for
-// accelerating rigorous global maximization.
 
-// Adapted from https://github.com/andschwa/rust-genetic-algorithm
-// By Andy Schwartzmeyer (https://github.com/andschwa)
-
-extern crate time;
-
+use std::sync::{Barrier, RwLock, Arc, RwLockWriteGuard};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering as AtOrd;
 extern crate rand;
-use rand::{Rng};
+use rand::{ThreadRng, Rng};
+use rand::distributions::{IndependentSample, Range};
 
-extern crate gelpia_utils;
-use gelpia_utils::{Parameters, INF, Flt};
 
 extern crate gr;
-use gr::{GI};
+use gr::{GI, width_box, split_box, midpoint_box, eps_tol};
 
-use rand::distributions::{Range, IndependentSample};
-
-use std::cmp::{Eq, PartialEq, Ordering, PartialOrd};
-
-use std::mem;
-
-use std::sync::{Barrier, RwLock, Arc};
-
-use std::sync::atomic::{AtomicBool};
-use std::sync::atomic::Ordering as AtOrd;
+extern crate gelpia_utils;
+use gelpia_utils::{Quple, INF, NINF, Flt, Parameters};
 
 extern crate function;
 use function::FuncObj;
 
-/// A genetic algorithm that searches for convergence to the given
-/// tolerance for the problem across the n-dimensional hypercube,
-/// using a population of individuals, up to a maximum iterations
-/// number of generations.
-pub fn ea(x_0: Vec<GI>, params: Parameters,
-          population: Arc<RwLock<Vec<Individual>>>,
-          f_bestag: Arc<RwLock<Flt>>,
-          x_bestbb: Arc<RwLock<Vec<GI>>>,
-          b1: Arc<Barrier>, b2: Arc<Barrier>,
-          stop: Arc<AtomicBool>, sync: Arc<AtomicBool>, f: FuncObj) {
-    // SETUP
-    // get thread local random number generator
-    let mut rng = rand::thread_rng();
-
-    // initialize population of individuals
-    {
-        let mut population_w = population.write().unwrap();
-        for _ in 0..params.population {
-            population_w.push(Individual::new(&x_0, &mut rng, &f));
-        }
-        assert!(population_w.len() == params.population);
-    }
-
-    // let mut running: f64 = 0.0;
-    // let mut iters: u64 = 0;
-
-    while !stop.load(AtOrd::Acquire) {
-        if sync.load(AtOrd::Acquire) {
-            b1.wait();
-            b2.wait();
-        }
-        
-        
-        let mut population = population.write().unwrap();
-        {
-            let mut fbest = f_bestag.write().unwrap();
-            *fbest = match (*population).iter().max() {
-                Some(i) => i.fitness,
-                None => panic!(),
-                }
-        }
-        // select, mutate, and crossover individuals for next generation
-        let mut offspring: Vec<Individual> = Vec::with_capacity(population.len());
-        for _ in 0..population.len()/2 {
-            let (mut x, mut y) = (select(&population, params.selection, &mut rng),
-                                  select(&population, params.selection, &mut rng));
-            x.mutate(&x_0, params.mutation, &mut rng);
-            y.mutate(&x_0, params.mutation, &mut rng);
-            Individual::crossover(&mut x, &mut y, params.crossover, &mut rng, &f);
-            offspring.push(x);
-            offspring.push(y);
-        }
-
-        // replace 2 random individuals with elite of prior generation
-        for _ in 0..params.elitism {
-            if let Some(x) = population.iter().max() {
-                offspring[rng.gen_range(0, population.len())] = x.clone();
-            }
-        }
-        
-        // Replace worst with bestbb
-        let mut worst_i = 0;
-        let mut worst = INF;
-        for i in 0..offspring.len() {
-            if offspring[i].fitness < worst {
-                worst = offspring[i].fitness;
-                worst_i = i;
-            }
-        }
-        {
-            let bestbb = x_bestbb.read().unwrap();
-            offspring[worst_i] = Individual::new(&bestbb, &mut rng, &f);
-        }
-
-        // replace population with next generation
-        *population = offspring;
-
-    }
-}
-
-
-/// Tournament selection from n random individuals
-fn select<R: Rng>(population: &[Individual], n: usize, rng: &mut R) -> Individual {
-    if let Some(selected) = (0..n).map(|_| rng.choose(population)).max() {
-        selected.unwrap().clone()
-    } else {
-        unimplemented!();
-    }
-}
 
 #[derive(Clone)]
 pub struct Individual {
@@ -125,86 +23,166 @@ pub struct Individual {
     pub fitness: Flt,
 }
 
-impl Individual {
-    /// Constructs a new Individual to solve Problem with n random values
-    pub fn new<R: Rng>(x: &Vec<GI>, rng: &mut R, f: &FuncObj) -> Self {
-        let mut result = Vec::new();
-        for i in 0..x.len() {
-            let up = x[i].upper();
-            let low = x[i].lower();
 
-            let num = if 
-                up == low {up} 
-            else 
-            {Range::new(low, 
-                        up).ind_sample(rng)};
-            result.push(GI::new_d(num, num));
-        }
-        let fitness = f.call(&result).lower();
-        Individual{solution: result, fitness: fitness}
+pub fn ea(x_e: Vec<GI>,
+          param: Parameters,
+          population: Arc<RwLock<Vec<Individual>>>,
+          f_bestag: Arc<RwLock<Flt>>,
+          x_bestbb: Arc<RwLock<Vec<GI>>>,
+          b1: Arc<Barrier>,
+          b2: Arc<Barrier>,
+          stop: Arc<AtomicBool>,
+          sync: Arc<AtomicBool>,
+          fo_c: FuncObj) -> (Flt, Vec<GI>, bool) {
+
+    let input = ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
+                        &x_bestbb, population, &fo_c);
+    let ans = fo_c.call(&input).upper();
+
+    (ans, input, true)
+}
+
+
+fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
+           sync: &Arc<AtomicBool>, b1: &Arc<Barrier>, b2: &Arc<Barrier>,
+           f_bestag: &Arc<RwLock<Flt>>,
+           x_bestbb: &Arc<RwLock<Vec<GI>>>,
+           population: Arc<RwLock<Vec<Individual>>>, fo_c: &FuncObj)
+           -> (Vec<GI>) {
+    let mut rng = rand::thread_rng();
+    let dimension = Range::new(0, x_e.len());
+    let mut ranges = Vec::new();
+    for g in x_e {
+        ranges.push(Range::new(g.lower(), g.upper()));
     }
 
-    /// Mutate with chance n a single gene to a new value in the
-    /// problem's domain (a "jump" mutation).
-    ///
-    /// Fitness is NOT evaluated as it is ALWAYS done in `crossover()`
-    pub fn mutate<R: Rng>(&mut self, x: &Vec<GI>, chance: f64, rng: &mut R) {
-        if rng.gen_range(0_f64, 1_f64) < chance {
-            let i = rng.gen_range(0, self.solution.len());
-            let up = x[i].upper();
-            let low = x[i].lower();
-
-            let num = if up == low {up} else {Range::new(low, up).ind_sample(rng)};
-
-            self.solution[i] = GI::new_d(num, num);
+    while !stop.load(AtOrd::Acquire) {
+        if sync.load(AtOrd::Acquire) {
+            b1.wait();
+            b2.wait();
         }
-    }
-    
-    /// Performs two-point crossover with chance n to swap a random
-    /// set of [0, dimension] genes between a pair of individuals.
-    ///
-    /// Fitness is ALWAYS evaluated because it is NOT done in mutate()
-    pub fn crossover<R: Rng>(x: &mut Individual, y: &mut Individual,
-                             chance: f64, rng: &mut R, f: &FuncObj) {
-        // assert_eq!(x.problem, y.problem);
-        if rng.gen_range(0_f64, 1_f64) < chance {
-            let len = x.solution.len();
-            let (start, n) = (rng.gen_range(0, len), rng.gen_range(0, len));
-            for i in start..start + n {
-                mem::swap(&mut x.solution[i % len], &mut y.solution[i % len]);
+        let ref mut population = *population.write().unwrap();
+        sample(param.population, population, fo_c, &ranges, &mut rng);
+
+        population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+
+        for iteration in 0..100 {
+            population.truncate(param.elitism);
+
+            for _ in 0..param.selection {
+                population.push(rand_individual(fo_c, &ranges, &mut rng));
             }
+
+            next_generation(param.population, population, fo_c, param.mutation,
+                            param.crossover, &dimension, &ranges, &mut rng);
+            population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+
+            // Report fittest of the fit.
+            {
+                let mut fbest = f_bestag.write().unwrap();
+                
+                *fbest =
+                    if *fbest < population[0].fitness { population[0].fitness }
+                else { *fbest };
+            }
+            
+            // Kill worst of the worst
+            let mut ftg = Vec::new();
+            {
+                let bestbb = x_bestbb.read().unwrap();
+                // From The Gods
+                for i in 0..bestbb.len() {
+                    ftg.push(Range::new(bestbb[i].lower(), bestbb[i].upper()));
+                }
+            }
+            let worst_ind = population.len() - 1;
+            population[worst_ind] = rand_individual(fo_c,
+                                                    &ftg,
+                                                    &mut rng);
+            population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
         }
-        x.fitness = f.call(&x.solution).lower();
-        y.fitness = f.call(&y.solution).lower();
     }
+    let ref population = *population.read().unwrap();
+    let result = population[0].solution.clone();
+        
+    result
 }
 
-impl Eq for Individual {}
 
-impl Ord for Individual {
-    /// This dangerously delegates to `partial_cmp`; NaN will panic
-    fn cmp(&self, other: &Self) -> Ordering {
-        if let Some(result) = self.fitness.partial_cmp(&other.fitness) {
-            return result;
-        }
-        unimplemented!();
+fn sample(population_size: usize, population: &mut Vec<Individual>,
+          fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut ThreadRng)
+          -> () {
+    for _ in 0..population_size-population.len() {
+        population.push(rand_individual(fo_c, ranges, rng));
     }
+
+    ()
 }
 
-impl PartialEq<Individual> for Individual {
-    /// This doesn't use `fitness.eq()` because it needs to be
-    /// consistent with `Eq`
-    fn eq(&self, other: &Individual) -> bool {
-        if let Some(result) = self.fitness.partial_cmp(&other.fitness) {
-            return result == Ordering::Equal;
-        }
-        unimplemented!();
+
+fn rand_individual(fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut ThreadRng)
+                   -> (Individual) {
+    let mut new_sol = Vec::new();
+    for r in ranges {
+        new_sol.push(GI::new_p(r.ind_sample(rng)));
     }
+    let fitness = fo_c.call(&new_sol).lower();
+
+    Individual{solution:new_sol, fitness:fitness}
 }
 
-impl PartialOrd for Individual {
-    /// This delegates to `fitness.partial_cmp()`
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.fitness.partial_cmp(&other.fitness)
+
+fn next_generation(population_size:usize, population: &mut Vec<Individual>,
+                   fo_c: &FuncObj, mut_rate: f64, crossover: f64,
+                   dimension: &Range<usize>, ranges: &Vec<Range<f64>>,
+                   rng: &mut ThreadRng)
+                   -> () {
+
+    let elites = population.clone();
+
+    for _ in 0..population_size-population.len() {
+        if rng.gen::<f64>() < crossover {
+            population.push(breed(rng.choose(&elites).unwrap(),
+                                  rng.choose(&elites).unwrap(),
+                                  fo_c,
+                                  dimension, rng));
+        } else {
+            population.push(mutate(rng.choose(&elites).unwrap(), fo_c, mut_rate,
+                                   dimension, ranges, rng));
+        }
     }
+
+    ()
+}
+
+
+fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
+          dimension: &Range<usize>, ranges: &Vec<Range<f64>>, rng: &mut ThreadRng)
+          -> (Individual) {
+    let mut output_sol = Vec::new();
+
+    for (r, &ind) in ranges.iter().zip(input.solution.iter()) {
+        output_sol.push(
+            if rng.gen::<f64>() < mut_rate {
+                ind
+            } else {
+                GI::new_p(r.ind_sample(rng))
+            });
+    }
+
+    let fitness = fo_c.call(&output_sol).lower();
+
+    Individual{solution: output_sol, fitness: fitness}
+}
+
+
+fn breed(parent1: &Individual, parent2: &Individual, fo_c: &FuncObj,
+         dimention: &Range<usize>, rng: &mut ThreadRng) -> (Individual) {
+    let mut child = parent1.clone();
+    let crossover_point = dimention.ind_sample(rng);
+    child.solution.truncate(crossover_point);
+    let mut rest = parent2.clone().solution.split_off(crossover_point);
+    child.solution.append(&mut rest);
+    child.fitness = fo_c.call(&child.solution).lower();
+    child
 }
