@@ -191,6 +191,7 @@ def main():
             # investigate
             idx = output.find('[')
             output = output[idx:]
+            inf = float("inf")        
             result = eval(output) 
             print("Maximum: {}".format(result[0][1]) + "\n" +
                   "Minimum: {}".format(result[0][0]))
