@@ -104,9 +104,14 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
             population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
         }
     }
+    
     let ref population = *population.read().unwrap();
-    let result = population[0].solution.clone();
-        
+    let result = if !population.is_empty() {
+        population[0].solution.clone()
+    } else {
+        x_e.clone()
+    };
+    
     result
 }
 
