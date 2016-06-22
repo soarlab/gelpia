@@ -70,7 +70,11 @@ def parse_gelpia_args():
     arg_parser.add_argument("-L", "--logging",
                         help="Enable solver logging to stderr",
                         type=str, nargs='?', const=True, default=None)
+    arg_parser.add_argument("-z",
+                            help="Enable division by zero preprocess pass",
+                            action='store_const', const=True, default=False)
 
+    
     # actually parse
     args = arg_parser.parse_args()
 
@@ -91,10 +95,8 @@ def parse_gelpia_args():
     consts = lift_consts(exp, inputs)
     assign = lift_assign(exp, inputs, consts)
     pow_replacement(exp, inputs, consts, assign)
-
-    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
-    if divides_by_zero:
+    if args.z and div_by_zero(exp, inputs, consts, assign):
         print("ERROR: Division by zero")
         sys.exit(-2)
 
@@ -146,6 +148,9 @@ def parse_dop_args():
                         type=str, nargs='?', const=True, default=None)
     arg_parser.add_argument("-v", "--verbose", help="increase output verbosity",
                             type=int, default=0)
+    arg_parser.add_argument("-z",
+                            help="Enable division by zero preprocess pass",
+                            action='store_const', const=True, default=False)
 
     args = arg_parser.parse_args()
     with open(args.query_file, 'r') as f:
@@ -223,9 +228,8 @@ def parse_dop_args():
     consts = lift_consts(exp, inputs)
     assign = lift_assign(exp, inputs, consts)
     pow_replacement(exp, inputs, consts, assign)
-    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
-    if divides_by_zero:
+    if args.z and div_by_zero(exp, inputs, consts, assign):
         print("ERROR: Division by zero")
         sys.exit(-2)
 
