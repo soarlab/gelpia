@@ -35,7 +35,7 @@ pub fn ea(x_e: Vec<GI>,
           fo_c: FuncObj) -> (Flt, Vec<GI>, bool) {
     // Constant function
     if x_e.len() == 0 {
-        unreachable!();
+        return (0.0, x_e, true);
     }
     let input = ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
                         &x_bestbb, population, &fo_c);
@@ -105,7 +105,6 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
         }
     }
     let ref population = *population.read().unwrap();
-    
     let result = population[0].solution.clone();
         
     result
