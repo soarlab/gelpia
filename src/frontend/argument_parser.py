@@ -12,7 +12,7 @@ from lexed_to_parsed import parse_function
 from pass_lift_inputs import lift_inputs
 from pass_lift_consts import lift_consts
 from pass_lift_assign import lift_assign
-from pass_pow import pow_replacement
+#from pass_pow import pow_replacement
 #from pass_div_zero import div_by_zero
 from output_rust import to_rust
 from output_interp import to_interp
@@ -42,6 +42,9 @@ def parse_gelpia_args():
     arg_parser.add_argument("-ie", "--input-epsilon",
                         help="cuttoff for function input size",
                         type=float, default=.001)
+    arg_parser.add_argument("-oer", "--relative-input-epsilon",
+                            help="relative error cutoff for function output size",
+                            type=float, default = 0);
     arg_parser.add_argument("-oe", "--output-epsilon",
                         help="cuttoff for function output size",
                         type=float, default=.001)
@@ -109,21 +112,22 @@ def parse_gelpia_args():
     rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
     interp_func = to_interp(exp, consts, inputs, assign)
     
-    return {"input_epsilon"   : args.input_epsilon,
-            "output_epsilon"  : args.output_epsilon,
-            "inputs"          : new_inputs,
-            "constants"       : '|'.join(new_consts),
-            "rust_function"   : rust_func,
-            "interp_function" : interp_func,
-            "expression"      : exp,
-            "debug"           : args.debug,
-            "timeout"         : args.timeout,
-            "grace"           : args.grace,
-            "update"          : args.update,
-            "logfile"         : args.logging,
-            "dreal"           : args.dreal,
-            "fptaylor"        : args.fptaylor,
-            "iters"           : args.maxiters}
+    return {"input_epsilon"      : args.input_epsilon,
+            "output_epsilon"     : args.output_epsilon,
+            "rel_output_epsilon" : args.relative_input_epsilon,
+            "inputs"             : new_inputs,
+            "constants"          : '|'.join(new_consts),
+            "rust_function"      : rust_func,
+            "interp_function"    : interp_func,
+            "expression"         : exp,
+            "debug"              : args.debug,
+            "timeout"            : args.timeout,
+            "grace"              : args.grace,
+            "update"             : args.update,
+            "logfile"            : args.logging,
+            "dreal"              : args.dreal,
+            "fptaylor"           : args.fptaylor,
+            "iters"              : args.maxiters}
 
 
 def parse_input_box(box_string):
@@ -232,7 +236,7 @@ def parse_dop_args():
     inputs = lift_inputs(exp)
     consts = lift_consts(exp, inputs)
     assign = lift_assign(exp, inputs, consts)
-    pow_replacement(exp, inputs, consts, assign)
+#    pow_replacement(exp, inputs, consts, assign)
 #    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
 #    if divides_by_zero:

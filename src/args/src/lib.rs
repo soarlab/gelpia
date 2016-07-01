@@ -17,6 +17,7 @@ pub struct Args {
     pub function: FuncObj,
     pub x_error: f64,
     pub y_error: f64,
+    pub y_error_rel: f64,
     pub timeout: u32,
     pub update_interval: u32,
     pub iters: u32,
@@ -72,7 +73,8 @@ pub fn process_args() -> Args {
     opts.reqopt("x", "x_epsilon", "", "");
     opts.reqopt("y", "y_epsilon", "", "");
     opts.reqopt("n", "names", "", "");
-
+    opts.reqopt("r", "y_epsilon_relative", "", "");
+    
     // Optional
     opts.optopt("t", "time_out", "", "");
     opts.optopt("M", "max_iters", "", "");
@@ -127,6 +129,7 @@ pub fn process_args() -> Args {
          function: fo, 
          x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
          y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), 
+         y_error_rel: matches.opt_str("r").unwrap().parse::<f64>().unwrap(), 
          timeout: to, 
          iters: a_iters,
          names: names, 

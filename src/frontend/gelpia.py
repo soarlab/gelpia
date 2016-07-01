@@ -106,6 +106,7 @@ def main():
                        '-i', inputs,
                        "-x", str(arg_dict["input_epsilon"]),
                        "-y", str(arg_dict["output_epsilon"]),
+                       "-r", str(arg_dict["rel_output_epsilon"]),
                        "-S", "generated_"+file_id, # Function file suffix
                        "-n", ",".join(arg_dict["inputs"]),
                        "-t", str(arg_dict["timeout"]),
