@@ -2,8 +2,7 @@ use std::sync::{Barrier, RwLock, Arc, RwLockWriteGuard};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::atomic::Ordering as AtOrd;
 extern crate rand;
-//use rand::{ThreadRng, Rng};
-use rand::{Rng, SeedableRng, StdRng};
+use rand::{ThreadRng, Rng, SeedableRng, StdRng, XorShiftRng};
 use rand::distributions::{IndependentSample, Range};
 
 
@@ -16,13 +15,13 @@ use gelpia_utils::{Quple, INF, NINF, Flt, Parameters};
 extern crate function;
 use function::FuncObj;
 
+type GARng = XorShiftRng;
 
 #[derive(Clone)]
 pub struct Individual {
     pub solution: Vec<GI>,
     pub fitness: Flt,
 }
-
 
 pub fn ea(x_e: Vec<GI>,
           param: Parameters,
@@ -38,8 +37,9 @@ pub fn ea(x_e: Vec<GI>,
     if x_e.len() == 0 {
         return (0.0, x_e, true);
     }
+    let seed = param.seed;
     let input = ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
-                        &x_bestbb, population, &fo_c);
+                        &x_bestbb, population, &fo_c, seed);
     let ans = fo_c.call(&input).upper();
 
     (ans, input, true)
@@ -50,11 +50,21 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
            sync: &Arc<AtomicBool>, b1: &Arc<Barrier>, b2: &Arc<Barrier>,
            f_bestag: &Arc<RwLock<Flt>>,
            x_bestbb: &Arc<RwLock<Vec<GI>>>,
-           population: Arc<RwLock<Vec<Individual>>>, fo_c: &FuncObj)
+           population: Arc<RwLock<Vec<Individual>>>, fo_c: &FuncObj,
+           seed: u32)
            -> (Vec<GI>) {
-    //    let mut rng = rand::thread_rng();
-    let seed: &[_] = &[1, 2, 3, 4];
-    let mut rng: StdRng = SeedableRng::from_seed(seed);
+    let mut rng: GARng = if seed != 0 {
+        let seed_r: [u32; 4] = [222, 173, 190, 239];
+        GARng::from_seed(seed_r)
+    }
+    else {
+        let mut seed_r: [u8; 4] = [0, 0, 0, 0];
+        rand::thread_rng().fill_bytes(&mut seed_r);
+        let seed_rr: [u32; 4] = [seed_r[0] as u32, seed_r[1] as u32,
+                                 seed_r[2] as u32, seed_r[3] as u32];
+        GARng::from_seed(seed_rr)
+    };
+    
     let dimension = Range::new(0, x_e.len());
     let mut ranges = Vec::new();
     for g in x_e {
@@ -120,7 +130,7 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
 
 
 fn sample(population_size: usize, population: &mut Vec<Individual>,
-          fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut StdRng)
+          fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng)
           -> () {
     for _ in 0..population_size-population.len() {
         population.push(rand_individual(fo_c, ranges, rng));
@@ -130,7 +140,7 @@ fn sample(population_size: usize, population: &mut Vec<Individual>,
 }
 
 
-fn rand_individual(fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut StdRng)
+fn rand_individual(fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng)
                    -> (Individual) {
     let mut new_sol = Vec::new();
     for r in ranges {
@@ -145,14 +155,14 @@ fn rand_individual(fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut StdRng)
 fn next_generation(population_size:usize, population: &mut Vec<Individual>,
                    fo_c: &FuncObj, mut_rate: f64, crossover: f64,
                    dimension: &Range<usize>, ranges: &Vec<Range<f64>>,
-                   rng: &mut StdRng)
+                   rng: &mut GARng)
                    -> () {
 
     let elites = population.clone();
 
     for _ in 0..population_size-population.len() {
         if rng.gen::<f64>() < crossover {
-            population.push(breed(rng.choose(&elites).unwrap(),
+            population.push(breed((&mut *rng).choose(&elites).unwrap(),
                                   rng.choose(&elites).unwrap(),
                                   fo_c,
                                   dimension, rng));
@@ -167,7 +177,7 @@ fn next_generation(population_size:usize, population: &mut Vec<Individual>,
 
 
 fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
-          dimension: &Range<usize>, ranges: &Vec<Range<f64>>, rng: &mut StdRng)
+          dimension: &Range<usize>, ranges: &Vec<Range<f64>>, rng: &mut GARng)
           -> (Individual) {
     let mut output_sol = Vec::new();
 
@@ -176,7 +186,7 @@ fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
             if rng.gen::<f64>() < mut_rate {
                 ind
             } else {
-                GI::new_p(r.ind_sample(rng))
+                GI::new_p(r.ind_sample(&mut *rng))
             });
     }
 
@@ -187,7 +197,7 @@ fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
 
 
 fn breed(parent1: &Individual, parent2: &Individual, fo_c: &FuncObj,
-         dimension: &Range<usize>, rng: &mut StdRng) -> (Individual) {
+         dimension: &Range<usize>, rng: &mut GARng) -> (Individual) {
     let mut child = parent1.clone();
     let crossover_point = dimension.ind_sample(rng);
     child.solution.truncate(crossover_point);

@@ -342,12 +342,14 @@ fn main() {
         let b1 = b1.clone();
         let b2 = b2.clone();
         let fo_c = fo.clone();
+        let factor = x_e.len();
         thread::Builder::new().name("EA".to_string()).spawn(move || {
-            ea(x_e, Parameters{population: 50, //1000,
+            ea(x_e, Parameters{population: 50*factor, //1000,
                                selection: 8, //4,
                                elitism: 5, //2,
                                mutation: 0.4_f64,//0.3_f64,
-                               crossover: 0.0_f64 // 0.5_f64
+                               crossover: 0.0_f64, // 0.5_f64
+                               seed:  0,
             },
                population, 
                f_bestag, 
