@@ -54,7 +54,10 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
            seed: u32)
            -> (Vec<GI>) {
     let mut rng: GARng = if seed != 0 {
-        let seed_r: [u32; 4] = [222, 173, 190, 239];
+        let seed_r: [u32; 4] = [(seed & 0xFF000000) >> 24,
+                                (seed & 0xFF0000) >> 16,
+                                (seed & 0xFF00) >> 8 ,
+                                seed & 0xFF];//[222, 173, 190, 239];
         GARng::from_seed(seed_r)
     }
     else {
