@@ -49,6 +49,7 @@ pub struct Parameters {
     pub elitism:   usize,
     pub mutation:    Flt,
     pub crossover:   Flt,
+    pub seed:        u32,
 }
 // Evolutionary algo end
 
