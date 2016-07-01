@@ -24,6 +24,7 @@ pub struct Args {
     pub names: Vec<String>,
     pub func_suffix: String,
     pub logging: bool,
+    pub seed: u32,
 }
 
 
@@ -81,6 +82,7 @@ pub fn process_args() -> Args {
     opts.optopt("u", "update", "", "");
     opts.optflag("d", "debug", "Enable debugging");
     opts.optflag("L", "logging", "Enable maximum logging to stderr");
+    opts.optopt("s", "seed", "Seed to use for random number generators", "");
     
     // Check that the args are there
     let args: Vec<String> = env::args().collect();
@@ -112,6 +114,12 @@ pub fn process_args() -> Args {
         0 as u32 
     };
 
+    let seed = if matches.opt_present("s") {
+        matches.opt_str("seed").unwrap().parse::<u32>().unwrap() 
+    } else { 
+        0 as u32 
+    };
+
     let ui = if matches.opt_present("u") {
         matches.opt_str("u").unwrap().parse::<u32>().unwrap()
     } else {
@@ -135,5 +143,6 @@ pub fn process_args() -> Args {
          names: names, 
          update_interval: ui, 
          func_suffix: func_suffix,
-         logging: logging}
+         logging: logging,
+         seed: seed}
 }

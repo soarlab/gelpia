@@ -111,9 +111,11 @@ def main():
                        "-n", ",".join(arg_dict["inputs"]),
                        "-t", str(arg_dict["timeout"]),
                        "-u", str(arg_dict["update"]),
+                       "-M", str(arg_dict["iters"]),
+                       "--seed", str(arg_dict["seed"]),
                        "-d" if arg_dict["debug"] else "", # If a debug run
-                       "-L" if arg_dict["logfile"] else "",
-                       "-M", str(arg_dict["iters"])] 
+                       "-L" if arg_dict["logfile"] else "",]
+
     
     iu.log(1, iu.cyan("Interpreted: ") + arg_dict["interp_function"])
     iu.log(1, iu.cyan("Rust: ") + arg_dict["rust_function"])
@@ -160,7 +162,6 @@ def main():
                     match = re.search("\[([^,]+),(.*)", line)
                     if match:
                         line = "[{},{}".format(-float(match.group(1)), match.group(2))
-                # print(line.strip())
                 output += line.strip()
     except KeyboardInterrupt:
         iu.warning("Caught ctrl-C, exiting now")

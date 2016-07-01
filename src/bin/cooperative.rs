@@ -285,6 +285,8 @@ fn main() {
     let x_err = args.x_error;
     let y_err = args.y_error;
     let y_rel = args.y_error_rel;
+    let seed = args.seed;
+    
     // Early out if there are no input variables...
     if x_0.len() == 0 {
         let result = fo.call(&x_0);
@@ -349,7 +351,7 @@ fn main() {
                                elitism: 5, //2,
                                mutation: 0.4_f64,//0.3_f64,
                                crossover: 0.0_f64, // 0.5_f64
-                               seed:  0,
+                               seed:  seed,
             },
                population, 
                f_bestag, 

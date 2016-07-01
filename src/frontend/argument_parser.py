@@ -64,6 +64,9 @@ def parse_gelpia_args():
     arg_parser.add_argument("-t", "--timeout",
                         type=int, help="Timeout for execution in seconds.",
                         default=0)
+    arg_parser.add_argument("-s", "--seed",
+                        type=int, help="Optional seed for the random number generators used within gelpia.",
+                        default=0)
     arg_parser.add_argument("-M", "--maxiters",
                         type=int, help="Maximum IBBA iterations.",
                         default=0)
@@ -127,7 +130,8 @@ def parse_gelpia_args():
             "logfile"            : args.logging,
             "dreal"              : args.dreal,
             "fptaylor"           : args.fptaylor,
-            "iters"              : args.maxiters}
+            "iters"              : args.maxiters,
+            "seed"               : args.seed,}
 
 
 def parse_input_box(box_string):
