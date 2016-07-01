@@ -53,21 +53,18 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
            population: Arc<RwLock<Vec<Individual>>>, fo_c: &FuncObj,
            seed: u32)
            -> (Vec<GI>) {
-    let mut rng: GARng = if seed != 0 {
-        let seed_r: [u32; 4] = [(seed & 0xFF000000) >> 24,
-                                (seed & 0xFF0000) >> 16,
-                                (seed & 0xFF00) >> 8 ,
-                                seed & 0xFF];//[222, 173, 190, 239];
-        GARng::from_seed(seed_r)
-    }
-    else {
-        let mut seed_r: [u8; 4] = [0, 0, 0, 0];
-        rand::thread_rng().fill_bytes(&mut seed_r);
-        let seed_rr: [u32; 4] = [seed_r[0] as u32, seed_r[1] as u32,
-                                 seed_r[2] as u32, seed_r[3] as u32];
-        GARng::from_seed(seed_rr)
-    };
-    
+    let rng_seed: u32 =
+        match seed {
+            0 => 3735928579,
+            1 => rand::thread_rng().next_u32(),
+            _ => seed,
+        };
+    let seed_r: [u32; 4] = [(rng_seed & 0xFF000000) >> 24,
+                            (rng_seed & 0xFF0000) >> 16,
+                            (rng_seed & 0xFF00) >> 8 ,
+                            rng_seed & 0xFF];
+    let mut rng: GARng = GARng::from_seed(seed_r);
+
     let dimension = Range::new(0, x_e.len());
     let mut ranges = Vec::new();
     for g in x_e {

@@ -65,8 +65,10 @@ def parse_gelpia_args():
                         type=int, help="Timeout for execution in seconds.",
                         default=0)
     arg_parser.add_argument("-s", "--seed",
-                        type=int, help="Optional seed for the random number generators used within gelpia.",
-                        default=0)
+                        type=int, help="Optional seed (u32) for the random number generators used within gelpia.\n"
+                            "A value of 0 (default) indicates to use the default seed, a value of 1 indicates gelpia \n"
+                            "will use a randomly selected seed. Any other value will be used as the RNG seed.",
+                            default=0)
     arg_parser.add_argument("-M", "--maxiters",
                         type=int, help="Maximum IBBA iterations.",
                         default=0)
