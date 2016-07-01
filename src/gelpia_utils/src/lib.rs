@@ -1,6 +1,6 @@
 /* 
-  Basic interval implementation and other common functions/data structures
-*/
+Basic interval implementation and other common functions/data structures
+ */
 #![feature(float_extras)]
 
 // External libraries
@@ -24,7 +24,7 @@ macro_rules! max {
         $(
             max = if max > $y {max} else {$y};
         )*
-        max
+            max
     }}
 }
 
@@ -36,7 +36,7 @@ macro_rules! min {
         $(
             min = if min < $y {min} else {$y};
         )*
-        min
+            min
     }}
 }
 
@@ -65,7 +65,11 @@ pub struct Quple {
 // Allow ordering of Quples
 impl PartialEq for Quple {
     fn eq(&self, other: &Quple) -> bool {
-        self.pf == other.pf
+        if self.pf == other.pf &&
+            self.p == other.p {
+                return true;
+            }
+        return false;
     }
 }
 
@@ -73,39 +77,43 @@ impl Eq for Quple { }
 
 impl PartialOrd for Quple {
     fn partial_cmp(&self, other: &Quple) -> Option<Ordering> {
-        if self.p < other.p {
-            Some(Ordering::Less)
+        // This element is greater than the other element
+        if self.pf < other.pf {
+            return Some(Ordering::Greater);
         }
-        else if self.pf < other.pf {
-            Some(Ordering::Greater)
+        else if self.pf == other.pf {
+            return self.p.partial_cmp(&other.p);
         }
         else {
-            Some(Ordering::Greater)
+            return Some(Ordering::Less);
         }
     }
 }
 
 impl Ord for Quple {
     fn cmp(&self, other: &Quple) -> Ordering {
-        if self.p < other.p {
-            Ordering::Less
-        }
-        else if self.pf < other.pf {
-            Ordering::Greater
+        if self.pf < other.pf {
+            return Ordering::Greater;
         }
         else if self.pf == other.pf {
-            Ordering::Equal
+            if self.p > other.p {
+                return Ordering::Greater;
+            }
+            else if self.p == other.p {
+                return Ordering::Equal;
+            }
+            else {
+                return Ordering::Less;
+            }
         }
         else {
-            Ordering::Greater
+            return Ordering::Less;
         }
     }
 }
 // End Quple ordering.
 // End Quple
 
-pub fn eps_tol(x: f64, y: f64, tol: f64) -> bool {
-    let (_,exp_x,_) = x.integer_decode();
-    let xe = (2.0f64).powi(exp_x as i32);
-    return y - x <= tol.max(xe);
+pub fn eps_tol(fx: GI, est: f64, e_f: f64, e_f_r: f64) -> bool {
+    (fx.upper() - est).abs() <= e_f_r*est +  e_f
 }
