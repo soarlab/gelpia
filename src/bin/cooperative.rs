@@ -102,7 +102,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
 
     q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
                                   fdata: first_val});
-    let mut f_best_low = max!(est_max, first_val.lower());
+    let mut f_best_low = est_max;
 
     while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
         if max_iters != 0 && iters >= max_iters {
