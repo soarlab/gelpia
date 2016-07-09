@@ -91,52 +91,49 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
         f: FuncObj,
         logging: bool, max_iters: u32)
-        -> (Flt, Flt, Vec<GI>, bool) {
-    let mut best_x = x_0.clone();
+        -> (Flt, Flt, Vec<GI>) {
+let mut best_x = x_0.clone();
+
+let mut iters: u32 = 0;
+let (est_max, first_val) = est_func(&f, &x_0);
+
+q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
+                              fdata: first_val});
+let mut f_best_low = est_max;
+let mut f_best_high = est_max;
+
+while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
+    if max_iters != 0 && iters >= max_iters {
+    break;
+}
+if sync.load(Ordering::Acquire) {
+    // Ugly: Update the update thread's view of the best branch bound.
+    *f_best_shared.write().unwrap() = f_best_low;
+    b1.wait();
+    b2.wait();
+}
+// Take q as writable during an iteration
+let mut q = q.write().unwrap();
+
+let fbl_orig = f_best_low;
+f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
+
+if iters % 2048 == 0 {
+    let guaranteed_bound = get_upper_bound(&q, f_best_high);
+    if (guaranteed_bound - f_best_high).abs() < e_f {
+        f_best_high = guaranteed_bound;
+        break;
+    }
+    }
     
-    let mut iters: u32 = 0;
-    let mut unclean: bool = false;
-    let first_val = f.call(&x_0);
-    let (est_max, first_val) = est_func(&f, &x_0);
-
-    q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
-                                  fdata: first_val});
-    let mut f_best_low = est_max;
-    let mut f_best_high = est_max;
-
-    while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
-        if max_iters != 0 && iters >= max_iters {
-            unclean = true;
-            break;
-        }
-        if sync.load(Ordering::Acquire) {
-            // Ugly: Update the update thread's view of the best branch bound.
-            *f_best_shared.write().unwrap() = f_best_low;
-            b1.wait();
-            b2.wait();
-        }
-        // Take q as writable during an iteration
-        let mut q = q.write().unwrap();
-
-        let fbl_orig = f_best_low;
-        f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
-        
-        if iters % 2048 == 0 {
-            let guaranteed_bound = get_upper_bound(&q, f_best_high);
-            if (guaranteed_bound - f_best_high).abs() < e_f {
-                f_best_high = guaranteed_bound;
-                break;
-            }
-        }
-        
-        if logging && fbl_orig != f_best_low {
-            log_max(&q, f_best_low, f_best_high);
-        }
-        
-        let (ref x, iter_est, fx, gen) = 
-            match q.pop() {
-                Some(y) => (y.data, y.p, y.fdata, y.pf),
-                None    => unreachable!()
+    if logging && fbl_orig != f_best_low {
+        log_max(&q, f_best_low, f_best_high);
+    }
+    
+    let (ref x, iter_est, fx, gen) = 
+        match q.pop() {
+            Some(y) => (y.data, y.p, y.fdata, y.pf),
+    None    => unreachable!()
             };
         if fx.upper() < f_best_low ||
             width_box(x, e_x) ||
@@ -168,16 +165,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             }
         }
     }
-    if !stop.load(Ordering::Acquire) || unclean {
-        // Exiting normally
-        // Tell GA thread to stop
-        stop.store(true, Ordering::Release);
-        (f_best_low, f_best_high, best_x, true)
-    }
-    else {
-        // Exiting by some other condition
-        (f_best_low, f_best_high, best_x, false)
-    }
+    stop.store(true, Ordering::Release);
+    (f_best_low, f_best_high, best_x)
 }
 
 fn distance(p: &Vec<GI>, x: &Vec<GI>) -> Flt {
@@ -196,29 +185,30 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
           b1: Arc<Barrier>, b2: Arc<Barrier>,
           f: FuncObj,
           upd_interval: u32,
-          timeout: u32) {  
+          timeout: u32) {
     let start = time::get_time();
-    
+    let one_sec = Duration::new(1, 0);
     'out: while !stop.load(Ordering::Acquire) {
         // Timer code...
         let last_update = time::get_time();
-        while (time::get_time() - last_update).num_seconds() <= upd_interval as i64 {
-            thread::sleep(Duration::new(1, 0));
-            if timeout > 0 &&
-                (time::get_time() - start).num_seconds() >= timeout as i64 { 
-                    let _ = writeln!(&mut std::io::stderr(), "Stopping early...");
-                    stop.store(true, Ordering::Release);
+        while upd_interval == 0 ||
+            (time::get_time() - last_update).num_seconds() <= upd_interval as i64 {
+                thread::sleep(one_sec);
+                if timeout > 0 &&
+                    (time::get_time() - start).num_seconds() >= timeout as i64 { 
+                        let _ = writeln!(&mut std::io::stderr(), "Stopping early...");
+                        stop.store(true, Ordering::Release);
+                        break 'out;
+                    }
+                if stop.load(Ordering::Acquire) { // Check if we've already stopped
                     break 'out;
                 }
-            if stop.load(Ordering::Acquire) { // Check if we've already stopped
-                break 'out;
             }
-        }
         // Signal EA and IBBA threads.
         sync.store(true, Ordering::Release);
 
         // Wait for EA and IBBA threads to stop.
-        b1.wait();                                                               // Dead lock here?
+        b1.wait();
         // Do update bizness.
         let mut q_u = q.write().unwrap();
         let mut q = Vec::new();
@@ -268,7 +258,7 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
         sync.store(false, Ordering::SeqCst);
         
         // Resume EA and IBBA threads.
-        b2.wait();                                                               // Dead lock here?
+        b2.wait();
     }
 }
 
@@ -394,27 +384,24 @@ fn main() {
 
     // Join EA and Update here pending stop signaling.
     if result.is_ok() {
-        let (min, mut max, mut interval, completed) = result.unwrap();
-        if !completed {
-            // Go through all remaining intervals from IBBA to find the true
-            // max
-            let mut lq = q.write().unwrap();
-            while lq.len() != 0 {
-                let v = lq.pop().unwrap();
-                let ref l_data = &v.data;
-                let ub = fo.call(l_data).upper();
-                if ub > max {
-                    max = ub;
-                    interval =v.data.clone();
-                }
-            }
+        let (min, mut max, mut interval) = result.unwrap();
+        // Go through all remaining intervals from IBBA to find the true
+        // max
+        let mut lq = q.write().unwrap();
+        while lq.len() != 0 {
+            let ref top = lq.pop().unwrap();
+            let (ub, dom) = (top.fdata.upper(), &top.data);
+            if ub > max {
+            max = ub;
+            interval = dom.clone();
         }
-        println!("[[{},{}], {{", min, max);
-        for i in 0..args.names.len() {
-            println!("'{}' : {},", args.names[i], interval[i].to_string());
-        }
-        println!("}}]");
-        
     }
-    else {println!("error")}
+    println!("[[{},{}], {{", min, max);
+    for i in 0..args.names.len() {
+        println!("'{}' : {},", args.names[i], interval[i].to_string());
+    }
+    println!("}}]");
+    
+}
+else {println!("error")}
 }

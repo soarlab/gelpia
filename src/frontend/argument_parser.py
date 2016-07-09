@@ -77,7 +77,7 @@ def parse_gelpia_args():
                         default=0)
     arg_parser.add_argument("-u", "--update",
                         type=int, help="Time between update thread executions.",
-                        default=10)
+                            default=0)
     arg_parser.add_argument("-L", "--logging",
                         help="Enable solver logging to stderr",
                         type=str, nargs='?', const=True, default=None)

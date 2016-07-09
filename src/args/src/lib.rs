@@ -123,7 +123,7 @@ pub fn process_args() -> Args {
     let ui = if matches.opt_present("u") {
         matches.opt_str("u").unwrap().parse::<u32>().unwrap()
     } else {
-        10 as u32
+        0 as u32
     };
     
     let a_iters = if matches.opt_present("M") {
