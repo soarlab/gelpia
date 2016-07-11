@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from pass_manager import *
-
+from func_map import strip_arc
 import collections
 import sys
 
@@ -38,7 +38,7 @@ def to_rust(exp, consts, inputs, assign):
       return [exp[0]] + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
       
     if exp[0] in UNIOPS:
-      return [exp[0]] + lp + _to_rust(exp[1]) + rp
+      return [strip_arc(exp[0])] + lp + _to_rust(exp[1]) + rp
 
     if exp[0] in {"Integer", "Float"}:
       return lb + [exp[1]] + rb
