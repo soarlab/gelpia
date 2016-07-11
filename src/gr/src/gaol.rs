@@ -104,8 +104,11 @@ extern {
 
     fn sin_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = sin(a).
+    fn asin_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = asin(a).
 
     fn isin_g(a: *mut gaol_int);
+    fn iasin_g(a: *mut gaol_int);
 
     fn sqrt_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = sin(a).
@@ -116,13 +119,22 @@ extern {
     fn cos_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = cos(a).
 
-    fn icos_g(a: *mut gaol_int);
-    // Returns tan(a) as a new interval.
+    fn acos_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = acos(a).
 
+    fn icos_g(a: *mut gaol_int);
+    fn iacos_g(a: *mut gaol_int);
+
+
+    // Returns tan(a) as a new interval.
     fn tan_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = tan(a).
 
+    fn atan_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = atan(a).
+
     fn itan_g(a: *mut gaol_int);
+    fn iatan_g(a: *mut gaol_int);
     
     // Returns e^a as a new interval.
 
@@ -279,6 +291,11 @@ impl GI {
     pub fn sin(&mut self) {
         unsafe{isin_g(&mut self.data)};
     }
+
+    pub fn asin(&mut self) {
+        unsafe{iasin_g(&mut self.data)};
+    }
+
     pub fn sqrt(&mut self) {
         unsafe{isqrt_g(&mut self.data)};
     }

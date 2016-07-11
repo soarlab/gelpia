@@ -96,8 +96,16 @@ void sin_g(const gaol_int* in, gaol_int* out) {
   TO_INTERVAL(out) = sin(TO_INTERVAL_C(in));
 }
 
+void asin_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = asin(TO_INTERVAL_C(in));
+}
+
 void isin_g(gaol_int* x) {
   TO_INTERVAL(x) = sin(TO_INTERVAL(x));
+}
+
+void iasin_g(gaol_int* x) {
+  TO_INTERVAL(x) = asin(TO_INTERVAL(x));
 }
 
 void sqrt_g(const gaol_int* in, gaol_int* out) {
@@ -116,12 +124,28 @@ void icos_g(gaol_int* x) {
   TO_INTERVAL(x) = cos(TO_INTERVAL(x));
 }
 
+void acos_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = acos(TO_INTERVAL_C(in));
+}
+
+void iacos_g(gaol_int* x) {
+  TO_INTERVAL(x) = acos(TO_INTERVAL(x));
+}
+
 void tan_g(const gaol_int* in, gaol_int* out) {
-  TO_INTERVAL(out) = tan(TO_INTERVAL_C(in));
+  TO_INTERVAL(out) = atan(TO_INTERVAL_C(in));
 }
 
 void itan_g(gaol_int* x) {
   TO_INTERVAL(x) = tan(TO_INTERVAL(x));
+}
+
+void atan_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = atan(TO_INTERVAL_C(in));
+}
+
+void iatan_g(gaol_int* x) {
+  TO_INTERVAL(x) = atan(TO_INTERVAL(x));
 }
 
 void exp_g(const gaol_int* in, gaol_int* out) {
