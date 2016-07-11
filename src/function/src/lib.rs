@@ -99,8 +99,11 @@ impl FuncObj {
                     match s.as_str() {
                         "abs" => op.abs(),
                         "sin" => op.sin(),
+                        "asin"=> op.asin(),
                         "cos" => op.cos(),
+                        "acos" => op.acos(),
                         "tan" => op.tan(),
+                        "atan" => op.atan(),
                         "exp" => op.exp(),
                         "log" => op.log(),
                         "neg" => op.neg(),

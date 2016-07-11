@@ -308,6 +308,14 @@ impl GI {
         unsafe{itan_g(&mut self.data)};
     }
     
+    pub fn acos(&mut self) {
+        unsafe{iacos_g(&mut self.data)};
+    }
+    
+    pub fn atan(&mut self) {
+        unsafe{iatan_g(&mut self.data)};
+    }
+    
     fn split(&self, out1: &mut GI, out2: &mut GI) {
         unsafe{split_g(&self.data, &mut out1.data, &mut out2.data)};
     }
@@ -415,6 +423,12 @@ pub fn sin(x: GI) -> GI {
     result
 }
 
+pub fn asin(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{asin_g(&x.data, &mut result.data)};
+    result
+}
+
 pub fn sqrt(x: GI) -> GI {
     let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
     unsafe{sqrt_g(&x.data, &mut result.data)};
@@ -427,9 +441,21 @@ pub fn cos(x: GI) -> GI {
     result
 }
 
+pub fn acos(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{acos_g(&x.data, &mut result.data)};
+    result
+}
+
 pub fn tan(x: GI) -> GI {
     let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
     unsafe{tan_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn atan(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{atan_g(&x.data, &mut result.data)};
     result
 }
 
