@@ -5,7 +5,8 @@
 int main() {
   std::string s;
   try {
-    while (std::getline(std::cin, s)) {      
+    gaol::interval::precision(1000);
+    while (std::getline(std::cin, s)) {
       std::cout << gaol::interval(s.c_str()) << std::endl;
     }
   }
