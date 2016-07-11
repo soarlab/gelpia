@@ -17,50 +17,36 @@ from pass_lift_assign import lift_assign
 from output_rust import to_rust
 from output_interp import to_interp
 
+
 def parse_args():
     exe = path.basename(sys.argv[0])
-    if exe == "gelpia":
-        return parse_gelpia_args()
-    elif exe == "dop_gelpia":
-        return parse_dop_args()
+    arg_parser = create_common_option_parser(exe == "gelpia")
+
+    if exe == "dop_gelpia":
+        (args, function, epsilons) = add_dop_args(arg_parser)
     else:
-        print("Defaulting to gelpia argument parsing")
-        return parse_gelpia_args()
+        if exe != "gelpia":
+            print("Defaulting to gelpia argument parsing")
+        (args, function, epsilons) = add_gelpia_args(arg_parser)
+        
+    return finish_parsing_args(args, function, epsilons)
 
 
-def parse_gelpia_args():
-    """ Command line argument parser. Returns a dict from arg name to value"""
 
-    # Using the Ian argument parser since it has nicer from file characteristics
+
+
+def create_common_option_parser(use_ampersand):
     arg_parser = iu.IanArgumentParser(description="Global function optimizer based "
-                                  "on branch and bound for noncontinuous "
-                                  "functions.",
-                                  fromfile_prefix_chars='@')
-    arg_parser.add_argument("--dreal", action='store_const', const=True, default=False)
+                                      "on branch and bound for noncontinuous "
+                                      "functions.",
+                                      fromfile_prefix_chars= '@' if use_ampersand else None)
     arg_parser.add_argument("-v", "--verbose", help="increase output verbosity",
-                        type=int, default=0)
-    arg_parser.add_argument("-ie", "--input-epsilon",
-                        help="cuttoff for function input size",
-                        type=float, default=.001)
-    arg_parser.add_argument("-oer", "--relative-input-epsilon",
-                            help="relative error cutoff for function output size",
-                            type=float, default = 0);
-    arg_parser.add_argument("-oe", "--output-epsilon",
-                        help="cuttoff for function output size",
-                        type=float, default=.001)
-    arg_parser.add_argument("-i", "--input",
-                        help="Search space. "
-                        "Format is: {V1 : (inf_V1, sup_V1), ...}"
-                        "Where V1 is the interval name, inf_V1 is the infimum, "
-                        "and sup_V1 is the supremum",
-                        type=str, nargs='+', required=True,)
-    arg_parser.add_argument("-f", "--function",
-                        help="the c++ interval arithmatic function to evaluate",
-                        type=str, nargs='+', required=True,)
+                            type=int, default=0)    
     arg_parser.add_argument("-d", "--debug",
                         help="Debug run of function. Makes the minimum verbosity"
                         " level one. Runs a debug build of gelpia, "
                         "with backtrace enabled.", action="store_true")
+    arg_parser.add_argument("--dreal", action='store_const', const=True, default=False)
     arg_parser.add_argument("-t", "--timeout",
                         type=int, help="Timeout for execution in seconds.",
                         default=0)
@@ -85,55 +71,10 @@ def parse_gelpia_args():
                         help="FPTaylor compatibility",
                             type=str, nargs='?', const=True, default=False)
     arg_parser.add_argument("-z", "--skip-div-zero",
-                            action="store_true", help="Skip division by zero check")
-    
-    # actually parse
-    args = arg_parser.parse_args()
+                            action="store_true", help="Skip division by zero check")    
+    return arg_parser
 
-    # set verbosity level
-    if args.debug or args.verbose:
-        iu.set_log_level(max(1, args.verbose))
 
-    # grab function (this is required since the function may have spaces in it)
-    function = ' '.join(args.function)
-    if args.dreal:
-        function = "-({})".format(function)
-    inputs = ' '.join(args.input)
-
-    start = parse_input_box(inputs)
-
-    exp = parse_function(start+'\n'+function)
-    inputs = lift_inputs(exp)
-    consts = lift_consts(exp, inputs)
-    assign = lift_assign(exp, inputs, consts)
-#    pow_replacement(exp, inputs, consts, assign)
-
-#    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
-    
-#    if divides_by_zero:
-#        print("ERROR: Division by zero")
-#        sys.exit(-2)
-
-    rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
-    interp_func = to_interp(exp, consts, inputs, assign)
-    
-    return {"input_epsilon"      : args.input_epsilon,
-            "output_epsilon"     : args.output_epsilon,
-            "rel_output_epsilon" : args.relative_input_epsilon,
-            "inputs"             : new_inputs,
-            "constants"          : '|'.join(new_consts),
-            "rust_function"      : rust_func,
-            "interp_function"    : interp_func,
-            "expression"         : exp,
-            "debug"              : args.debug,
-            "timeout"            : args.timeout,
-            "grace"              : args.grace,
-            "update"             : args.update,
-            "logfile"            : args.logging,
-            "dreal"              : args.dreal,
-            "fptaylor"           : args.fptaylor,
-            "iters"              : args.maxiters,
-            "seed"               : args.seed,}
 
 
 def parse_input_box(box_string):
@@ -144,36 +85,62 @@ def parse_input_box(box_string):
     return '\n'.join(reformatted)
     
 
-def parse_dop_args():
-    arg_parser = argparse.ArgumentParser(description="Gelpia which reads a subset of the dop query format")
+
+
+def add_gelpia_args(arg_parser):
+    """ Command line argument parser. Returns a dict from arg name to value"""
+
+    arg_parser.add_argument("-ie", "--input-epsilon",
+                        help="cuttoff for function input size",
+                        type=float, default=.001)
+    arg_parser.add_argument("-oer", "--relative-input-epsilon",
+                            help="relative error cutoff for function output size",
+                            type=float, default = 0);
+    arg_parser.add_argument("-oe", "--output-epsilon",
+                        help="cuttoff for function output size",
+                        type=float, default=.001)
+    arg_parser.add_argument("-i", "--input",
+                        help="Search space. "
+                        "Format is: {V1 : (inf_V1, sup_V1), ...}"
+                        "Where V1 is the interval name, inf_V1 is the infimum, "
+                        "and sup_V1 is the supremum",
+                        type=str, nargs='+', required=True,)
+    arg_parser.add_argument("-f", "--function",
+                        help="the c++ interval arithmatic function to evaluate",
+                        type=str, nargs='+', required=True,)
+
+
+    
+    # actually parse
+    args = arg_parser.parse_args()
+
+    # reformat query
+    function = ' '.join(args.function)
+    if args.dreal:
+        function = "-({})".format(function)
+
+    inputs = ' '.join(args.input)
+    start = parse_input_box(inputs)
+
+    reformatted_query = start+'\n'+function
+        
+    return (args,
+            reformatted_query,
+            [args.input_epsilon,
+             args.output_epsilon,
+             args.relative_input_epsilon])
+
+
+
+
+
+def add_dop_args(arg_parser):
     arg_parser.add_argument("query_file",type=str)
-    arg_parser.add_argument("--dreal", action='store_const', const=True, default=False)
-    arg_parser.add_argument("-d", "--debug",
-                        help="Debug run of function. Makes the minimum verbosity"
-                        " level one. Runs a debug build of gelpia, "
-                        "with backtrace enabled.", action="store_true")
-    arg_parser.add_argument("-t", "--timeout",
-                        type=int, help="Timeout for execution in seconds.",
-                        default=0)
-    arg_parser.add_argument("-g", "--grace",
-                        type=int, help="Grace period for timeout option. Defaults to twice the supplied timeout",
-                        default=0)
-    arg_parser.add_argument("-u", "--update",
-                        type=int, help="Time between update thread executions.",
-                        default=10)
-    arg_parser.add_argument("-L", "--logging",
-                        help="Enable solver logging to stderr",
-                        type=str, nargs='?', const=True, default=None)
-    arg_parser.add_argument("-v", "--verbose", help="increase output verbosity",
-                            type=int, default=0)
 
     args = arg_parser.parse_args()
     with open(args.query_file, 'r') as f:
         query = f.read()
 
-    # set verbosity level
-    if args.debug or args.verbose:
-        iu.set_log_level(max(1, args.verbose))
         
     # precision
     match = re.match(r"^prec: +(\d*.\d*) *$", query)
@@ -238,33 +205,45 @@ def parse_dop_args():
     # combining and parsing
     reformatted_query = '\n'.join((var_lines, constraints, function))
 
-    exp = parse_function(reformatted_query)
+    return (args, reformatted_query, [prec, prec, 0])
+
+
+
+
+def finish_parsing_args(args, function, epsilons):
+    if args.debug or args.verbose:
+        iu.set_log_level(max(1, args.verbose))
+
+    exp = parse_function(function)
     inputs = lift_inputs(exp)
     consts = lift_consts(exp, inputs)
     assign = lift_assign(exp, inputs, consts)
-#    pow_replacement(exp, inputs, consts, assign)
-#    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
+    # IB I'm leaving these commented out. We need to vet them and put them back in
+    #    pow_replacement(exp, inputs, consts, assign)
+
+    #    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
     
-#    if divides_by_zero:
-#        print("ERROR: Division by zero")
-#        sys.exit(-2)
+    #    if divides_by_zero:
+    #        print("ERROR: Division by zero")
+    #        sys.exit(-2)
 
     rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
     interp_func = to_interp(exp, consts, inputs, assign)
-
     
-    return {"input_epsilon"   : prec,
-            "output_epsilon"  : prec,
-            "inputs"          : new_inputs,
-            "constants"       : '|'.join(new_consts),
-            "rust_function"   : rust_func,
-            "interp_function" : interp_func,
-            "expression"      : exp,
-            "debug"           : args.debug,
-            "timeout"         : args.timeout,
-            "grace"           : args.grace,
-            "update"          : args.update,
-            "logfile"         : args.logging,
-            "dreal"           : args.dreal}
-
-    
+    return {"input_epsilon"      : epsilons[0],
+            "output_epsilon"     : epsilons[1],
+            "rel_output_epsilon" : epsilons[2],
+            "inputs"             : new_inputs,
+            "constants"          : '|'.join(new_consts),
+            "rust_function"      : rust_func,
+            "interp_function"    : interp_func,
+            "expression"         : exp,
+            "debug"              : args.debug,
+            "timeout"            : args.timeout,
+            "grace"              : args.grace,
+            "update"             : args.update,
+            "logfile"            : args.logging,
+            "dreal"              : args.dreal,
+            "fptaylor"           : args.fptaylor,
+            "iters"              : args.maxiters,
+            "seed"               : args.seed,}
