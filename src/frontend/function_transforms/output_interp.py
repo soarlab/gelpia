@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from pass_manager import *
+from func_map import strip_arc
 
 import sys
 
@@ -19,7 +20,7 @@ def to_interp(exp, consts, inputs, assign):
       return _to_interp(exp[1]) + _to_interp(exp[2]) + ['o'+exp[0]]
 
     if exp[0] in UNIOPS:
-      return _to_interp(exp[1]) + ['f'+exp[0].lower()]
+      return _to_interp(exp[1]) + ['f'+strip_arc(exp[0].lower())]
 
     if exp[0] in {"Const"}:
       return ['c'+exp[1]]
