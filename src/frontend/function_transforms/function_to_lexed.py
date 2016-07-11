@@ -51,7 +51,9 @@ t_INFIX_POW = '\^'
 BINOPS  = {"pow"}
 t_BINOP = "({})".format(")|(".join(BINOPS))
 
-UNIOPS  = {"abs", "cos", "exp", "log", "sin", "tan", "sqrt"}
+UNIOPS  = {"abs", "cos", "exp", "log", "sin", "tan", "sqrt",
+           "arccos", "arcsin", "arctan", "acos", "asin", "atan"}
+
 t_UNIOP = "({})".format(")|(".join(UNIOPS))
 
 
