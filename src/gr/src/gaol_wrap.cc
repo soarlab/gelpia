@@ -133,7 +133,7 @@ void iacos_g(gaol_int* x) {
 }
 
 void tan_g(const gaol_int* in, gaol_int* out) {
-  TO_INTERVAL(out) = atan(TO_INTERVAL_C(in));
+  TO_INTERVAL(out) = tan(TO_INTERVAL_C(in));
 }
 
 void itan_g(gaol_int* x) {
