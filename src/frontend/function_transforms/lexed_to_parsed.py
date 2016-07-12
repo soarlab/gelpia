@@ -11,6 +11,7 @@ import sys
 precedence = (
   ("left", "PLUS", "MINUS"),
   ("left", "TIMES", "DIVIDE"),
+  ("right", "UMINUS"),
   ("right", "INFIX_POW"),
 )
 
@@ -34,7 +35,8 @@ def p_expression(t):
                  | expression TIMES expression
                  | expression DIVIDE expression
                  | expression INFIX_POW expression
-                 | negation '''
+                 | MINUS expression %prec UMINUS 
+                 | base'''
   if len(t) == 4:
     if t[2] == '^' and t[3][0] == "Integer":
       t[0] = ["ipow", t[1], t[3]]
@@ -42,6 +44,8 @@ def p_expression(t):
       t[0] = ["pow", t[1], t[3]]
     else:
       t[0] = [t[2], t[1], t[3]]
+  elif len(t) == 3:
+    t[0] = ["Neg", t[2]]
   elif len(t) == 2:
     t[0] = t[1]
   else:
@@ -49,26 +53,26 @@ def p_expression(t):
     sys.exit(-1)
 
 
-def p_negation(t):
-  ''' negation : MINUS negation
-               | base '''
-  if len(t) == 3:
-    typ = t[2][0]
-    if typ in ["Integer", "Float"]:
-      val = t[2][1]
-      if val[0] == '-':
-        t[0] = [typ, val[1:]]
-      else:
-        t[0] = [typ, '-'+val]
-    elif typ == "Neg":
-      t[0] = t[2][1]
-    else:
-      t[0] = ["Neg", t[2]]
-  elif len(t) == 2:
-    t[0] = t[1]
-  else:
-    print("Internal parse error in p_negation")
-    sys.exit(-1)
+# def p_negation(t):
+#   ''' negation : MINUS negation
+#                | base '''
+#   if len(t) == 3:
+#     typ = t[2][0]
+#     if typ in ["Integer", "Float"]:
+#       val = t[2][1]
+#       if val[0] == '-':
+#         t[0] = [typ, val[1:]]
+#       else:
+#         t[0] = [typ, '-'+val]
+#     elif typ == "Neg":
+#       t[0] = t[2][1]
+#     else:
+#       t[0] = ["Neg", t[2]]
+#   elif len(t) == 2:
+#     t[0] = t[1]
+#   else:
+#     print("Internal parse error in p_negation")
+#     sys.exit(-1)
 
 
 def p_base(t):

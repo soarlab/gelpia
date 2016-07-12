@@ -158,10 +158,6 @@ def main():
                             f2.write('\n')
                             f2.flush()
             else:
-                if arg_dict['dreal']:
-                    match = re.search("\[([^,]+),(.*)", line)
-                    if match:
-                        line = "[{},{}".format(-float(match.group(1)), match.group(2))
                 output += line.strip()
     except KeyboardInterrupt:
         iu.warning("Caught ctrl-C, exiting now")
@@ -186,8 +182,20 @@ def main():
                 pass
         end = time.time()
     if output:
-        if not arg_dict["fptaylor"]:
+        try:
+            lst = eval(output, {'inf':float('inf')})
+        except:
             print(output)
+            sys.exit(-1)
+
+        if arg_dict["dreal"]:
+            if type(lst[0]) is list:
+                 lst[0][1] = -lst[0][1]
+            else:
+                 lst[0] = -lst[0]
+                 
+        if not arg_dict["fptaylor"]:
+            print(lst)
         else:
             # We're crashing in compilation for some reason. Will need to
             # investigate
