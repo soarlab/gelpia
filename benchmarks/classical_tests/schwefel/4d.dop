@@ -1,0 +1,14 @@
+# answer: 0 at (420.9687,...,420.9687)
+
+var:
+[-500, 500] x1;
+[-500, 500] x2;
+[-500, 500] x3;
+[-500, 500] x4;
+
+cost:
+-418.9829 * 4;
+x1 * sin(sqrt(abs(x1)));
+x2 * sin(sqrt(abs(x2)));
+x3 * sin(sqrt(abs(x3)));
+x4 * sin(sqrt(abs(x4)));
