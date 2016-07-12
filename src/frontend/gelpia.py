@@ -183,6 +183,8 @@ def main():
         end = time.time()
     if output:
         try:
+            idx = output.find('[')
+            output = output[idx:]            
             lst = eval(output, {'inf':float('inf')})
         except:
             print(output)
@@ -190,7 +192,8 @@ def main():
 
         if arg_dict["dreal"]:
             if type(lst[0]) is list:
-                 lst[0][1] = -lst[0][1]
+                lst[0] = reversed(lst[0])
+                lst[0] = [-b for b in lst[0]]
             else:
                  lst[0] = -lst[0]
                  
@@ -199,12 +202,8 @@ def main():
         else:
             # We're crashing in compilation for some reason. Will need to
             # investigate
-            idx = output.find('[')
-            output = output[idx:]
-            inf = float("inf")        
-            result = eval(output) 
-            print("Maximum: {}".format(result[0][1]) + "\n" +
-                  "Minimum: {}".format(result[0][0]))
+            print("Maximum: {}".format(lst[0][1]) + "\n" +
+                  "Minimum: {}".format(lst[0][0]))
 
     iu.log(log_level, iu.green("Parsing time: ")+str(parsing_end-parsing_start))
     iu.log(log_level, iu.green("Solver time: ")+str(end-start))

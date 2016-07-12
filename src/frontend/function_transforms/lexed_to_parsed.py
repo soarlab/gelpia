@@ -53,34 +53,14 @@ def p_expression(t):
     sys.exit(-1)
 
 
-# def p_negation(t):
-#   ''' negation : MINUS negation
-#                | base '''
-#   if len(t) == 3:
-#     typ = t[2][0]
-#     if typ in ["Integer", "Float"]:
-#       val = t[2][1]
-#       if val[0] == '-':
-#         t[0] = [typ, val[1:]]
-#       else:
-#         t[0] = [typ, '-'+val]
-#     elif typ == "Neg":
-#       t[0] = t[2][1]
-#     else:
-#       t[0] = ["Neg", t[2]]
-#   elif len(t) == 2:
-#     t[0] = t[1]
-#   else:
-#     print("Internal parse error in p_negation")
-#     sys.exit(-1)
-
-
 def p_base(t):
-  ''' base : variable
+  ''' base : symbolic_const
+           | variable
            | interval
            | const
            | group
            | func '''
+          
   t[0] = t[1]
 
 
@@ -176,6 +156,11 @@ def p_func(t):
     sys.exit(-1)
 
 
+def p_symbolic_const(t):
+  ''' symbolic_const : SYMBOLIC_CONST '''
+  t[0] = ["Symbol", t[1]]
+  
+  
 def p_error(t):
   print("Syntax error at '{}'".format(t))
   sys.exit(-1)

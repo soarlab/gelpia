@@ -45,6 +45,9 @@ def flatten(root, exp, inputs, consts, assign):
     if exp[0] in {"Variable"}:
       return _flatten(assign[exp[1]])
 
+    if exp[0] in {"Symbol"}:
+      return exp[1]
+
     if exp[0] in {"Return", "ConstantInterval"}:
       return _flatten(exp[1])
 

@@ -136,7 +136,9 @@ def add_gelpia_args(arg_parser):
 
 def add_dop_args(arg_parser):
     arg_parser.add_argument("query_file",type=str)
-
+    arg_parser.add_argument("-p", "--prec",
+                        help="dOp delta precision",
+                            type=float, default=None)
     args = arg_parser.parse_args()
     with open(args.query_file, 'r') as f:
         query = f.read()
@@ -144,8 +146,10 @@ def add_dop_args(arg_parser):
         
     # precision
     match = re.match(r"^prec: +(\d*.\d*) *$", query)
-    if match:
+    if match and args.prec == None:
         prec = float(match.group(1))
+    elif args.prec != None:
+        prec = args.prec
     else:
         prec = 0.001
 

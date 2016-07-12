@@ -36,7 +36,7 @@ def lift_inputs(exp):
       _lift_inputs(exp[1])
       return
 
-    if exp[0] in {"ConstantInterval", "Float", "Integer"}:
+    if exp[0] in {"ConstantInterval", "Float", "Integer", "Symbol"}:
       return
     
     if exp[0] == "InputInterval":

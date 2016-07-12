@@ -50,11 +50,8 @@ def div_by_zero(exp, inputs, consts, assign):
 
   
   def _div_by_zero(exp):
-    if type(exp[0]) is list:
-      print(exp)
-      assert(0)
     if exp[0] in {'Float', 'Integer', 'ConstantInterval',
-                  'InputInterval', 'Input'}:
+                  'InputInterval', 'Input', 'Symbol'}:
       return False
 
     if exp[0] in {'/'}:

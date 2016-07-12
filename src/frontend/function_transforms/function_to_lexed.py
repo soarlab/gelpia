@@ -26,7 +26,9 @@ tokens = [
   "INTEGER",
   "FLOAT",
   "INTERVAL",
+  "SYMBOLIC_CONST",
 
+  
   # Deliminators
   "LPAREN",
   "RPAREN",
@@ -66,6 +68,8 @@ def t_NAME(t):
     t.type = "UNIOP"
   elif t.value in {"interval"}:
     t.type = "INTERVAL"
+  elif t.value in SYMBOLIC_CONSTS:
+    t.type = "SYMBOLIC_CONST"
   else:
     t.type = "NAME"
 
@@ -98,7 +102,7 @@ t_FLOAT    = ('('                 # match all floats
               ')')
 t_INTEGER  = '\d+'
 t_INTERVAL = 'interval'
-
+SYMBOLIC_CONSTS = {"pi"}
 
 # Deliminators
 t_LPAREN    = '\('

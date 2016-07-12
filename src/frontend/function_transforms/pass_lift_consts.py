@@ -42,7 +42,7 @@ def lift_consts(exp, inputs):
     if exp[0] in {"InputInterval", "Variable", "Input"}:
       return False
     
-    if exp[0] in {"ConstantInterval", "Float", "Integer"}:
+    if exp[0] in {"ConstantInterval", "Float", "Integer", "Symbol"}:
       return True
     
     if exp[0] in {"Return"}:

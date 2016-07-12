@@ -76,7 +76,7 @@ def pow_replacement(exp, inputs, consts, assign):
       return
       
     if exp[0] in {"ConstantInterval", "InputInterval", "Float", "Integer",
-                  "Const", "Input"}:
+                  "Const", "Input", "Symbol"}:
       return
 
     print("pow_replacement error unknown: '{}'".format(exp))

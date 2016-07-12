@@ -43,6 +43,9 @@ def to_rust(exp, consts, inputs, assign):
     if exp[0] in {"Integer", "Float"}:
       return lb + [exp[1]] + rb
 
+    if exp[0] in {"Symbol"}:
+      return [exp[1]]
+    
     if exp[0] in {"InputInterval"}:
       inside = _to_rust(exp[1]) + cm + _to_rust(exp[2])
       inside = [part for part in inside if part != ']' and part != '[']
