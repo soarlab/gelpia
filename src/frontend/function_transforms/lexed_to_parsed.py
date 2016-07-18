@@ -158,8 +158,12 @@ def p_func(t):
 
 def p_symbolic_const(t):
   ''' symbolic_const : SYMBOLIC_CONST '''
-  t[0] = ["Symbol", t[1]]
-  
+  if t[1] in SYMBOLIC_CONSTS:
+    t[0] = ["ConstantInterval", *SYMBOLIC_CONSTS[t[1]]]
+  else:
+    print("Internal parse errir in p_symbolic_const")
+    sys.exit(-1)
+    
   
 def p_error(t):
   print("Syntax error at '{}'".format(t))

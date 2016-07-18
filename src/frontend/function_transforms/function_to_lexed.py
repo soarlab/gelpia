@@ -102,7 +102,8 @@ t_FLOAT    = ('('                 # match all floats
               ')')
 t_INTEGER  = '\d+'
 t_INTERVAL = 'interval'
-SYMBOLIC_CONSTS = {"pi"}
+SYMBOLIC_CONSTS = {"pi" : (["Float", "3.141592653589793115997963468544185161590576171875"],
+                           ["Float", "3.141592653589793560087173318606801331043243408203125"])}
 
 # Deliminators
 t_LPAREN    = '\('

@@ -60,7 +60,18 @@ def to_rust(exp, consts, inputs, assign):
     if exp[0] in {"Variable"}:
       return _to_rust(assign[exp[1]])
 
-    if exp[0] in {"Return", "ConstantInterval"}:
+    if exp[0] in {"ConstantInterval"}:
+      if len(exp) == 2:
+        return _to_rust(exp[1])
+      elif len(exp) == 3:
+        inside = _to_rust(exp[1]) + cm + _to_rust(exp[2])
+        inside = [part for part in inside if part != ']' and part != '[']
+        return lb + inside + rb
+      else:
+        print("Error in constant outputting for rust")
+        sys.exit(-1)
+      
+    if exp[0] in {"Return"}:
       return _to_rust(exp[1])
                                           
     print("to_rust error unknown: '{}'".format(exp))
