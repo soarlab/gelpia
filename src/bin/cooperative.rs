@@ -76,7 +76,7 @@ fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI) {
     let fsx_l = f.call(&input.iter()
                        .map(|&si| GI::new_p(si.lower()))
                        .collect::<Vec<_>>());
-    let est_max = max!(est_m.lower(), fsx_u.lower(), fsx_l.lower());
+    let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
     (est_max, fsx)
 }
 
