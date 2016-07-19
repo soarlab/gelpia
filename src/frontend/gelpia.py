@@ -120,7 +120,7 @@ def main():
     iu.log(1, iu.cyan("Interpreted: ") + arg_dict["interp_function"])
     iu.log(1, iu.cyan("Rust: ") + arg_dict["rust_function"])
     iu.log(1, iu.cyan("Domain: ") + inputs)
-    iu.log(1, iu.cyan("Variables: ") + ", ".join(b[0] for b in arg_dict["inputs"]))
+    iu.log(1, iu.cyan("Variables: ") + ", ".join(b for b in arg_dict["inputs"]))
     iu.log(1, iu.cyan("Command: ") + ' '.join([executable] + executable_args))
 
     parsing_end = time.time()
