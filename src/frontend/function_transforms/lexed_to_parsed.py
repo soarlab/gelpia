@@ -165,9 +165,19 @@ def p_symbolic_const(t):
     sys.exit(-1)
     
   
-def p_error(t):
-  print("Syntax error at '{}'".format(t))
+def p_function_error(t):
+  ''' function : SYMBOLIC_CONST error SEMICOLON'''
+  print("Reserved name: '{}'".format(t[1]))
   sys.exit(-1)
+
+
+def p_error(t):
+  if t:
+    print("Syntax error at '{}'".format(t.value))
+    #sys.exit(-1)
+  else:
+    print("Unexpected end of function")
+    sys.exit(-1)
 
 
 _function_parser = yacc.yacc(debug=0, write_tables=1, optimize=1)
