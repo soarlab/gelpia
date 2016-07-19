@@ -36,6 +36,7 @@ def p_expression(t):
                  | expression DIVIDE expression
                  | expression INFIX_POW expression
                  | MINUS expression %prec UMINUS 
+                 | PLUS expression %prec UMINUS 
                  | base'''
   if len(t) == 4:
     if t[2] == '^' and t[3][0] == "Integer":
@@ -45,7 +46,13 @@ def p_expression(t):
     else:
       t[0] = [t[2], t[1], t[3]]
   elif len(t) == 3:
-    t[0] = ["Neg", t[2]]
+    if t[1] == '-':
+      t[0] = ["Neg", t[2]]
+    elif t[1] == '+':
+      t[0] = t[2]
+    else:
+      print("Internal parse error in p_expression")
+      sys.exit(-1)
   elif len(t) == 2:
     t[0] = t[1]
   else:
@@ -98,14 +105,17 @@ def p_interval(t):
 
 def p_negconst(t):
   ''' negconst : MINUS negconst
+               | PLUS negconst
                | const '''
-  if len(t) == 3:
+  if len(t) == 3 and t[1] == '-':
     typ = t[2][0]
     val = t[2][1]
     if val[0] == '-':
       t[0] = [typ, val[1:]]
     else:
       t[0] = [typ, '-'+val]
+  elif len(t) == 3:
+    t[0] = t[2]
   elif len(t) == 2:
     t[0] = t[1]
   else:
