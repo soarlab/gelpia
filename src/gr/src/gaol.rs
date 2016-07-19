@@ -34,10 +34,12 @@ extern {
     // interval. These resources must be freed.
 
     // Constructs an interval from two doubles
-
     fn make_interval_dd(a: c_double, b: c_double, out: *mut gaol_int);
-    // Constructs an interval from two strings
 
+    // Constructs an interval from a point
+    fn make_interval_d(x: c_double, out: *mut gaol_int);
+    
+    // Constructs an interval from two strings
     fn make_interval_ss(inf: *const c_char,
                         sup: *const c_char,
                         out: *mut gaol_int, success: *mut c_char);
@@ -220,7 +222,9 @@ impl GI {
     }
 
     pub fn new_p(x: f64) -> GI {
-        GI::new_d(x, x)
+        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        unsafe{make_interval_d(x as c_double, &mut result.data)};
+        result
     }
     
     pub fn new_ss(inf: &str, sup: &str) -> Result<GI, String> {

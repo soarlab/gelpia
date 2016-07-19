@@ -19,6 +19,10 @@ void make_interval_dd(double inf, double sup, gaol_int* out) {
     TO_INTERVAL(out) = interval(inf, sup);
 }
 
+void make_interval_d(double p, gaol_int* out) {
+  TO_INTERVAL(out) = interval(p);
+}
+
 // These Gaol functions my throw. Exceptions must be caught here since Rust
 // has no mechanism for handling these.
 
