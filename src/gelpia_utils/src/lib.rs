@@ -118,3 +118,14 @@ impl Ord for Quple {
 pub fn eps_tol(fx: GI, est: f64, e_f: f64, e_f_r: f64) -> bool {
     (fx.upper() - est).abs() <= e_f_r*est +  e_f
 }
+
+fn printerval(input: &Vec<GI>) -> () {
+    print!("[");
+    for i in 0..input.len() {
+        print!("{}", input[i].to_string());
+        if i < input.len() - 1 {
+            print!(", ");
+        }
+    }
+    println!("]");
+}
