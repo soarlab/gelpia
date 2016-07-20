@@ -42,3 +42,13 @@ export CFLAGS=" -msse3 "; export CXXFLAGS=" -msse3 ";
 ./configure  --with-mathlib=crlibm --enable-simd --disable-debug --disable-preserve-rounding --enable-optimize --disable-verbose-mode --prefix=$SCRIPT_LOCATION
 make
 make install
+
+# Cleanup
+cd $SCRIPT_LOCATION
+rm -rf $SOURCE_LOCATION
+
+# Debug enviroment source file
+echo "export PATH=$SCRIPT_LOCATION/bin:\$PATH" > debug_eniroment.sh
+echo "export LIBRARY_PATH=$SCRIPT_LOCATION/lib:\$LIBRARY_PATH" >> debug_eniroment.sh
+echo "export LD_LIBRARY_PATH=$SCRIPT_LOCATION/lib:\$LD_LIBRARY_PATH" >> debug_eniroment.sh
+echo "export CPLUS_INCLUDE_PATH=$SCRIPT_LOCATION/include:\$CPLUS_INCLUDE_PATH" >> debug_eniroment.sh
