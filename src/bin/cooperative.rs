@@ -92,48 +92,48 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         f: FuncObj,
         logging: bool, max_iters: u32)
         -> (Flt, Flt, Vec<GI>) {
-let mut best_x = x_0.clone();
+    let mut best_x = x_0.clone();
 
-let mut iters: u32 = 0;
-let (est_max, first_val) = est_func(&f, &x_0);
+    let mut iters: u32 = 0;
+    let (est_max, first_val) = est_func(&f, &x_0);
 
-q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
-                              fdata: first_val});
-let mut f_best_low = est_max;
-let mut f_best_high = est_max;
+    q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
+                                  fdata: first_val});
+    let mut f_best_low = est_max;
+    let mut f_best_high = est_max;
 
-while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
-    if max_iters != 0 && iters >= max_iters {
-    break;
-}
-if sync.load(Ordering::Acquire) {
-    // Ugly: Update the update thread's view of the best branch bound.
-    *f_best_shared.write().unwrap() = f_best_low;
-    b1.wait();
-    b2.wait();
-}
-// Take q as writable during an iteration
-let mut q = q.write().unwrap();
+    while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
+        if max_iters != 0 && iters >= max_iters {
+            break;
+        }
+        if sync.load(Ordering::Acquire) {
+            // Ugly: Update the update thread's view of the best branch bound.
+            *f_best_shared.write().unwrap() = f_best_low;
+            b1.wait();
+            b2.wait();
+        }
+        // Take q as writable during an iteration
+        let mut q = q.write().unwrap();
 
-let fbl_orig = f_best_low;
-f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
+        let fbl_orig = f_best_low;
+        f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
 
-if iters % 2048 == 0 {
-    let guaranteed_bound = get_upper_bound(&q, f_best_high);
-    if (guaranteed_bound - f_best_high).abs() < e_f {
-        f_best_high = guaranteed_bound;
-        break;
-    }
-    }
-    
-    if logging && fbl_orig != f_best_low {
-        log_max(&q, f_best_low, f_best_high);
-    }
-    
-    let (ref x, iter_est, fx, gen) = 
-        match q.pop() {
-            Some(y) => (y.data, y.p, y.fdata, y.pf),
-    None    => unreachable!()
+        if iters % 2048 == 0 {
+            let guaranteed_bound = get_upper_bound(&q, f_best_high);
+            if (guaranteed_bound - f_best_high).abs() < e_f {
+                f_best_high = guaranteed_bound;
+                break;
+            }
+        }
+        
+        if logging && fbl_orig != f_best_low {
+            log_max(&q, f_best_low, f_best_high);
+        }
+        
+        let (ref x, iter_est, fx, gen) = 
+            match q.pop() {
+                Some(y) => (y.data, y.p, y.fdata, y.pf),
+                None    => unreachable!()
             };
         if fx.upper() < f_best_low ||
             width_box(x, e_x) ||
@@ -150,7 +150,7 @@ if iters % 2048 == 0 {
                 }
             }
         else {
-            let x_s = split_box(&x);
+            let (x_s, is_split) = split_box(&x);
             for sx in x_s {
                 let (est_max, fsx) = est_func(&f, &sx);
                 if f_best_low < est_max  {
@@ -158,10 +158,12 @@ if iters % 2048 == 0 {
                     *x_bestbb.write().unwrap() = sx.clone();
                 }
                 iters += 1;
-                q.push(Quple{p: est_max,
-                             pf: gen+1,
-                             data: sx,
-                             fdata: fsx});
+                if is_split {
+                    q.push(Quple{p: est_max,
+                                 pf: gen+1,
+                                 data: sx,
+                                 fdata: fsx});
+                }
             }
         }
     }

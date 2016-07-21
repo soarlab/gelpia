@@ -52,17 +52,19 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
                 continue;
             }
         else {
-            let x_s = split_box(&x);
+            let (x_s, is_split) = split_box(&x);
             for sx in x_s {
                 let est = f.call(&midpoint_box(&sx));
                 if f_best_low < est.lower()  {
                     f_best_low = est.lower();
                 }
                 i += 1;
-                q.push(Quple{p: est.upper(),
-                             pf: i,
-                             data: sx.clone(),
-                             fdata: f.call(&sx)});
+                if is_split {
+                    q.push(Quple{p: est.upper(),
+                                 pf: i,
+                                 data: sx.clone(),
+                                 fdata: f.call(&sx)});
+                }
             }
         }
     }

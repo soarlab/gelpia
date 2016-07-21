@@ -532,7 +532,7 @@ fn get_next_binade(current: f64)
     d
 }
 
-pub fn split_box(_x: &Vec<GI>) -> Vec<Vec<GI>> {
+pub fn split_box(_x: &Vec<GI>) -> (Vec<Vec<GI>>, bool) {
     let mut w = NINF;
     let mut w_ind: usize = 0;
     for i in 0.._x.len() {
@@ -552,8 +552,13 @@ pub fn split_box(_x: &Vec<GI>) -> Vec<Vec<GI>> {
     } else {
         _x[w_ind].split(&mut a[w_ind], &mut b[w_ind]);
     }
-    
-    vec![a, b]
+    if a[w_ind].lower() == b[w_ind].lower() &&
+        a[w_ind].upper() == b[w_ind].upper() {
+            (vec![a], false)
+    }
+    else {
+        (vec![a, b], true)
+    }
 }
 
 
