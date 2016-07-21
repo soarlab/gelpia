@@ -39,7 +39,9 @@ patch -p0 < $SCRIPT_LOCATION/../documents/gaol-4.2.0.patch
 mv gaol-4.2.0 gaol
 cd gaol
 export CFLAGS=" -msse3 "; export CXXFLAGS=" -msse3 ";
-./configure  --with-mathlib=crlibm --enable-simd --disable-debug --enable-optimize --disable-verbose-mode --prefix=$SCRIPT_LOCATION
+./configure  --with-mathlib=crlibm --enable-simd --enable-preserve-rounding=yes\
+	     --disable-debug --enable-optimize --disable-verbose-mode \
+	     --prefix=$SCRIPT_LOCATION
 make
 make install
 
