@@ -8,6 +8,7 @@ import sys
 
 def lift_inputs(exp):
   inputs = collections.OrderedDict()
+  used_inputs = set()
   implicit_input_count = 0
     
   def _lift_inputs(exp):
@@ -50,6 +51,7 @@ def lift_inputs(exp):
         
     if exp[0] == "Variable":
       if exp[1] in inputs:
+        used_inputs.add(exp[1])
         exp[0] = "Input"
       return
 
@@ -62,6 +64,9 @@ def lift_inputs(exp):
 
     
   _lift_inputs(exp)
+  for k in inputs:
+    if k not in used_inputs:
+      del inputs[k]
   return inputs
 
 
