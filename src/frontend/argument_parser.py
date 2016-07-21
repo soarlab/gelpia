@@ -72,6 +72,15 @@ def create_common_option_parser(use_ampersand):
                             type=str, nargs='?', const=True, default=False)
     arg_parser.add_argument("-z", "--skip-div-zero",
                             action="store_true", help="Skip division by zero check")    
+    arg_parser.add_argument("-ie", "--input-epsilon",
+                        help="cuttoff for function input size",
+                            type=float, default=None)
+    arg_parser.add_argument("-oer", "--relative-input-epsilon",
+                            help="relative error cutoff for function output size",
+                            type=float, default=None);
+    arg_parser.add_argument("-oe", "--output-epsilon",
+                        help="cuttoff for function output size",
+                            type=float, default=None)
     return arg_parser
 
 
@@ -90,15 +99,6 @@ def parse_input_box(box_string):
 def add_gelpia_args(arg_parser):
     """ Command line argument parser. Returns a dict from arg name to value"""
 
-    arg_parser.add_argument("-ie", "--input-epsilon",
-                        help="cuttoff for function input size",
-                        type=float, default=.001)
-    arg_parser.add_argument("-oer", "--relative-input-epsilon",
-                            help="relative error cutoff for function output size",
-                            type=float, default = 0);
-    arg_parser.add_argument("-oe", "--output-epsilon",
-                        help="cuttoff for function output size",
-                        type=float, default=.001)
     arg_parser.add_argument("-i", "--input",
                         help="Search space. "
                         "Format is: {V1 : (inf_V1, sup_V1), ...}"
@@ -123,12 +123,20 @@ def add_gelpia_args(arg_parser):
     start = parse_input_box(inputs)
 
     reformatted_query = start+'\n'+function
-        
+
+    ie = oe = 0.001
+    oer = 0
+    if args.input_epsilon != None:
+        ie = args.input_epsilon
+    if args.output_epsilon != None:
+        oe = args.output_epsilon
+    if args.output_epsilon != None:
+        oe = args.output_epsilon
+    if args.relative_input_epsilon != None:
+        oer = args.relative_input_epsilon
     return (args,
             reformatted_query,
-            [args.input_epsilon,
-             args.output_epsilon,
-             args.relative_input_epsilon])
+            [ie, oe, oer])
 
 
 
@@ -145,14 +153,35 @@ def add_dop_args(arg_parser):
 
         
     # precision
-    match = re.match(r"^prec: +(\d*.\d*) *$", query)
-    if match and args.prec == None:
-        prec = float(match.group(1))
-    elif args.prec != None:
-        prec = args.prec
-    else:
-        prec = 0.001
+    pmatch = re.match(r"^prec: +(\d*.\d*) *$", query)
+    iematch = re.match(r"^ie: +(\d*.\d*) *$", query)
+    oematch = re.match(r"^oe: +(\d*.\d*) *$", query)
+    oermatch = re.match(r"^oer: +(\d*.\d*) *$", query)
+    ie = oe = 0.001
+    oer = 0
+    # overide values with file values
+    if pmatch:
+        ie = oe = float(pmatch.group(1))
+    if iematch:
+        ie = float(iematch.group(1))
+    if oematch:
+        oe = float(oematch.group(1))
+    if oermatch:
+        oer = float(oermatch.group(1))
+    #overide those with command line values
+    if args.prec != None:
+        ie = oe = args.prec
+    if args.input_epsilon != None:
+        ie = args.input_epsilon
+    if args.output_epsilon != None:
+        oe = args.output_epsilon
+    if args.output_epsilon != None:
+        oe = args.output_epsilon
+    if args.relative_input_epsilon != None:
+        oer = args.relative_input_epsilon
 
+
+        
     # vars
     lines = [line.strip() for line in query.splitlines() if line.strip()!=''and line.strip()[0] != '#']
     try:
@@ -209,7 +238,7 @@ def add_dop_args(arg_parser):
     # combining and parsing
     reformatted_query = '\n'.join((var_lines, constraints, function))
 
-    return (args, reformatted_query, [prec, prec, 0])
+    return (args, reformatted_query, [ie, oe, oer])
 
 
 
