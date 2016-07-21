@@ -43,7 +43,7 @@ def lift_inputs(exp):
     if exp[0] == "InputInterval":
       interval = exp[:]
       exp[0] = "Input"
-      exp[1] = "Implicit_Input_{}".format(implicit_input_count)
+      exp[1] = "$Implicit_Input_{}".format(implicit_input_count)
       used_inputs.add(exp[1])
       implicit_input_count += 1
       del exp[2:]
