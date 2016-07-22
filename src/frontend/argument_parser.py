@@ -17,6 +17,7 @@ from pass_lift_assign import lift_assign
 from output_rust import to_rust
 from output_interp import to_interp
 
+from input_parser import process
 
 def parse_args():
     exe = path.basename(sys.argv[0])
@@ -86,15 +87,17 @@ def create_common_option_parser(use_ampersand):
 
 
 
-def parse_input_box(box_string):
-    inputs = ast.literal_eval(box_string)
+def parse_input_box(box):
     reformatted = list()
-    for k,v in inputs.items():
-        reformatted.append("{} = [{},{}];".format(k, *v))
+    names = set()
+    for i in box:
+      name = i[0]
+      if name in names:
+        print("Duplicate variable", name)
+        exit(-1)
+      names.add(name)
+      reformatted.append("{} = [{},{}];".format(name, *i[1]))
     return '\n'.join(reformatted)
-    
-
-
 
 def add_gelpia_args(arg_parser):
     """ Command line argument parser. Returns a dict from arg name to value"""
@@ -120,7 +123,7 @@ def add_gelpia_args(arg_parser):
         function = "-({})".format(function)
 
     inputs = ' '.join(args.input)
-    start = parse_input_box(inputs)
+    start = parse_input_box(process(inputs))
 
     reformatted_query = start+'\n'+function
 
