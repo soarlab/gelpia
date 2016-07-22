@@ -190,7 +190,8 @@ def p_error(t):
     sys.exit(-1)
 
 
-_function_parser = yacc.yacc(debug=0, write_tables=1, optimize=1)
+_function_parser = yacc.yacc(debug=0, write_tables=1, optimize=1,
+                             tabmodule="functiontable")
 
 def parse_function(text):
   return _function_parser.parse(text, lexer=_function_lexer)
