@@ -108,6 +108,12 @@ impl FuncObj {
                         "log" => op.log(),
                         "neg" => op.neg(),
                         "sqrt" => op.sqrt(),
+                        "sinh" => op.sinh(),
+                        "cosh" => op.cosh(),
+                        "tanh" => op.tanh(),
+                        "asinh" => op.asinh(),
+                        "acosh" => op.acosh(),
+                        "atanh" => op.atanh(),
                         _     => unreachable!()
                     };
                 },
