@@ -1,0 +1,5 @@
+var:
+  [1.99,2.01] x;
+
+cost:
+  asinh(sinh(x))/2.0+arcsinh(sinh(x))/2.0;
