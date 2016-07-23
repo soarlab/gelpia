@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 from pass_manager import *
+from gelpia import bin_dir
 
 import collections
 import sys
-
+import subprocess
+import os.path as path
 
 def lift_inputs(exp):
   inputs = collections.OrderedDict()
@@ -71,7 +73,22 @@ def lift_inputs(exp):
       to_remove.add(k)
   for k in to_remove:
     del inputs[k]
-    
+
+
+  # Check interval sanity
+  query_proc = subprocess.Popen(path.join(bin_dir, 'gaol_repl'),
+                                stdout=subprocess.PIPE,
+                                stdin=subprocess.PIPE,
+                                universal_newlines=True,
+                                bufsize=0)
+  for i in inputs.values():
+    interval = "[{}, {}]".format(i[1][1], i[2][1])
+    query_proc.stdin.write(interval + '\n')
+    result = query_proc.stdout.readline()
+    if result.strip() == "[empty]":
+      print("Invalid interval: {}".format(interval))
+      sys.exit(-1)
+  query_proc.communicate();
   return inputs
 
 
