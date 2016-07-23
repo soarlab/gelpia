@@ -65,9 +65,13 @@ def lift_inputs(exp):
 
     
   _lift_inputs(exp)
+  to_remove = set()
   for k in inputs:
     if k not in used_inputs:
-      del inputs[k]
+      to_remove.add(k)
+  for k in to_remove:
+    del inputs[k]
+    
   return inputs
 
 
