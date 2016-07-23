@@ -50,6 +50,23 @@ extern "C" {
   void atan_g(const gaol_int*, gaol_int*);
   void itan_g(gaol_int*);
   void iatan_g(gaol_int*);
+
+  void sinh_g(const gaol_int*, gaol_int*);
+  void asinh_g(const gaol_int*, gaol_int*);
+  void isinh_g(gaol_int*);
+  void iasinh_g(gaol_int*);
+
+  void cosh_g(const gaol_int*, gaol_int*);
+  void acosh_g(const gaol_int*, gaol_int*);
+  void icosh_g(gaol_int*);
+  void iacosh_g(gaol_int*);
+
+  void tanh_g(const gaol_int*, gaol_int*);
+  void atanh_g(const gaol_int*, gaol_int*);
+  void itanh_g(gaol_int*);
+  void iatanh_g(gaol_int*);
+
+
   
   void exp_g(const gaol_int*, gaol_int*);
   void iexp_g(gaol_int*);

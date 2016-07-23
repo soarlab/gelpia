@@ -152,6 +152,62 @@ void iatan_g(gaol_int* x) {
   TO_INTERVAL(x) = atan(TO_INTERVAL(x));
 }
 
+// Hyperbolic functions
+void sinh_g(const gaol_int* in, gaol_int* out) {
+  const interval& x = TO_INTERVAL_C(in);
+  TO_INTERVAL(out) = (exp(x) - exp(-x))/2.0;
+}
+
+void isinh_g(gaol_int* in) {
+  const interval& x = TO_INTERVAL_C(in);
+  TO_INTERVAL(in) = (exp(x) - exp(-x))/2.0;
+}
+
+void asinh_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = asinh(TO_INTERVAL_C(in));
+}
+
+void iasinh_g(gaol_int* x) {
+  TO_INTERVAL(x) = asinh(TO_INTERVAL(x));
+}
+
+void cosh_g(const gaol_int* in, gaol_int* out) {
+  const interval& x = TO_INTERVAL_C(in);
+  TO_INTERVAL(out) = (exp(x)+exp(-x))/2.0;
+}
+
+void icosh_g(gaol_int* in) {
+  const interval& x = TO_INTERVAL_C(in);
+  TO_INTERVAL(in) = (exp(x)+exp(-x))/2.0;
+}
+
+void acosh_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = acosh(TO_INTERVAL_C(in));
+}
+
+void iacosh_g(gaol_int* x) {
+  TO_INTERVAL(x) = acosh(TO_INTERVAL(x));
+}
+
+void tanh_g(const gaol_int* in, gaol_int* out) {
+  const interval& x = TO_INTERVAL_C(in);
+  TO_INTERVAL(out) = (exp(2.0*x) - 1)/(exp(2.0*x) + 1.0);
+}
+
+void itanh_g(gaol_int* in) {
+  const interval& x = TO_INTERVAL_C(in);
+  TO_INTERVAL(in) = (exp(2.0*x) - 1)/(exp(2.0*x) + 1.0);
+}
+
+void atanh_g(const gaol_int* in, gaol_int* out) {
+  TO_INTERVAL(out) = atanh(TO_INTERVAL_C(in));
+}
+
+void iatanh_g(gaol_int* x) {
+  TO_INTERVAL(x) = atanh(TO_INTERVAL(x));
+}
+
+//
 void exp_g(const gaol_int* in, gaol_int* out) {
   TO_INTERVAL(out) = exp(TO_INTERVAL_C(in));
 }

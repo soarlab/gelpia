@@ -172,6 +172,35 @@ extern {
 
     fn ipow_vg(a: *mut gaol_int, b: *const gaol_int);
 
+
+    // Hyperbolic functions
+    fn sinh_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = sinh(a).
+    fn asinh_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = asinh(a).
+
+    fn isinh_g(a: *mut gaol_int);
+    fn iasinh_g(a: *mut gaol_int);
+
+    
+    fn cosh_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = cosh(a).
+    fn acosh_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = acosh(a).
+
+    fn icosh_g(a: *mut gaol_int);
+    fn iacosh_g(a: *mut gaol_int);
+    
+
+    fn tanh_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = tanh(a).
+    fn atanh_g(a: *const gaol_int, out: *mut gaol_int);
+    // Returns a = atanh(a).
+
+    fn itanh_g(a: *mut gaol_int);
+    fn iatanh_g(a: *mut gaol_int);
+    
+    
     // Returns the supremum of a.
 
     fn upper_g(a: *const gaol_int) -> c_double;
@@ -319,7 +348,32 @@ impl GI {
     pub fn atan(&mut self) {
         unsafe{iatan_g(&mut self.data)};
     }
+    // Hyperbolic functions
+    pub fn sinh(&mut self) {
+        unsafe{isinh_g(&mut self.data)};
+    }
     
+    pub fn asinh(&mut self) {
+        unsafe{iasinh_g(&mut self.data)};
+    }
+
+    pub fn cosh(&mut self) {
+        unsafe{icosh_g(&mut self.data)};
+    }
+
+    pub fn acosh(&mut self) {
+        unsafe{iacosh_g(&mut self.data)};
+    }
+
+    pub fn tanh(&mut self) {
+        unsafe{itanh_g(&mut self.data)};
+    }
+
+    pub fn atanh(&mut self) {
+        unsafe{iatanh_g(&mut self.data)};
+    }
+
+    // Auxiliary functions
     fn split(&self, out1: &mut GI, out2: &mut GI) {
         unsafe{split_g(&self.data, &mut out1.data, &mut out2.data)};
     }
@@ -460,6 +514,43 @@ pub fn tan(x: GI) -> GI {
 pub fn atan(x: GI) -> GI {
     let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
     unsafe{atan_g(&x.data, &mut result.data)};
+    result
+}
+
+// Hyperbolic functions
+pub fn sinh(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{sinh_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn asinh(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{asinh_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn cosh(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{cosh_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn acosh(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{acosh_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn tanh(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{tanh_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn atanh(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{atanh_g(&x.data, &mut result.data)};
     result
 }
 
