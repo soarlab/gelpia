@@ -193,6 +193,7 @@ def add_dop_args(arg_parser):
         print("Malformed query file, no var section: {}".format(args.query_file))
         sys.exit(-1)
     var_lines = list()
+    names = set()
     for line in lines[start+1:]:
         if ':' in line:
             break
@@ -200,6 +201,10 @@ def add_dop_args(arg_parser):
         if match:
             val = match.group(1)
             name = match.group(2)
+            if name in names:
+                print("Duplicate variable definition {}".format(name))
+                sys.exit(-1)
+            names.add(name)
         else:
             print("Malformed query file, imporoper var: {}".format(line))
             sys.exit(-1)
