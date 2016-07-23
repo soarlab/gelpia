@@ -25,9 +25,15 @@ def lift_consts(exp, inputs):
       _lift_consts(exp[1])
       return False
 
+    if exp[0] in {"sinh", "cosh", "tanh"}:
+      inner = _lift_consts(exp[1])
+      if inner:
+        make_constant(exp[1])
+      return False;
+    
     if exp[0] in UNIOPS.union({"ipow"}):
       return _lift_consts(exp[1])
-      
+
     if exp[0] in BINOPS:
       first  = _lift_consts(exp[1])
       second = _lift_consts(exp[2])
