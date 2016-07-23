@@ -81,12 +81,13 @@ def lift_inputs(exp):
                                 stdin=subprocess.PIPE,
                                 universal_newlines=True,
                                 bufsize=0)
-  for i in inputs.values():
+  for k in inputs.keys():
+    i = inputs[k]
     interval = "[{}, {}]".format(i[1][1], i[2][1])
     query_proc.stdin.write(interval + '\n')
     result = query_proc.stdout.readline()
     if result.strip() == "[empty]":
-      print("Invalid interval: {}".format(interval))
+      print("Invalid interval: {} = {}".format(k, interval))
       sys.exit(-1)
   query_proc.communicate();
   return inputs
