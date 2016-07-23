@@ -57,6 +57,14 @@ src_dir = path.join(base_dir, "src")
 bin_dir = path.join(base_dir, "bin")
 assert(full_dir == bin_dir)
 
+def var_ordered_output(inputs, lst):
+    # Assumes inputs is an ordered dict
+    domain = lst[-1]
+    domain_string = []
+    for i in inputs.keys():
+        if i in domain.keys():
+            domain_string.append("'{}' : {}".format(i, domain[i]))
+    return "[{}, {}]".format(lst[0], "{" + ", ".join(domain_string) + "}")
 
 def main():
     log_level = 0
@@ -202,7 +210,7 @@ def main():
                  lst[0] = -lst[0]
                  
         if not arg_dict["fptaylor"]:
-            print(lst)
+            print(var_ordered_output(arg_dict["inputs"], lst))
         else:
             # We're crashing in compilation for some reason. Will need to
             # investigate
