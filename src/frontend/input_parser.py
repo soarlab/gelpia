@@ -16,6 +16,7 @@ tokens = (
     "DQUOTE",
     "VAR",
     "NUM",
+    "EQUAL",
 )
 
 t_LCURLY = (r'\{')
@@ -27,7 +28,8 @@ t_RBRACK = (r'\]')
 t_COMMA  = (r",")
 t_COLON  = (r":")
 t_QUOTE  = (r"\'")
-t_DQUOTE  = (r"\"")
+t_DQUOTE = (r"\"")
+t_EQUAL  = (r"=")
 
 t_VAR    = (r'([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*')
 
@@ -66,7 +68,7 @@ def p_kv_pairs(t):
     
 def p_kv_pair(t):
     '''kv_pair : var_dec COLON pair
-               | var_dec COMMA pair'''
+               | var_dec EQUAL pair'''
     t[0] = (t[1], t[3])
 
 def p_var_dec(t):
