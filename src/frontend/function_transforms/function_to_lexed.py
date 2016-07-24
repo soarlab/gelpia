@@ -54,10 +54,10 @@ BINOPS  = {"pow"}
 t_BINOP = "({})".format(")|(".join(BINOPS))
 
 UNIOPS  = {"abs", "cos", "exp", "log", "sin", "tan", "sqrt",
-           "arccos", "arcsin", "arctan", "arcos", "arsin", "artan",
-           "acos", "asin", "atan",
+           "arccos", "arcsin", "arctan", "acos", "asin", "atan",
            "sinh", "cosh", "tanh",
-           "arccosh", "arcsinh", "arctanh", "arcosh", "arsinh", "artanh",
+           "arccosh", "arcsinh", "arctanh", "argcosh", "argsinh", "argtanh",
+           "arcosh", "arsinh", "artanh",
            "acosh", "asinh", "atanh"}
 
 t_UNIOP = "({})".format(")|(".join(UNIOPS))
