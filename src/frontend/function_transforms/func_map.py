@@ -1,15 +1,15 @@
 def strip_arc(f):
     d = {"arccos"  : "acos",
-         "arcos"   : "acos",
          "arcsin"  : "asin",
-         "arsin"   : "asin",
          "arctan"  : "atan",
-         "artan"   : "atan",
          "arccosh" : "acosh",
+         "argcosh" : "acosh",
          "arcosh"  : "acosh",
          "arcsinh" : "asinh",
+         "argsinh" : "asinh",
          "arsinh"  : "asinh",
          "arctanh" : "atanh",
+         "argtanh" : "atanh",
          "artanh"  : "atanh"}
     if f in d.keys():
         return d[f]
