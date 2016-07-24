@@ -1,5 +1,17 @@
 def strip_arc(f):
-    if f[:3] == "arc":
-        return "a" + f[3:]
+    d = {"arccos"  : "acos",
+         "arcos"   : "acos",
+         "arcsin"  : "asin",
+         "arsin"   : "asin",
+         "arctan"  : "atan",
+         "artan"   : "atan",
+         "arccosh" : "acosh",
+         "arcosh"  : "acosh",
+         "arcsinh" : "asinh",
+         "arsinh"  : "asinh",
+         "arctanh" : "atanh",
+         "artanh"  : "atanh"}
+    if f in d.keys():
+        return d[f]
     return f
 
