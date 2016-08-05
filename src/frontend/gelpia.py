@@ -72,7 +72,7 @@ def main():
 
     parsing_start = time.time()
     arg_dict = ap.parse_args()
-    # For FPTaylor 
+    # For FPTaylor
     if arg_dict['fptaylor']:
         log_level = 1
     # Add to paths used during runtime for our rust libs
@@ -100,7 +100,7 @@ def main():
     inputs = "|".join(inputs)
 
     file_id = mk_file_hash(arg_dict["rust_function"])
-    function_filename = path.join(src_dir, 
+    function_filename = path.join(src_dir,
                                   "func/src/lib_generated_{}.rs".format(file_id))
 
     if arg_dict["debug"]:
@@ -124,7 +124,7 @@ def main():
                        "-d" if arg_dict["debug"] else "", # If a debug run
                        "-L" if arg_dict["logfile"] else "",]
 
-    
+
     iu.log(1, iu.cyan("Interpreted: ") + arg_dict["interp_function"])
     iu.log(1, iu.cyan("Rust: ") + arg_dict["rust_function"])
     iu.log(1, iu.cyan("Domain: ") + inputs)
@@ -137,7 +137,7 @@ def main():
     output = ""
     logging = bool(arg_dict["logfile"])
     log_file = arg_dict["logfile"] if type(arg_dict["logfile"]) is str else None
-    
+
     try:
         with open(function_filename, 'w') as f:
             f.write(arg_dict["rust_function"])
@@ -146,7 +146,7 @@ def main():
             with open(log_file, 'w') as f2:
                 f2.write("")
                 f2.flush()
-            
+
         start = time.time()
         term_time = None
         if arg_dict["timeout"] != 0:
@@ -154,7 +154,7 @@ def main():
                 term_time = start + arg_dict["timeout"]*2
             else:
                 term_time = start + arg_dict["grace"]
-        
+
         iu.log(1, iu.cyan("Running"))
         for line in iu.run_async(executable, executable_args, term_time):
             if line.startswith("lb:"): # Hacky
@@ -192,7 +192,7 @@ def main():
     if output:
         try:
             idx = output.find('[')
-            output = output[idx:]            
+            output = output[idx:]
             lst = eval(output, {'inf':float('inf')})
             assert(type(lst[-1]) is dict)
             for k in list(lst[-1]):
@@ -208,7 +208,7 @@ def main():
                 lst[0] = [-b for b in lst[0]]
             else:
                  lst[0] = -lst[0]
-                 
+
         if not arg_dict["fptaylor"]:
             print(var_ordered_output(arg_dict["inputs"], lst))
         else:
@@ -220,6 +220,6 @@ def main():
     iu.log(log_level, iu.green("Parsing time: ")+str(parsing_end-parsing_start))
     iu.log(log_level, iu.green("Solver time: ")+str(end-start))
 
-    
+
 if __name__ == "__main__":
     main()

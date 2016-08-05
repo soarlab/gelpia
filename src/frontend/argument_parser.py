@@ -11,7 +11,8 @@ import ian_utils as iu
 from lexed_to_parsed import parse_function
 from pass_lift_inputs import lift_inputs
 from pass_lift_consts import lift_consts
-from pass_lift_assign import lift_assign
+from pass_lift_assigns import lift_assigns
+from pass_single_assignment import single_assignment
 #from pass_pow import pow_replacement
 #from pass_div_zero import div_by_zero
 from output_rust import to_rust
@@ -29,7 +30,7 @@ def parse_args():
         if exe != "gelpia":
             print("Defaulting to gelpia argument parsing")
         (args, function, epsilons) = add_gelpia_args(arg_parser)
-        
+
     return finish_parsing_args(args, function, epsilons)
 
 
@@ -42,7 +43,7 @@ def create_common_option_parser(use_ampersand):
                                       "functions.",
                                       fromfile_prefix_chars= '@' if use_ampersand else None)
     arg_parser.add_argument("-v", "--verbose", help="increase output verbosity",
-                            type=int, default=0)    
+                            type=int, default=0)
     arg_parser.add_argument("-d", "--debug",
                         help="Debug run of function. Makes the minimum verbosity"
                         " level one. Runs a debug build of gelpia, "
@@ -72,7 +73,7 @@ def create_common_option_parser(use_ampersand):
                         help="FPTaylor compatibility",
                             type=str, nargs='?', const=True, default=False)
     arg_parser.add_argument("-z", "--skip-div-zero",
-                            action="store_true", help="Skip division by zero check")    
+                            action="store_true", help="Skip division by zero check")
     arg_parser.add_argument("-ie", "--input-epsilon",
                         help="cuttoff for function input size",
                             type=float, default=None)
@@ -113,7 +114,7 @@ def add_gelpia_args(arg_parser):
                         type=str, nargs='+', required=True,)
 
 
-    
+
     # actually parse
     args = arg_parser.parse_args()
 
@@ -154,7 +155,7 @@ def add_dop_args(arg_parser):
     with open(args.query_file, 'r') as f:
         query = f.read()
 
-        
+
     # precision
     pmatch = re.match(r"^prec: +(\d*.\d*) *$", query)
     iematch = re.match(r"^ie: +(\d*.\d*) *$", query)
@@ -184,7 +185,7 @@ def add_dop_args(arg_parser):
         oer = args.relative_input_epsilon
 
 
-        
+
     # vars
     lines = [line.strip() for line in query.splitlines() if line.strip()!=''and line.strip()[0] != '#']
     try:
@@ -210,7 +211,7 @@ def add_dop_args(arg_parser):
             sys.exit(-1)
         var_lines.append("{} = {};".format(name, val))
     var_lines = '\n'.join(var_lines)
-        
+
     # cost
     try:
         start = lines.index("cost:")
@@ -225,7 +226,7 @@ def add_dop_args(arg_parser):
     function = '+'.join(function)
     if args.dreal:
         function = "-({})".format(function)
-    
+
     # constraints
     try:
         start = lines.index("ctr:")
@@ -257,25 +258,26 @@ def finish_parsing_args(args, function, epsilons):
 
     exp = parse_function(function)
     inputs = lift_inputs(exp)
-    consts = lift_consts(exp, inputs)
-    assign = lift_assign(exp, inputs, consts)
+    assigns = lift_assigns(exp, inputs)
+    consts = lift_consts(exp, inputs, assigns)
+    exp = single_assignment(exp, inputs, assigns, consts)
     # IB I'm leaving these commented out. We need to vet them and put them back in
     #    pow_replacement(exp, inputs, consts, assign)
 
     #    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
-    
+
     #    if divides_by_zero:
     #        print("ERROR: Division by zero")
     #        sys.exit(-2)
 
-    rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
-    interp_func = to_interp(exp, consts, inputs, assign)
-    
+    rust_func, new_inputs, new_consts = to_rust(exp, inputs, assigns, consts)
+    interp_func = to_interp(exp, inputs, assigns, consts)
+
     return {"input_epsilon"      : epsilons[0],
             "output_epsilon"     : epsilons[1],
             "rel_output_epsilon" : epsilons[2],
             "inputs"             : new_inputs,
-            "constants"          : '|'.join(new_consts),
+            "constants"          : '|'.join(new_consts.values()),
             "rust_function"      : rust_func,
             "interp_function"    : interp_func,
             "expression"         : exp,

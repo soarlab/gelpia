@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from pass_manager import *
-from gelpia import bin_dir
 
 import collections
 import sys
@@ -12,14 +11,14 @@ def lift_inputs(exp):
   inputs = collections.OrderedDict()
   used_inputs = set()
   implicit_input_count = 0
-    
+
   def _lift_inputs(exp):
     nonlocal implicit_input_count
 
     if type(exp[0]) is list:
-      assign = exp[0]
-      name = assign[1]
-      val = assign[2]
+      assigns = exp[0]
+      name = assigns[1]
+      val = assigns[2]
       if val[0] == "InputInterval":
         inputs[name[1]] = val
         exp[0] = exp[1][0]
@@ -34,14 +33,14 @@ def lift_inputs(exp):
       _lift_inputs(exp[1])
       _lift_inputs(exp[2])
       return
-    
-    if exp[0] in UNIOPS.union({"Return"}):
+
+    if exp[0] in UNOPS.union({"Return"}):
       _lift_inputs(exp[1])
       return
 
     if exp[0] in {"ConstantInterval", "Float", "Integer", "Symbol"}:
       return
-    
+
     if exp[0] == "InputInterval":
       interval = exp[:]
       exp[0] = "Input"
@@ -50,9 +49,9 @@ def lift_inputs(exp):
       implicit_input_count += 1
       del exp[2:]
       inputs[exp[1]] = interval
-      return    
-        
-    if exp[0] == "Variable":
+      return
+
+    if exp[0] == "Name":
       if exp[1] in inputs:
         used_inputs.add(exp[1])
         exp[0] = "Input"
@@ -61,35 +60,17 @@ def lift_inputs(exp):
     if exp[0] == "Assign":
       _lift_inputs(exp[2])
       return
-      
+
     print("lift_inputs error unknown: '{}'".format(exp))
     sys.exit(-1)
 
-    
+
   _lift_inputs(exp)
-  to_remove = set()
-  for k in inputs:
+
+  for k in list(inputs):
     if k not in used_inputs:
-      to_remove.add(k)
-  for k in to_remove:
-    del inputs[k]
+      del inputs[k]
 
-
-  # Check interval sanity
-  query_proc = subprocess.Popen(path.join(bin_dir, 'gaol_repl'),
-                                stdout=subprocess.PIPE,
-                                stdin=subprocess.PIPE,
-                                universal_newlines=True,
-                                bufsize=0)
-  for k in inputs.keys():
-    i = inputs[k]
-    interval = "[{}, {}]".format(i[1][1], i[2][1])
-    query_proc.stdin.write(interval + '\n')
-    result = query_proc.stdout.readline()
-    if result.strip() == "[empty]":
-      print("Invalid interval: {} = {}".format(k, interval))
-      sys.exit(-1)
-  query_proc.communicate();
   return inputs
 
 
@@ -101,7 +82,7 @@ def lift_inputs(exp):
 
 def runmain():
   from lexed_to_parsed import parse_function
-      
+
   data = get_runmain_input()
   exp = parse_function(data)
   inputs = lift_inputs(exp)
@@ -109,7 +90,7 @@ def runmain():
   print_exp(exp)
   print()
   print_inputs(inputs)
-    
+
 if __name__ == "__main__":
   try:
     runmain()

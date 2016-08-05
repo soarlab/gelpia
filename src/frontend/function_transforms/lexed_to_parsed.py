@@ -35,14 +35,13 @@ def p_expression(t):
                  | expression TIMES expression
                  | expression DIVIDE expression
                  | expression INFIX_POW expression
-                 | MINUS expression %prec UMINUS 
-                 | PLUS expression %prec UMINUS 
+                 | MINUS expression %prec UMINUS
                  | base'''
   if len(t) == 4:
     if t[2] == '^' and t[3][0] == "Integer":
-      t[0] = ["ipow", t[1], t[3]]
-    elif t[2] == '^':
       t[0] = ["pow", t[1], t[3]]
+    elif t[2] == '^':
+      t[0] = ["powi", t[1], t[3]]
     else:
       t[0] = [t[2], t[1], t[3]]
   elif len(t) == 3:
@@ -67,13 +66,13 @@ def p_base(t):
            | const
            | group
            | func '''
-          
+
   t[0] = t[1]
 
 
 def p_variable(t):
   ''' variable : NAME '''
-  t[0] = ["Variable", t[1]]
+  t[0] = ["Name", t[1]]
 
 
 def p_interval(t):
@@ -100,22 +99,22 @@ def p_interval(t):
   if left == right:
     t[0] = ["ConstantInterval", left]
   else:
+    if float(left[1]) > float(right[1]):
+      print("Upside down intervals not allowed: [{}, {}]".format(left[1], right[1]))
+      sys.exit(-1)
     t[0] = ["InputInterval", left, right]
 
 
 def p_negconst(t):
   ''' negconst : MINUS negconst
-               | PLUS negconst
                | const '''
-  if len(t) == 3 and t[1] == '-':
+  if len(t) == 3:
     typ = t[2][0]
     val = t[2][1]
     if val[0] == '-':
       t[0] = [typ, val[1:]]
     else:
       t[0] = [typ, '-'+val]
-  elif len(t) == 3:
-    t[0] = t[2]
   elif len(t) == 2:
     t[0] = t[1]
   else:
@@ -153,10 +152,10 @@ def p_group(t):
 
 def p_func(t):
   ''' func : BINOP LPAREN expression COMMA expression RPAREN
-           | UNIOP LPAREN expression RPAREN '''
+           | UNOP LPAREN expression RPAREN '''
   if len(t) == 7:
-    if t[1] == "pow" and t[5][0] == "Integer":
-      t[0] = ["ipow", t[3], t[5]]
+    if t[1] == "pow" and t[5][0] != "Integer":
+      t[0] = ["powi", t[3], t[5]]
     else:
       t[0] = [t[1], t[3], t[5]]
   elif len(t) == 5:
@@ -173,25 +172,19 @@ def p_symbolic_const(t):
   else:
     print("Internal parse errir in p_symbolic_const")
     sys.exit(-1)
-    
-  
-def p_function_error(t):
-  ''' function : SYMBOLIC_CONST error SEMICOLON'''
-  print("Reserved name: '{}'".format(t[1]))
-  sys.exit(-1)
 
 
 def p_error(t):
   if t:
     print("Syntax error at '{}'".format(t.value))
-    #sys.exit(-1)
+    sys.exit(-1)
   else:
     print("Unexpected end of function")
     sys.exit(-1)
 
 
-_function_parser = yacc.yacc(debug=0, write_tables=1, optimize=1,
-                             tabmodule="functiontable")
+_function_parser = yacc.yacc(debug=0, write_tables=0, optimize=1,)
+                             #tabmodule="functiontable")
 
 def parse_function(text):
   return _function_parser.parse(text, lexer=_function_lexer)

@@ -14,7 +14,7 @@ tokens = [
 
   # Prefix operators
   "BINOP",
-  "UNIOP",
+  "UNOP",
 
   # Variables
   "NAME",
@@ -28,7 +28,7 @@ tokens = [
   "INTERVAL",
   "SYMBOLIC_CONST",
 
-  
+
   # Deliminators
   "LPAREN",
   "RPAREN",
@@ -53,14 +53,14 @@ t_INFIX_POW = '\^'
 BINOPS  = {"pow"}
 t_BINOP = "({})".format(")|(".join(BINOPS))
 
-UNIOPS  = {"abs", "cos", "exp", "log", "sin", "tan", "sqrt",
+UNOPS  = {"abs", "cos", "exp", "log", "sin", "tan", "sqrt",
            "arccos", "arcsin", "arctan", "acos", "asin", "atan",
            "sinh", "cosh", "tanh",
            "arccosh", "arcsinh", "arctanh", "argcosh", "argsinh", "argtanh",
            "arcosh", "arsinh", "artanh",
            "acosh", "asinh", "atanh"}
 
-t_UNIOP = "({})".format(")|(".join(UNIOPS))
+t_UNOP = "({})".format(")|(".join(UNOPS))
 
 
 # Variables
@@ -68,8 +68,8 @@ def t_NAME(t):
   '([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*'
   if t.value in BINOPS:
     t.type = "BINOP"
-  elif t.value in UNIOPS:
-    t.type = "UNIOP"
+  elif t.value in UNOPS:
+    t.type = "UNOP"
   elif t.value in {"interval"}:
     t.type = "INTERVAL"
   elif t.value in SYMBOLIC_CONSTS:
@@ -158,4 +158,3 @@ if __name__ == "__main__":
     lex.runmain(_function_lexer)
   except KeyboardInterrupt:
     print("\nGoodbye")
-    

@@ -1,39 +1,38 @@
 #!/usr/bin/env python3
 
 from pass_manager import *
-from func_map import strip_arc
 
 import sys
 
 
-def to_interp(exp, consts, inputs, assign):
+def to_interp(exp, inputs, assigns, consts):
   input_names = [name for name in inputs]
-  
-  def _to_interp(exp):
-    if exp[0] in {"ipow"}:
-      return _to_interp(exp[1]) + ["p{}".format(exp[2][1])]
 
+  def _to_interp(exp):
     if exp[0] in {"pow"}:
+      return _to_interp(exp[1]) + ["p{}".format(consts[exp[2][1]][1])]
+
+    if exp[0] in {"powi"}:
       return _to_interp(exp[1]) + _to_interp(exp[2]) + ['op']
-    
+
     if exp[0] in INFIX:
       return _to_interp(exp[1]) + _to_interp(exp[2]) + ['o'+exp[0]]
 
-    if exp[0] in UNIOPS:
+    if exp[0] in UNOPS:
       return _to_interp(exp[1]) + ['f'+strip_arc(exp[0].lower())]
 
     if exp[0] in {"Const"}:
-      return ['c'+exp[1]]
-    
+      return ['c'+str(list(consts.keys()).index(exp[1]))]
+
     if exp[0] in {"Input"}:
       return ['i'+str(input_names.index(exp[1]))]
 
     if exp[0] in {"Variable"}:
-      return _to_interp(assign[exp[1]])
+      return _to_interp(assigns[exp[1]])
 
     if exp[0] in {"Return"}:
       return _to_interp(exp[1])
-                                          
+
     print("to_interp error unknown: '{}'".format(exp))
     sys.exit(-1)
 
@@ -50,16 +49,18 @@ def to_interp(exp, consts, inputs, assign):
 def runmain():
   from lexed_to_parsed import parse_function
   from pass_lift_inputs import lift_inputs
+  from pass_lift_assigns import lift_assigns
   from pass_lift_consts import lift_consts
-  from pass_lift_assign import lift_assign
-  
+
+
   data = get_runmain_input()
   exp = parse_function(data)
   inputs = lift_inputs(exp)
-  consts = lift_consts(exp, inputs)
-  assign = lift_assign(exp, inputs, consts)
-  function = to_interp(exp, consts, inputs, assign)
-    
+  assigns = lift_assigns(exp, inputs)
+  consts = lift_consts(exp, inputs, assigns)
+
+  function = to_interp(exp, inputs, assigns, consts)
+
   print("-Interp Version-")
   print("function:")
   print(function)
@@ -67,7 +68,7 @@ def runmain():
   print_inputs(inputs)
   print()
   print_consts(consts)
-    
+
 if __name__ == '__main__':
   try:
     runmain()
