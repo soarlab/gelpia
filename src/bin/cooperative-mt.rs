@@ -147,23 +147,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             q.len()/n_workers + 1
         };
         
-/*        let mut p_q = vec![];
-        {
-            let mut total_len = 0;
-            let q = q.write().unwrap();
-            let q_len = q.len();
-            for i in 0..n_workers {
-                let mut elems = vec![];
-                for j in 0..p_q_len {
-                    if i + j*n_workers >= q_len {
-                        break;
-                    }
-                    elems.push(q[i+j*n_workers].clone());
-                }
-                total_len += elems.len();
-                p_q.push(elems);
-            }
-        } */
         
         let outer_barr = Arc::new(Barrier::new(n_workers + 1));
 
@@ -173,7 +156,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         
         for i in 0..n_workers {
             let inner_barr = outer_barr.clone();
-//            let elems = p_q[i].clone();
             let _f = f.clone();
             let qtx = qtx.clone();
             let htx = htx.clone();
@@ -191,7 +173,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                 let mut lqo = vec![];
                 let mut used = false;
                 let lqi = lqi.read().unwrap();
-//                let elems_len = elems.len();
 
                 for j in 0..p_q_len {
                     if i + j*n_workers >= lqi.len() { break };
@@ -201,7 +182,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     let ref iter_est = elem.p;
                     let ref fx = elem.fdata;
                     let ref gen = elem.pf;
-                    //let (ref x, iter_est, fx, gen) = ;
                     
                     if fx.upper() < l_f_best_low ||
                         width_box(&x, e_x) ||
@@ -209,7 +189,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                             if l_f_best_high < fx.upper() {
                                 l_f_best_high = fx.upper();
                                 l_best_x = x.clone();
-                                // htx.send((fx.upper(), x.clone())).unwrap();
                             }
                         }
                     else {
@@ -219,7 +198,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                             if l_f_best_low < est_max {
                                 l_f_best_low = est_max;
                                 l_best_low_x = sx.clone();
-                                // ltx.send((est_max, sx.clone())).unwrap();
                             }
                             iters.fetch_add(1, Ordering::Release);
                             if is_split && fsx.upper() > f_best_low &&
@@ -234,12 +212,16 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                 }
                 ltx.send((l_f_best_low, l_best_low_x, used)).unwrap();
                 htx.send((l_f_best_high, l_best_x, used)).unwrap();
+                
                 lqo.sort();
                 qtx.send(lqo).unwrap();
+
                 inner_barr.wait();
             });
         }
         outer_barr.wait();
+
+        // Hangup the transmission ends of the channels
         drop(qtx);
         drop(htx);
         drop(ltx);
