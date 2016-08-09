@@ -13,7 +13,8 @@ def reverse_diff(exp, inputs, assigns, consts):
   gradient = collections.OrderedDict([(k,None) for k in inputs])
 
   def _reverse_diff(exp, adjoint):
-    if exp[0] in {"Input"}:
+    tag = exp[0]
+    if tag in {"Input"}:
       if gradient[exp[1]] == None:
         gradient[exp[1]] = adjoint
         return
@@ -21,44 +22,44 @@ def reverse_diff(exp, inputs, assigns, consts):
       gradient[exp[1]] =["+", old, adjoint]
       return
 
-    if exp[0] in {"Const"}:
+    if tag in {"Const"}:
       return
 
-    if exp[0] in {'+'}:
+    if tag in {'+'}:
        _reverse_diff(exp[1], adjoint)
        _reverse_diff(exp[2], adjoint)
        return
 
-    if exp[0] in {'-'}:
+    if tag in {'-'}:
       _reverse_diff(exp[1], adjoint)
       _reverse_diff(exp[2], ["Neg", adjoint])
       return
 
-    if exp[0] in {'*'}:
+    if tag in {'*'}:
       left = exp[1]
       right = exp[2]
       _reverse_diff(exp[1], ["*", adjoint, left])
       _reverse_diff(exp[2], ["*", adjoint, right])
       return
 
-    if exp[0] in {'/'}:
+    if tag in {'/'}:
       upper = exp[1]
       lower = exp[2]
       _reverse_diff(exp[1], ["/", adjoint, upper])
       _reverse_diff(exp[2], ["/", ["*", ["Neg", adjoint], upper], ["pow", lower, ["Integer", "2"]]]) #"-({})*{}/{}**2".format(adjoint, high, low))
       return
 
-    if exp[0] in {"exp"}:
+    if tag in {"exp"}:
       expo = exp[1]
       _reverse_diff(exp[1], ["*", ["exp", expo], adjoint]) #"exp({})*{}".format(base, adjoint))
       return
 
-    if exp[0] in {"log"}:
+    if tag in {"log"}:
       base = exp[1]
       _reverse_diff(exp[1], ["/", adjoint, base]) #"1/{}*{}".format(base, adjoint))
       return
 
-    if exp[0] in {"pow", "powi"}:
+    if tag in {"pow", "powi"}:
       base = exp[1]
       expo = exp[2]
       _reverse_diff(exp[1], ['*', adjoint, ['*', expo, ['powi', base, ['-', expo, ['Integer', "1"]]]]])
@@ -67,19 +68,55 @@ def reverse_diff(exp, inputs, assigns, consts):
                     #"{}*math.log({})*{}**{}".format(adjoint, base, base, expo))
       return
 
-    if exp[0] in {"Neg"}:
+    if tag == "sqrt":
+      _reverse_diff(exp[1], ['*', ['/', ['Integer', 1], ['sqrt', exp[1]]], adjoint])
+      return
+    
+    if tag == "cos":
+      _reverse_diff(exp[1], ['*', ["Neg", ["sin", exp[1]]], adjoint])
+      return
+    
+    if tag == "sin":
+      _reverse_diff(exp[1], ['*', ["cos", exp[1]], adjoint])
+      return
+
+    if tag == "tan":
+      _reverse_diff(exp[1], ['*', ['+', ["Integer", "1"],
+                                   ["pow", ["tan", exp[1]], ["Integer", "2"]]],
+                             adjoint])
+      return
+
+    if tag == "cosh":
+      _reverse_diff(exp[1], ['*', ['sinh', exp[1]], adjoint])
+      return
+
+    if tag == "sinh":
+      _reverse_diff(exp[1], ['*', ['cosh', exp[1]], adjoint])
+      return
+
+    if tag == "tanh":
+      _reverse_diff(exp[1], ['*', ['-', ["Integer", "1"],
+                                   ["pow", ["tanh", exp[1]], ["Integer", "2"]]],
+                             adjoint])
+      return
+    
+    if tag == "abs":
+      _reverse_diff(exp[1], ['*', ["dabs", exp[1]], adjoint])
+      return
+    
+    if tag in {"Neg"}:
       _reverse_diff(exp[1], ["Neg", adjoint]) #"-({})".format(adjoint))
       return
 
-    if exp[0] in {"Variable"}:
+    if tag in {"Variable"}:
       _reverse_diff(assigns[exp[1]], adjoint)
       return
 
-    if exp[0] in {"Return"}:
+    if tag in {"Return"}:
       _reverse_diff(exp[1], adjoint)
       return
 
-    if exp[0] in {"Integer", "Float"}:
+    if tag in {"Integer", "Float"}:
       return
 
     print("reverse_diff error unknown: '{}'".format(exp))

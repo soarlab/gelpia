@@ -63,9 +63,7 @@ def lift_consts(exp, inputs, assigns, consts=None):
       if exp[2][1] == "1":
         replace_exp(exp, exp[1][:])
         return _lift_consts(exp)
-      if _lift_consts(exp[1]):
-        return True
-      return False
+      return _lift_consts(exp[1])
 
     if exp[0] in {"+"}:
       l = expand(exp[1])
