@@ -11,6 +11,10 @@ path = "src/bin/cooperative.rs"
 name = "serial"
 path = "src/bin/serial.rs"
 
+[[bin]]
+name = "cooperative-mt"
+path = "src/bin/cooperative-mt.rs"
+
 [dependencies]
 gr = { path = "src/gr" }
 gelpia_utils = { path = "src/gelpia_utils" }
@@ -20,6 +24,10 @@ function = { path = "src/function" }
 getopts = "0.2.*"
 rand = "0.3.*"
 time = "*"
+threadpool = "1.3.*"
+
+[dependencies.scoped_threadpool]
+git = "https://github.com/Kimundi/scoped-threadpool-rs"
 
 [profile.release]
 opt-level = 3
