@@ -10,7 +10,7 @@ def to_interp(exp, inputs, assigns, consts):
 
   def _to_interp(exp):
     if exp[0] in {"pow"}:
-      return _to_interp(exp[1]) + ["p{}".format(consts[exp[2][1]][1])]
+      return _to_interp(exp[1]) + ["p{}".format(exp[2][1])]
 
     if exp[0] in {"powi"}:
       return _to_interp(exp[1]) + _to_interp(exp[2]) + ['op']
