@@ -7,6 +7,24 @@ from pass_manager import *
 import ply.yacc as yacc
 import sys
 
+def strip_arc(f):
+  d = {"arccos"  : "acos",
+       "arcsin"  : "asin",
+       "arctan"  : "atan",
+       "arccosh" : "acosh",
+       "argcosh" : "acosh",
+       "arcosh"  : "acosh",
+       "arcsinh" : "asinh",
+       "argsinh" : "asinh",
+       "arsinh"  : "asinh",
+       "arctanh" : "atanh",
+       "argtanh" : "atanh",
+       "artanh"  : "atanh"}
+  if f in d.keys():
+    return d[f]
+  return f
+
+
 
 precedence = (
   ("left", "PLUS", "MINUS"),
@@ -159,7 +177,7 @@ def p_func(t):
     else:
       t[0] = [t[1], t[3], t[5]]
   elif len(t) == 5:
-    t[0] = [t[1], t[3]]
+    t[0] = [strip_arc(t[1]), t[3]]
   else:
     print("Internal parse error in p_func")
     sys.exit(-1)

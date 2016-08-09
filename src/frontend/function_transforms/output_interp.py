@@ -19,7 +19,7 @@ def to_interp(exp, inputs, assigns, consts):
       return _to_interp(exp[1]) + _to_interp(exp[2]) + ['o'+exp[0]]
 
     if exp[0] in UNOPS:
-      return _to_interp(exp[1]) + ['f'+strip_arc(exp[0].lower())]
+      return _to_interp(exp[1]) + ['f'+exp[0].lower()]
 
     if exp[0] in {"Const"}:
       return ['c'+str(list(consts.keys()).index(exp[1]))]

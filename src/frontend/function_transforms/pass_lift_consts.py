@@ -99,7 +99,7 @@ def lift_consts(exp, inputs, assigns, consts=None):
       assert(exp[1] in consts)
       return True
 
-    if exp[0] in {"sinh", "cosh", "tanh"}:
+    if exp[0] in {"sinh", "cosh", "tanh", "dabs", "datanh"}:
       # Crlibm is claimed to not be ULP accurate by GAOL. Hence, we must defer
       # to implementations based on the exponential function.
       inner = _lift_consts(exp[1])

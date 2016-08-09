@@ -1,29 +1,13 @@
 #!/usr/bin/env python3
 
+import re
 import sys
 
 from lexed_to_parsed import BINOPS, UNOPS
 
 BINOPS.update({'+', '-', '*', '/', 'powi'})
-UNOPS.update({'Neg'})
+UNOPS.update({'Neg', "dabs", "datanh"})
 INFIX = {'+', '-', '*', '/'}
-
-def strip_arc(f):
-    d = {"arccos"  : "acos",
-         "arcsin"  : "asin",
-         "arctan"  : "atan",
-         "arccosh" : "acosh",
-         "argcosh" : "acosh",
-         "arcosh"  : "acosh",
-         "arcsinh" : "asinh",
-         "argsinh" : "asinh",
-         "arsinh"  : "asinh",
-         "arctanh" : "atanh",
-         "argtanh" : "atanh",
-         "artanh"  : "atanh"}
-    if f in d.keys():
-        return d[f]
-    return f
 
 
 def print_exp(exp):
@@ -61,7 +45,66 @@ def get_runmain_input():
     sys.stdout.write("Reading from standard input (type EOF to end):\n")
     data = sys.stdin.read()
 
-  return data
+  # vars
+  lines = [line.strip() for line in data.splitlines() if line.strip()!='']
+  try:
+    start = lines.index("var:")
+  except:
+    return data
+
+
+  var_lines = list()
+  names = set()
+  for line in lines[start+1:]:
+    if ':' in line:
+      break
+    match = re.search(r"(\[[^,]+, *[^\]]+\]) *([^;]+)", line)
+    if match:
+      val = match.group(1)
+      name = match.group(2)
+      if name in names:
+        print("Duplicate variable definition {}".format(name))
+        sys.exit(-1)
+      names.add(name)
+    else:
+      print("Malformed query file, imporoper var: {}".format(line))
+      sys.exit(-1)
+    var_lines.append("{} = {};".format(name, val))
+  var_lines = '\n'.join(var_lines)
+
+  # cost
+  try:
+    start = lines.index("cost:")
+  except:
+    print("Malformed query file, no cost section: {}".format(args.query_file))
+    sys.exit(-1)
+  function = list()
+  for line in lines[start+1:]:
+    if ':' in line:
+      break
+    function.append("({})".format(line.replace(';','')))
+  function = '+'.join(function)
+
+  # constraints
+  try:
+    start = lines.index("ctr:")
+  except:
+    start = False
+
+  constraints = list()
+  if start:
+    for line in lines[start+1:]:
+      if ':' in line:
+        break
+      constraints.append(line)
+    print("Gelpia does not currently handle constraints")
+    sys.exit(-1)
+
+  constraints = '\n'.join(constraints)
+
+  # combining and parsing
+  return '\n'.join((var_lines, constraints, function))
+
 
 def exp_hash(exp, hashed=dict()):
     h = hash(str(exp))

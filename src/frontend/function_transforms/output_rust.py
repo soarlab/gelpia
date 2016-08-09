@@ -49,7 +49,7 @@ def to_rust(exp, inputs, assigns, consts):
       return [exp[0]] + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
 
     if exp[0] in UNOPS:
-      return [strip_arc(exp[0])] + lp + _to_rust(exp[1]) + rp
+      return [exp[0]] + lp + _to_rust(exp[1]) + rp
 
     if exp[0] in {"Symbol"}:
       return [exp[1]]
