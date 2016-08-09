@@ -96,7 +96,7 @@ def lift_consts(exp, inputs, assigns, consts=None):
       else:
         # purposely fall through
         pass
-      
+
     if exp[0] in {"Const"}:
       assert(exp[1] in consts)
       return True
@@ -162,7 +162,7 @@ def lift_consts(exp, inputs, assigns, consts=None):
       if _lift_consts(exp[2]):
         exp[2] = make_constant(exp[2])
       return False
-    
+
     if exp[0] in {"Box"}:
       all_const = True
       for i in range(1, len(exp)):

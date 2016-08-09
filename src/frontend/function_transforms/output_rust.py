@@ -13,15 +13,22 @@ def to_rust(exp, inputs, assigns, consts):
   rb = [']']
   cm = [',']
   sp = [' ']
-  function = ["extern crate gr;\n"
-              "use gr::*;\n"
-              "\n"
-              "#[no_mangle]\n"
-              "pub extern \"C\"\n"
-              "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Vec<GI>) {\n"]
+  diff_decl = ["extern crate gr;\n"
+               "use gr::*;\n"
+               "\n"
+               "#[no_mangle]\n"
+               "pub extern \"C\"\n"
+               "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Vec<GI>) {\n"]
+  decl = ["extern crate gr;\n"
+          "use gr::*;\n"
+          "\n"
+          "#[no_mangle]\n"
+          "pub extern \"C\"\n"
+          "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI) {\n"]
   input_names = [name for name in inputs]
 
   def _to_rust(exp):
+    nonlocal decl
     if exp[0] in {"Integer", "Float"}:
       return lb + [exp[1]] + rb
 
@@ -73,6 +80,7 @@ def to_rust(exp, inputs, assigns, consts):
         sys.exit(-1)
 
     if exp[0] in {"Tuple"}:
+      decl = diff_decl
       return ["("] + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + [")"]
 
     if exp[0] in {"Box"}:
@@ -89,7 +97,7 @@ def to_rust(exp, inputs, assigns, consts):
     print("to_rust error unknown: '{}'".format(exp))
     sys.exit(-1)
 
-  function += [let.format(n, ''.join(_to_rust(v))) for n,v in assigns.items()]
+  function = [let.format(n, ''.join(_to_rust(v))) for n,v in assigns.items()]
   function += ["    "] + _to_rust(exp) + ["\n}\n"]
 
   new_inputs = [(n, ''.join(_to_rust(v))) for n,v in inputs.items()]
@@ -97,7 +105,7 @@ def to_rust(exp, inputs, assigns, consts):
 
   new_consts = collections.OrderedDict([(k,(''.join(_to_rust(v))).replace("powi","pow")) for k,v in consts.items()])
 
-  return ''.join(function), new_inputs, new_consts
+  return ''.join(decl+function), new_inputs, new_consts
 
 
 
