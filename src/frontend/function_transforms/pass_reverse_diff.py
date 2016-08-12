@@ -69,7 +69,7 @@ def reverse_diff(exp, inputs, assigns, consts):
       return
 
     if tag == "sqrt":
-      _reverse_diff(exp[1], ['*', ['/', ['Integer', 1], ['sqrt', exp[1]]], adjoint])
+      _reverse_diff(exp[1], ['*', ['/', ['Integer', "1"], ['sqrt', exp[1]]], adjoint])
       return
     
     if tag == "cos":
