@@ -232,6 +232,66 @@ void iabs_g(gaol_int* x) {
   TO_INTERVAL(x) = abs(TO_INTERVAL(x));
 }
 
+static interval
+dabs(const interval& x) {
+  interval sx = sqr(x);
+  return 4*x*(15 + 1024*sx*(-5 + 576*sx));
+}
+
+void dabs_g(const gaol_int* in, gaol_int* out) {
+  const interval& x = TO_INTERVAL_C(in);
+  interval& result = TO_INTERVAL(out);
+  const double v = 1/16.0;
+  if (x.right() < -v) {
+    result = -1;
+  }
+  else if (x.left() > v) {
+    result = 1;
+  }
+  else if (x.left() < -v && x.right() > v) {
+    result = interval(-1, 1);
+  }
+  else if (x.left() < -v && x.right() <= v) {
+    interval i = dabs(x.right());
+    result = interval(-1.0, std::max(-1.0, i.right()));
+  }
+  else if (x.left() >= v && x.right() > v) {
+    interval i = dabs(x.left());
+    result = interval(std::min(1.0, i.left()), 1.0);
+  }
+  else {
+    result = dabs(x);
+  }
+}
+
+void idabs_g(gaol_int* in) {
+  interval& x = TO_INTERVAL(in);
+  interval& result = TO_INTERVAL(in);
+  const double v = 1/16.0;
+  if (x.right() < -v) {
+    result = -1;
+  }
+  else if (x.left() > v) {
+    result = 1;
+  }
+  else if (x.left() < -v && x.right() > v) {
+    result = interval(-1, 1);
+  }
+  else if (x.left() < -v && x.right() <= v) {
+    interval i = dabs(x.right());
+    result = interval(-1.0, std::max(-1.0, i.right()));
+  }
+  else if (x.left() >= v && x.right() > v) {
+    interval i = dabs(x.left());
+    result = interval(std::min(1.0, i.left()), 1.0);
+  }
+  else {
+    result = dabs(x);
+  }
+
+}
+
+
 void pow_ig(const gaol_int* a, int b, gaol_int* out) {
   TO_INTERVAL(out) = pow(TO_INTERVAL_C(a), b);
 }

@@ -34,6 +34,8 @@ extern "C" {
   void ipow_ig(gaol_int*, int);
   void abs_g(const gaol_int*, gaol_int*);
   void iabs_g(gaol_int*);
+  void dabs_g(const gaol_int*, gaol_int*);
+  void idabs_g(gaol_int*);
   
   // Transcendental
   void sin_g(const gaol_int*, gaol_int*);

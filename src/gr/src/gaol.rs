@@ -158,6 +158,11 @@ extern {
 
     fn iabs_g(x: *mut gaol_int);
     
+    fn dabs_g(x: *const gaol_int, out: *mut gaol_int);
+
+
+    fn idabs_g(x: *mut gaol_int);
+    
     // Returns a^b as a new interval.
 
     fn pow_ig(a: *const gaol_int, b: c_int, out: *mut gaol_int);
@@ -303,6 +308,10 @@ impl GI {
 
     pub fn abs(&mut self) {
         unsafe{iabs_g(&mut self.data)};
+    }
+
+    pub fn dabs(&mut self) {
+        unsafe{idabs_g(&mut self.data)};
     }
 
     pub fn pow(&mut self, exp: i32) {
@@ -460,6 +469,12 @@ impl ToString for GI {
 pub fn abs(x: GI) -> GI {
     let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
     unsafe{abs_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn dabs(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{dabs_g(&x.data, &mut result.data)};
     result
 }
 
