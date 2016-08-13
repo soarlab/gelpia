@@ -35,7 +35,7 @@ enum OpType {
 
 impl fmt::Display for OpType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        
+
         let outstring = match self {
             &OpType::Func(ref s) => format!("f{}", s),
             &OpType::Const(i) => format!("c{}", i),
@@ -46,7 +46,7 @@ impl fmt::Display for OpType {
         };
         write!(f, "{}", outstring)
     }
-    
+
 }
 
 #[derive(Clone)]
@@ -56,22 +56,22 @@ pub struct FuncObj {
     constants: Vec<GI>,
     instructions: Vec<OpType>,
     switched: Arc<AtomicBool>,
-    function: Arc<AtomicPtr<fn(&Vec<GI>, &Vec<GI>) -> GI>>,
+    function: Arc<AtomicPtr<fn(&Vec<GI>, &Vec<GI>) -> (GI, Option<Vec<GI>>)>>,
 
 }
 
 unsafe impl Sync for FuncObj {}
 unsafe impl Send for FuncObj {}
-fn dummy(_x: &Vec<GI>, _c: &Vec<GI>) -> GI {
-    GI::new_c("1.0").unwrap()
+fn dummy(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {
+    (GI::new_c("1.0").unwrap(), None)
 }
 
 impl FuncObj {
-    pub fn call(&self, _x: &Vec<GI>) -> GI {
+    pub fn call(&self, _x: &Vec<GI>) -> (GI, Option<Vec<GI>>) {
         if self.switched.load(Ordering::Acquire) {
             let real_func = unsafe{
-                std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->GI,
-                                      fn(&Vec<GI>, &Vec<GI>)->GI>(
+                std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>),
+                                      fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>)>(
                     (self.function.load(Ordering::Acquire)))};
             real_func(_x, &self.constants)
         }
@@ -80,17 +80,17 @@ impl FuncObj {
         }
     }
 
-    fn set(&self, f: fn(&Vec<GI>,&Vec<GI>) -> GI, handle: DynamicLibrary) {
+    fn set(&self, f: fn(&Vec<GI>,&Vec<GI>) -> (GI, Option<Vec<GI>>), handle: DynamicLibrary) {
         // This FuncObj owns the handle from the dynamic lib as the lifetime of
         // f is tied to the lifetime of the handle.
-        self.function.store(unsafe{std::mem::transmute::<fn(&Vec<GI>, &Vec<GI>)->GI,
-                                                         *mut fn(&Vec<GI>, &Vec<GI>)->GI>(f)}, Ordering::Release);
+        self.function.store(unsafe{std::mem::transmute::<fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>),
+                                                         *mut fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>)>(f)}, Ordering::Release);
         let mut h = self.handle.write().unwrap();
         *h = Some(handle);
         self.switched.store(true, Ordering::Release);
     }
-    
-    fn interpreted(&self, _x: &Vec<GI>, _c: &Vec<GI>) -> GI {
+
+    fn interpreted(&self, _x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {
         let mut stack: Vec<GI> = Vec::new();
         for inst in &self.instructions {
             match inst {
@@ -144,12 +144,12 @@ impl FuncObj {
                 }
             }
         }
-        stack[0]
+        (stack[0], None)
     }
 
     pub fn new(consts: &Vec<GI>, instructions: &String, debug: bool, suffix: String) -> FuncObj {
         let mut insts = vec![];
-       
+
         for inst in instructions.split(',') {
             let dummy = inst.trim().to_string();
             let (first, rest) = dummy.split_at(1);
@@ -169,8 +169,8 @@ impl FuncObj {
                 constants: consts.clone(),
                 instructions: insts,
                 switched: Arc::new(AtomicBool::new(false)),
-                function: Arc::new(AtomicPtr::new(unsafe{std::mem::transmute::<fn(&Vec<GI>, &Vec<GI>)->GI,
-                                                                               *mut fn(&Vec<GI>, &Vec<GI>)->GI>(dummy)}))
+                function: Arc::new(AtomicPtr::new(unsafe{std::mem::transmute::<fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>),
+                                                                               *mut fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>)>(dummy)}))
         };
 
         {
@@ -189,10 +189,10 @@ impl FuncObj {
         }
         let ignore = process.arg(suffix.clone()).output()
             .unwrap_or_else(|e| {panic!("Could not compile: {}", e)});
-        
+
         if !ignore.status.success() {
             panic!("Could not compile: {}\n----\n{}", String::from_utf8(ignore.stdout).unwrap(),
-                   String::from_utf8(ignore.stderr).unwrap());                  
+                   String::from_utf8(ignore.stderr).unwrap());
         }
 
         DynamicLibrary::prepend_search_path(Path::new("./.compiled"));
@@ -202,13 +202,13 @@ impl FuncObj {
         {
             Ok(lib) => lib,
             Err(err) => panic!("Could not load library: {}", err)
-        };                                                                     
-        let g = unsafe{match f.symbol("gelpia_func") {                         
-            Ok(func) => transmute::<*mut u32, fn(&Vec<GI>, &Vec<GI>)->GI>(func),
-            Err(err) => panic!("Could not load function: {}", err),          
+        };
+        let g = unsafe{match f.symbol("gelpia_func") {
+            Ok(func) => transmute::<*mut u32, fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>)>(func),
+            Err(err) => panic!("Could not load function: {}", err),
         }};
 
-        self.set(g, f);  
+        self.set(g, f);
     }
 }
 

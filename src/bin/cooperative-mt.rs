@@ -71,12 +71,12 @@ fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
 /// * `input` - The input domain
 fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI) {
     let mid = midpoint_box(input);
-    let est_m = f.call(&mid);
-    let fsx = f.call(&input);
-    let fsx_u = f.call(&input.iter()
+    let (est_m, _) = f.call(&mid);
+    let (fsx, _) = f.call(&input);
+    let (fsx_u, _) = f.call(&input.iter()
                        .map(|&si| GI::new_p(si.upper()))
                        .collect::<Vec<_>>());
-    let fsx_l = f.call(&input.iter()
+    let (fsx_l, _) = f.call(&input.iter()
                        .map(|&si| GI::new_p(si.lower()))
                        .collect::<Vec<_>>());
     let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
@@ -86,11 +86,11 @@ fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI) {
 // Returns the upper bound, the domain where this bound occurs and a status
 // flag indicating whether the answer is complete for the problem.
 fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
-        f_bestag: Arc<RwLock<Flt>>, 
+        f_bestag: Arc<RwLock<Flt>>,
         f_best_shared: Arc<RwLock<Flt>>,
         x_bestbb: Arc<RwLock<Vec<GI>>>,
-        b1: Arc<Barrier>, b2: Arc<Barrier>, 
-        q: Arc<RwLock<Vec<Quple>>>, 
+        b1: Arc<Barrier>, b2: Arc<Barrier>,
+        q: Arc<RwLock<Vec<Quple>>>,
         sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
         f: FuncObj,
         logging: bool, max_iters: u32)
@@ -109,7 +109,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
     let n_workers = 11;
     let n_jobs = n_workers;
     let pool = ThreadPool::new(n_workers);
-    
+
     while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
         if max_iters != 0 && iters.load(Ordering::Acquire) as u32 >= max_iters {
             break;
@@ -135,7 +135,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     break;
                 }
             }
-            
+
             if logging && fbl_orig != f_best_low {
                 log_max(&q, f_best_low, f_best_high);
             }
@@ -146,7 +146,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             q.sort();
             q.len()/n_workers + 1
         };
-        
+
 /*        let mut p_q = vec![];
         {
             let mut total_len = 0;
@@ -164,13 +164,13 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                 p_q.push(elems);
             }
         } */
-        
+
         let outer_barr = Arc::new(Barrier::new(n_workers + 1));
 
         let (qtx, qrx) = channel();
         let (htx, hrx) = channel();
         let (ltx, lrx) = channel();
-        
+
         for i in 0..n_workers {
             let inner_barr = outer_barr.clone();
 //            let elems = p_q[i].clone();
@@ -184,7 +184,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             pool.execute(move || {
                 let mut l_f_best_high = f_best_high;
                 let mut l_best_x = vec![];
-                
+
                 let mut l_f_best_low = f_best_low;
                 let mut l_best_low_x = vec![];
 
@@ -202,7 +202,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     let ref fx = elem.fdata;
                     let ref gen = elem.pf;
                     //let (ref x, iter_est, fx, gen) = ;
-                    
+
                     if fx.upper() < l_f_best_low ||
                         width_box(&x, e_x) ||
                         eps_tol(*fx, *iter_est, e_f, e_f_r) {
@@ -286,7 +286,7 @@ fn update(stop: Arc<AtomicBool>, _sync: Arc<AtomicBool>,
         // Timer code...
         thread::sleep(one_sec);
         if timeout > 0 &&
-            (time::get_time() - start).num_seconds() >= timeout as i64 { 
+            (time::get_time() - start).num_seconds() >= timeout as i64 {
                 let _ = writeln!(&mut std::io::stderr(), "Stopping early...");
                 stop.store(true, Ordering::Release);
                 break 'out;
@@ -297,42 +297,42 @@ fn update(stop: Arc<AtomicBool>, _sync: Arc<AtomicBool>,
 
 fn main() {
     let args = process_args();
-    
+
     let ref x_0 = args.domain;
     let ref fo = args.function;
     let x_err = args.x_error;
     let y_err = args.y_error;
     let y_rel = args.y_error_rel;
     let seed = args.seed;
-    
+
     // Early out if there are no input variables...
     if x_0.len() == 0 {
-        let result = fo.call(&x_0);
+        let result = fo.call(&x_0).0;
         println!("[[{},{}], {{}}]", result.lower(), result.upper());
         return
     }
-    
+
     let q_inner: Vec<Quple> = Vec::new();
     let q = Arc::new(RwLock::new(q_inner));
-    
+
     let population_inner: Vec<Individual> = Vec::new();
     let population = Arc::new(RwLock::new(population_inner));
-    
+
     let b1 = Arc::new(Barrier::new(3));
     let b2 = Arc::new(Barrier::new(3));
-    
+
     let sync = Arc::new(AtomicBool::new(false));
     let stop = Arc::new(AtomicBool::new(false));
-    
+
     let f_bestag: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
     let f_best_shared: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
-    
+
     let x_e = x_0.clone();
     let x_i = x_0.clone();
-    
+
     let x_bestbb = Arc::new(RwLock::new(x_0.clone()));
-    
-    let ibba_thread = 
+
+    let ibba_thread =
     {
         let q = q.clone();
         let b1 = b1.clone();
@@ -351,8 +351,8 @@ fn main() {
                  x_bestbb,
                  b1, b2, q, sync, stop, fo_c, logging, iters)
         })};
-    
-    let ea_thread = 
+
+    let ea_thread =
     {
         let population = population.clone();
         let f_bestag = f_bestag.clone();
@@ -371,15 +371,15 @@ fn main() {
                                crossover: 0.0_f64, // 0.5_f64
                                seed:  seed,
             },
-               population, 
-               f_bestag, 
+               population,
+               f_bestag,
                x_bestbb,
                b1, b2,
                stop, sync, fo_c)
         })};
 
     // pending finding out how to kill threads
-    //let update_thread = 
+    //let update_thread =
     {
         let sync = sync.clone();
         let stop = stop.clone();
@@ -390,7 +390,7 @@ fn main() {
         let _ = thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(stop, sync, b1, b2, fo_c, to)
         });};
-    
+
     let result = ibba_thread.unwrap().join();
     let ea_result = ea_thread.unwrap().join();
 
@@ -414,7 +414,7 @@ fn main() {
         println!("'{}' : {},", args.names[i], interval[i].to_string());
     }
     println!("}}]");
-    
+
 }
 else {println!("error")}
 }

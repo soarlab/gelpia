@@ -13,6 +13,7 @@ from pass_lift_inputs import lift_inputs
 from pass_lift_consts import lift_consts
 from pass_lift_assigns import lift_assigns
 from pass_single_assignment import single_assignment
+from pass_reverse_diff import reverse_diff
 #from pass_pow import pow_replacement
 #from pass_div_zero import div_by_zero
 from output_rust import to_rust
@@ -260,7 +261,9 @@ def finish_parsing_args(args, function, epsilons):
     inputs = lift_inputs(exp)
     assigns = lift_assigns(exp, inputs)
     consts = lift_consts(exp, inputs, assigns)
-    exp = single_assignment(exp, inputs, assigns, consts)
+    rev_diff = reverse_diff(exp, inputs, assigns, consts)
+    consts = lift_consts(rev_diff, inputs, assigns, consts)
+    single_assignment(rev_diff, inputs, assigns, consts)
     # IB I'm leaving these commented out. We need to vet them and put them back in
     #    pow_replacement(exp, inputs, consts, assign)
 
@@ -270,7 +273,7 @@ def finish_parsing_args(args, function, epsilons):
     #        print("ERROR: Division by zero")
     #        sys.exit(-2)
 
-    rust_func, new_inputs, new_consts = to_rust(exp, inputs, assigns, consts)
+    rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
     interp_func = to_interp(exp, inputs, assigns, consts)
 
     return {"input_epsilon"      : epsilons[0],

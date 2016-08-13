@@ -45,7 +45,7 @@ def reverse_diff(exp, inputs, assigns, consts):
     if tag in {'/'}:
       upper = exp[1]
       lower = exp[2]
-      _reverse_diff(exp[1], ["/", adjoint, upper])
+      _reverse_diff(exp[1], ["/", adjoint, lower])
       _reverse_diff(exp[2], ["/", ["*", ["Neg", adjoint], upper], ["pow", lower, ["Integer", "2"]]]) #"-({})*{}/{}**2".format(adjoint, high, low))
       return
 
