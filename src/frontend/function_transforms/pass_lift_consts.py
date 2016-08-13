@@ -35,7 +35,7 @@ def lift_consts(exp, inputs, assigns, consts=None):
       return consts[exp[1]][:]
     if exp[0] in {"Input", "Integer", "Float", "ConstantInterval"}:
       return exp
-    print("Internal error in expand")
+    print("Internal error in expand: {}".format(exp))
     sys.exit(-1)
 
   def make_constant(exp):
@@ -162,10 +162,9 @@ def lift_consts(exp, inputs, assigns, consts=None):
       return False
 
     if exp[0] in {"Box"}:
-      all_const = True
       for i in range(1, len(exp)):
-        all_const &= _lift_consts(exp[i])
-      return all_const
+        _lift_consts(exp[i])
+      return False
 
     print("lift_consts error unknown: '{}'".format(exp))
     sys.exit(-1)
