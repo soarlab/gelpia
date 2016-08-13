@@ -16,8 +16,6 @@ def lift_consts(exp, inputs, assigns, consts=None):
   uops = {'Neg': lambda a:str(-int(a[1]))}
 
   def expand(exp):
-    if exp[0] in UNOPS:
-      return [exp[0], expand(exp[1])]
     if exp[0] in bops:
       l = expand(exp[1])
       r = expand(exp[2])
@@ -31,11 +29,15 @@ def lift_consts(exp, inputs, assigns, consts=None):
       # purposely fall through
     if exp[0] in BINOPS:
       return [exp[0], expand(exp[1]), expand(exp[2])]
+    if exp[0] in UNOPS:
+      return [exp[0], expand(exp[1])]
     if exp[0] in {"Const"}:
       return consts[exp[1]][:]
     if exp[0] in {"Input", "Integer", "Float", "ConstantInterval"}:
       return exp
-    print("Internal error in expand")
+    if exp[0] in {"Box"}:
+      return ["Box"] + [expand(e) for e in exp[1:]]
+    print("Internal error in expand: {}".format(exp))
     sys.exit(-1)
 
   def make_constant(exp):
@@ -47,14 +49,6 @@ def lift_consts(exp, inputs, assigns, consts=None):
     if key not in consts:
       consts[key] = exp[:]
     return ['Const', key]
-
-  def replace_exp(exp, new_exp):
-    for i in range(len(new_exp)):
-      try:
-        exp[i] = new_exp[i]
-      except IndexError:
-        exp.append(new_exp[i])
-    del exp[len(new_exp):]
 
   def _lift_consts(exp):
     # First reduce identity functions
@@ -88,6 +82,11 @@ def lift_consts(exp, inputs, assigns, consts=None):
         new_exp = exp[2][:]
       if r[0] == "Integer" and r[1] == "1":
         new_exp = exp[1][:]
+      if l[0] == "Integer" and l[1] == "-1":
+        new_exp = ["Neg", exp[2][:]]
+      if r[0] == "Integer" and r[1] == "-1":
+        new_exp = ["Neg", exp[1][:]]
+
       if new_exp:
         replace_exp(exp, new_exp)
         return _lift_consts(exp)

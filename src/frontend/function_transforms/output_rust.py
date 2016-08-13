@@ -87,7 +87,8 @@ def to_rust(exp, inputs, assigns, consts):
       val = ["Some(vec!"] + lb
       for part in exp[1:]:
         val += _to_rust(part) + cm + sp
-      del val[-2:]
+      if val[-2:] == [cm, sp]:
+        del val[-2:]
       val += rb + [")"]
       return val
 

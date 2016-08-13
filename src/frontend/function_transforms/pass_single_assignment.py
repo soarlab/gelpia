@@ -19,27 +19,50 @@ def single_assignment(exp, inputs, assigns, consts, name_cache=list()):
       assigns[key] = exp[:]
     return ["Variable", key]
 
+  def search_replace(var, val, exp):
+    if type(exp) is not list or len(exp) < 1:
+      return
+    if exp[0] == "Variable" and exp[1] == var:
+      replace_exp(exp, val)
+      return
+    for e in exp[1:]:
+      search_replace(var, val, e)
+
+  def collapse(exp):
+    assert(exp[0] == "Tuple")
+    boxvars = str(assigns[exp[2][1]])
+    usages = "\n".join([str(k) for k in assigns.values()])
+    single_used = dict()
+    for var in assigns.keys():
+      if usages.count(var) == 1 and boxvars.count(var) == 0:
+        single_used[var] = assigns[var]
+    for var in single_used:
+      del assigns[var]
+      for val in assigns.values():
+        search_replace(var, single_used[var], val)
+
   def _single_assignment(exp):
-    if exp[0] in {"Input", "InputInterval", "Const", "Integer", "Float", "Const"}:
+    typ = exp[0]
+    if typ in {"Input", "InputInterval", "Const", "Integer", "Float", "Const"}:
       return exp
-    if exp[0] in BINOPS:
+    if typ in BINOPS:
       left = cache(_single_assignment(exp[1]))
       right = cache(_single_assignment(exp[2]))
-      return [exp[0], left, right]
-    if exp[0] in UNOPS:
+      return [typ, left, right]
+    if typ in UNOPS:
       arg = cache(_single_assignment(exp[1]))
-      return [exp[0], arg]
-    if exp[0] in {"Variable"}:
+      return [typ, arg]
+    if typ in {"Variable"}:
       _single_assignment(assigns[exp[1]])
       return exp
-    if exp[0] in {"Return"}:
+    if typ in {"Return"}:
       ret = cache(_single_assignment(exp[1]))
       return ret
-    if exp[0] in {"Tuple"}:
+    if typ in {"Tuple"}:
       exp[1] = cache(_single_assignment(exp[1]))
       exp[2] = cache(_single_assignment(exp[2]))
       return exp
-    if exp[0] in {"Box"}:
+    if typ in {"Box"}:
       for i in range(1, len(exp)):
         exp[i] = cache(_single_assignment(exp[i]))
       return exp
@@ -48,6 +71,7 @@ def single_assignment(exp, inputs, assigns, consts, name_cache=list()):
     sys.exit(-1)
 
   result = _single_assignment(exp)
+  collapse(result)
   return result
 
 
