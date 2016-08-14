@@ -10,6 +10,7 @@ __pycache__
 /requirements/lib
 /requirements/share
 /requirements/Sources
+/requirements/debug_eniroment.sh
 
 /bin/*
 /target/*

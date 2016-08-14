@@ -9,6 +9,15 @@ BINOPS.update({'+', '-', '*', '/', 'powi'})
 UNOPS.update({'Neg', "dabs", "datanh"})
 INFIX = {'+', '-', '*', '/'}
 
+def replace_exp(exp, new_exp):
+  for i in range(len(new_exp)):
+    try:
+      exp[i] = new_exp[i]
+    except IndexError:
+      exp.append(new_exp[i])
+  del exp[len(new_exp):]
+
+
 
 def print_exp(exp):
   print("expressions:")

@@ -45,8 +45,8 @@ def reverse_diff(exp, inputs, assigns, consts):
     if tag in {'/'}:
       upper = exp[1]
       lower = exp[2]
-      _reverse_diff(exp[1][:], ['/', adjoint[:], lower[:]])
-      _reverse_diff(exp[2][:], ["/", ["*", ["Neg", adjoint[:]], upper[:]], ["pow", lower[:], ["Integer", "2"]]]) #"-({})*{}/{}**2".format(adjoint, high, low))
+      _reverse_diff(exp[1], ["/", adjoint, lower])
+      _reverse_diff(exp[2], ["/", ["*", ["Neg", adjoint], upper], ["pow", lower, ["Integer", "2"]]]) #"-({})*{}/{}**2".format(adjoint, high, low))
       return
 
     if tag in {"exp"}:
@@ -71,11 +71,11 @@ def reverse_diff(exp, inputs, assigns, consts):
     if tag == "sqrt":
       _reverse_diff(exp[1], ['/', adjoint, ['*', ['Integer', '2'],  ['sqrt', exp[1]]]])
       return
-    
+
     if tag == "cos":
       _reverse_diff(exp[1], ['*', ["Neg", ["sin", exp[1]]], adjoint])
       return
-    
+
     if tag == "sin":
       _reverse_diff(exp[1], ['*', ["cos", exp[1]], adjoint])
       return
@@ -99,11 +99,11 @@ def reverse_diff(exp, inputs, assigns, consts):
                                    ["pow", ["tanh", exp[1]], ["Integer", "2"]]],
                              adjoint])
       return
-    
+
     if tag == "abs":
       _reverse_diff(exp[1], ['*', ["dabs", exp[1]], adjoint])
       return
-    
+
     if tag in {"Neg"}:
       _reverse_diff(exp[1], ["Neg", adjoint]) #"-({})".format(adjoint))
       return
@@ -157,9 +157,9 @@ def runmain():
   consts = lift_consts(exp, inputs, assigns, consts)
   single_assignment(exp, inputs, assigns, consts)
 
+  #func, new_inputs, new_consts = to_rust(exp, inputs, assigns, consts)
+
   print("reverse_diff:")
-  print(to_rust(exp, inputs, assigns, consts)[0])
-  print()
   print_exp(exp)
   print()
   print_inputs(inputs)

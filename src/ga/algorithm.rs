@@ -40,7 +40,8 @@ pub fn ea(x_e: Vec<GI>,
     let seed = param.seed;
     let input = ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
                         &x_bestbb, population, &fo_c, seed);
-    let ans = fo_c.call(&input).upper();
+    let (ans_i, _) = fo_c.call(&input);
+    let ans = ans_i.upper();
 
     (ans, input, true)
 }
@@ -95,12 +96,12 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
             // Report fittest of the fit.
             {
                 let mut fbest = f_bestag.write().unwrap();
-                
+
                 *fbest =
                     if *fbest < population[0].fitness { population[0].fitness }
                 else { *fbest };
             }
-            
+
             // Kill worst of the worst
             let mut ftg = Vec::new();
             {
@@ -117,14 +118,14 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
             population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
         }
     }
-    
+
     let ref population = *population.read().unwrap();
     let result = if !population.is_empty() {
         population[0].solution.clone()
     } else {
         x_e.clone()
     };
-    
+
     result
 }
 
@@ -146,7 +147,8 @@ fn rand_individual(fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng)
     for r in ranges {
         new_sol.push(GI::new_p(r.ind_sample(rng)));
     }
-    let fitness = fo_c.call(&new_sol).lower();
+    let (fitness_i, _) = fo_c.call(&new_sol);
+    let fitness = fitness_i.lower();
 
     Individual{solution:new_sol, fitness:fitness}
 }
@@ -190,7 +192,8 @@ fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
             });
     }
 
-    let fitness = fo_c.call(&output_sol).lower();
+    let (fitness_i, _) = fo_c.call(&output_sol);
+    let fitness = fitness_i.lower();
 
     Individual{solution: output_sol, fitness: fitness}
 }
@@ -203,6 +206,7 @@ fn breed(parent1: &Individual, parent2: &Individual, fo_c: &FuncObj,
     child.solution.truncate(crossover_point);
     let mut rest = parent2.clone().solution.split_off(crossover_point);
     child.solution.append(&mut rest);
-    child.fitness = fo_c.call(&child.solution).lower();
+    let (fitness_i, _) = fo_c.call(&child.solution);
+    child.fitness = fitness_i.lower();
     child
 }

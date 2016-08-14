@@ -28,7 +28,7 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
     let mut q = BinaryHeap::new();
     let mut i: u32 = 0;
 
-    q.push(Quple{p: INF, pf: i, data: x_0.clone(), fdata: f.call(x_0)});
+    q.push(Quple{p: INF, pf: i, data: x_0.clone(), fdata: f.call(x_0).0});
     while q.len() != 0 {
         let v = q.pop();
         let (ref x, fx) =
@@ -54,7 +54,7 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
         else {
             let (x_s, is_split) = split_box(&x);
             for sx in x_s {
-                let est = f.call(&midpoint_box(&sx));
+                let est = f.call(&midpoint_box(&sx)).0;
                 if f_best_low < est.lower()  {
                     f_best_low = est.lower();
                 }
@@ -63,7 +63,7 @@ fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
                     q.push(Quple{p: est.upper(),
                                  pf: i,
                                  data: sx.clone(),
-                                 fdata: f.call(&sx)});
+                                 fdata: f.call(&sx).0});
                 }
             }
         }

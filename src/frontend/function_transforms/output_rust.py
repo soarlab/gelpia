@@ -18,7 +18,7 @@ def to_rust(exp, inputs, assigns, consts):
                "\n"
                "#[no_mangle]\n"
                "pub extern \"C\"\n"
-               "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Vec<GI>) {\n"]
+               "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {\n"]
   decl = ["extern crate gr;\n"
           "use gr::*;\n"
           "\n"
@@ -84,11 +84,12 @@ def to_rust(exp, inputs, assigns, consts):
       return ["("] + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + [")"]
 
     if exp[0] in {"Box"}:
-      val = ["vec!"] + lb
+      val = ["Some(vec!"] + lb
       for part in exp[1:]:
         val += _to_rust(part) + cm + sp
-      del val[-2:]
-      val += rb
+      if val[-2:] == [cm, sp]:
+        del val[-2:]
+      val += rb + [")"]
       return val
 
     if exp[0] in {"Return"}:
