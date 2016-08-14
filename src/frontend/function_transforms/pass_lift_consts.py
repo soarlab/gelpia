@@ -160,11 +160,10 @@ def lift_consts(exp, inputs, assigns, consts=None):
         exp[2] = make_constant(exp[2])
       return False
 
-    if exp[0] in {"Box"}:
-      all_const = True
+    if exp[0] in {"Box"}: # Boxes aren't constant
       for i in range(1, len(exp)):
-        all_const &= _lift_consts(exp[i])
-      return all_const
+        _lift_consts(exp[i])
+      return False
 
     print("lift_consts error unknown: '{}'".format(exp))
     sys.exit(-1)
