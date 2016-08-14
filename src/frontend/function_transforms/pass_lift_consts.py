@@ -161,9 +161,10 @@ def lift_consts(exp, inputs, assigns, consts=None):
       return False
 
     if exp[0] in {"Box"}:
+      all_const = True
       for i in range(1, len(exp)):
-        _lift_consts(exp[i])
-      return False
+        all_const &= _lift_consts(exp[i])
+      return all_const
 
     print("lift_consts error unknown: '{}'".format(exp))
     sys.exit(-1)
