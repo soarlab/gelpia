@@ -28,6 +28,8 @@ def simplify(exp, inputs, assigns, consts=None):
       if l == r:
         new_r = exp[1] if exp[1][0] == "Variable" else exp[2]
         new_exp = ["*", ["Integer", "2"], new_r]
+      if exp[2][0] == "neg":
+        new_exp = ["-", exp[1], exp[2][1]]
       if l[0] == "neg" and l[1] == r:
         new_exp = ["Integer", "0"]
       if r[0] == "neg" and r[1] == l:
@@ -46,6 +48,8 @@ def simplify(exp, inputs, assigns, consts=None):
         new_exp = exp[1]
       if l == r:
         new_exp = ["Integer", "0"]
+      if exp[2][0] == "neg":
+        new_exp = ["+", exp[1], exp[2][1]]
       if new_exp:
         replace_exp(exp, new_exp)
         return True
@@ -104,6 +108,9 @@ def simplify(exp, inputs, assigns, consts=None):
 
   while _simplify(exp):
     pass
+
+  if consts != None:
+    lift_consts(exp, inputs, assigns, consts)
 
   return None
 
