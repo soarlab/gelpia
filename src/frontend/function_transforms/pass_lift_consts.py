@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from pass_manager import *
+from pass_utils import *
 
 import collections
 import sys
@@ -10,114 +10,45 @@ def lift_consts(exp, inputs, assigns, consts=None):
   if consts == None:
     consts = collections.OrderedDict()
 
-  bops = {'+': lambda l,r:str(int(l[1])+int(r[1])),
-          '-': lambda l,r:str(int(l[1])-int(r[1])),
-          '*': lambda l,r:str(int(l[1])*int(r[1])),}
-  uops = {'Neg': lambda a:str(-int(a[1]))}
-
-  def expand(exp):
-    if exp[0] in bops:
-      l = expand(exp[1])
-      r = expand(exp[2])
-      if l[0] == "Integer" and r[0] == "Integer":
-        return ["Integer", bops[exp[0]](l, r)]
-      # purposely fall through
-    if exp[0] in uops:
-      a = expand(exp[1])
-      if a[0] == "Integer":
-        return ["Integer", uops[exp[0]](a)]
-      # purposely fall through
-    if exp[0] in BINOPS:
-      return [exp[0], expand(exp[1]), expand(exp[2])]
-    if exp[0] in UNOPS:
-      return [exp[0], expand(exp[1])]
-    if exp[0] in {"Const"}:
-      return consts[exp[1]][:]
-    if exp[0] in {"Input", "Integer", "Float", "ConstantInterval"}:
-      return exp
-    if exp[0] in {"Box"}:
-      return ["Box"] + [expand(e) for e in exp[1:]]
-    print("Internal error in expand: {}".format(exp))
-    sys.exit(-1)
-
   def make_constant(exp):
     if exp[0] == "Const":
       assert(exp[1] in consts)
       return exp
-    exp = expand(exp)
+    exp = expand(exp, assigns, consts)
     key = const_hash(exp)
     if key not in consts:
       consts[key] = exp[:]
     return ['Const', key]
 
   def _lift_consts(exp):
-    # First reduce identity functions
-    if exp[0] in {"pow"}:
-      assert(exp[2][0] == "Integer")
-      if exp[2][1] == "1":
-        replace_exp(exp, exp[1][:])
-        return _lift_consts(exp)
-      return _lift_consts(exp[1])
+    typ = exp[0]
 
-    if exp[0] in {"+"}:
-      l = expand(exp[1])
-      r = expand(exp[2])
-      new_exp = None
-      if l[0] == "Integer" and l[1] == "0":
-        new_exp = exp[2][:]
-      if r[0] == "Integer" and r[1] == "0":
-        new_exp = exp[1][:]
-      if new_exp:
-        replace_exp(exp, new_exp)
-        return _lift_consts(exp)
-      else:
-        # purposely fall through
-        pass
-
-    if exp[0] in {"*"}:
-      l = expand(exp[1])
-      r = expand(exp[2])
-      new_exp = None
-      if l[0] == "Integer" and l[1] == "1":
-        new_exp = exp[2][:]
-      if r[0] == "Integer" and r[1] == "1":
-        new_exp = exp[1][:]
-      if l[0] == "Integer" and l[1] == "-1":
-        new_exp = ["Neg", exp[2][:]]
-      if r[0] == "Integer" and r[1] == "-1":
-        new_exp = ["Neg", exp[1][:]]
-
-      if new_exp:
-        replace_exp(exp, new_exp)
-        return _lift_consts(exp)
-      else:
-        # purposely fall through
-        pass
-
-    if exp[0] in {"Const"}:
+    if typ in {"Const"}:
       assert(exp[1] in consts)
       return True
 
-    if exp[0] in {"sinh", "cosh", "tanh", "dabs", "datanh"}:
-      # Crlibm is claimed to not be ULP accurate by GAOL. Hence, we must defer
-      # to implementations based on the exponential function.
+    if typ in {"sinh", "cosh", "tanh", "dabs", "datanh"}:
+      # MB: Crlibm is claimed to not be ULP accurate by GAOL. Hence, we must
+      # MB: defer to implementations based on the exponential function.
       inner = _lift_consts(exp[1])
       if inner:
         make_constant(exp[1])
       return False;
 
-    if exp[0] in {"powi"}:
-      e = expand(exp[2])
+    if typ in {"powi"}:
+      e = expand(exp[2], assigns, consts)
       if e[0] == "Integer":
         exp[0] = "pow"
         exp[2] = e
         return _lift_consts(exp)
-      # purposely fall through
+      else:
+        # purposely fall through
+        pass
 
-    if exp[0] in UNOPS:
+    if typ in UNOPS:
       return _lift_consts(exp[1])
 
-    if exp[0] in BINOPS:
+    if typ in BINOPS:
       first  = _lift_consts(exp[1])
       second = _lift_consts(exp[2])
       if first and second:
@@ -128,39 +59,33 @@ def lift_consts(exp, inputs, assigns, consts=None):
         exp[2] = make_constant(exp[2])
       return False
 
-    if exp[0] in {"InputInterval", "Input"}:
+    if typ in {"InputInterval", "Input"}:
       return False
 
-    if exp[0] in {"Assign"}:
-      if _lift_consts(exp[2]):
-        exp[2] = make_constant(exp[2])
-        return True
-      return False
-
-    if exp[0] in {"Variable"}:
+    if typ in {"Variable"}:
       assignment = assigns[exp[1]]
       if _lift_consts(assignment):
-        exp[0] = "Const"
-        exp[1] = make_constant(assignment)[1]
+        new_exp = make_constant(assignment)
+        replace_exp(exp, new_exp)
         return True
       return False
 
-    if exp[0] in {"ConstantInterval", "Float", "Integer"}:
+    if typ in {"ConstantInterval", "PointInterval", "Float", "Integer"}:
       return True
 
-    if exp[0] in {"Return"}:
+    if typ in {"Return"}:
       if _lift_consts(exp[1]):
         exp[1] = make_constant(exp[1])
       return False
 
-    if exp[0] in {"Tuple"}:
+    if typ in {"Tuple"}:
       if _lift_consts(exp[1]):
         exp[1] = make_constant(exp[1])
       if _lift_consts(exp[2]):
         exp[2] = make_constant(exp[2])
       return False
 
-    if exp[0] in {"Box"}:
+    if typ in {"Box"}:
       all_const = True
       for i in range(1, len(exp)):
         all_const &= _lift_consts(exp[i])
@@ -169,8 +94,6 @@ def lift_consts(exp, inputs, assigns, consts=None):
     print("lift_consts error unknown: '{}'".format(exp))
     sys.exit(-1)
 
-  for k,v in assigns.items():
-    _lift_consts(["Assign", k, v])
   _lift_consts(exp)
 
   return consts
@@ -184,13 +107,11 @@ def lift_consts(exp, inputs, assigns, consts=None):
 
 def runmain():
   from lexed_to_parsed import parse_function
-  from pass_lift_inputs import lift_inputs
-  from pass_lift_assigns import lift_assigns
+  from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
 
   data = get_runmain_input()
   exp = parse_function(data)
-  inputs = lift_inputs(exp)
-  assigns = lift_assigns(exp, inputs)
+  inputs, assigns = lift_inputs_and_assigns(exp)
   consts = lift_consts(exp, inputs, assigns)
 
   print_exp(exp)

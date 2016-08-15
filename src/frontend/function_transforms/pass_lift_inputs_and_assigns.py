@@ -1,77 +1,75 @@
 #!/usr/bin/env python3
 
-from pass_manager import *
+from pass_utils import *
 
 import collections
 import sys
 import subprocess
 import os.path as path
 
-def lift_inputs(exp):
+
+def lift_inputs_and_assigns(exp):
+  """Extracts input variables and assignmentsfrom an expression """
+  assigns = collections.OrderedDict()
   inputs = collections.OrderedDict()
-  used_inputs = set()
   implicit_input_count = 0
 
-  def _lift_inputs(exp):
+  def _lift_inputs_and_assigns(exp):
     nonlocal implicit_input_count
-
-    if type(exp[0]) is list:
-      assigns = exp[0]
-      name = assigns[1]
-      val = assigns[2]
+    typ = exp[0]
+    if type(typ) is list:
+      assignment = exp[0]
+      assert(assignment[0] == "Assign")
+      name = assignment[1]
+      val = assignment[2]
       if val[0] == "InputInterval":
         inputs[name[1]] = val
-        exp[0] = exp[1][0]
-        exp[1] = exp[1][1]
-        _lift_inputs(exp)
       else:
-        _lift_inputs(exp[0])
-        _lift_inputs(exp[1])
+        assigns[name[1]] = val
+        _lift_inputs_and_assigns(val)
+      replace_exp(exp, exp[1])
+      _lift_inputs_and_assigns(exp)
       return
 
-    if exp[0] in BINOPS:
-      _lift_inputs(exp[1])
-      _lift_inputs(exp[2])
+    if typ in BINOPS:
+      _lift_inputs_and_assigns(exp[1])
+      _lift_inputs_and_assigns(exp[2])
       return
 
-    if exp[0] in UNOPS.union({"Return"}):
-      _lift_inputs(exp[1])
+    if typ in UNOPS.union({"Return"}):
+      _lift_inputs_and_assigns(exp[1])
       return
 
-    if exp[0] in {"ConstantInterval", "Float", "Integer", "Symbol"}:
+    if typ in {"ConstantInterval", "PointInterval", "Float", "Integer", "Input",
+               "Variable"}:
       return
 
-    if exp[0] == "InputInterval":
+    if typ == "InputInterval":
       interval = exp[:]
-      exp[0] = "Input"
-      exp[1] = "$Implicit_Input_{}".format(implicit_input_count)
+      new_exp = ["Input", "$Implicit_Input_{}".format(implicit_input_count)]
+      replace_exp(exp, new_exp)
       used_inputs.add(exp[1])
       implicit_input_count += 1
-      del exp[2:]
       inputs[exp[1]] = interval
       return
 
     if exp[0] == "Name":
       if exp[1] in inputs:
-        used_inputs.add(exp[1])
         exp[0] = "Input"
+      elif exp[1] in assigns:
+        exp[0] = "Variable"
+      else:
+        print("Use of undeclared name: {}".format(exp[1]))
+        sys.exit(-1)
       return
 
-    if exp[0] == "Assign":
-      _lift_inputs(exp[2])
-      return
-
-    print("lift_inputs error unknown: '{}'".format(exp))
+    print("lift_inputs_and_assigns error unknown: '{}'".format(exp))
     sys.exit(-1)
 
 
-  _lift_inputs(exp)
+  _lift_inputs_and_assigns(exp)
 
-  for k in list(inputs):
-    if k not in used_inputs:
-      del inputs[k]
-
-  return inputs
+  return inputs, assigns
 
 
 
@@ -85,11 +83,13 @@ def runmain():
 
   data = get_runmain_input()
   exp = parse_function(data)
-  inputs = lift_inputs(exp)
+  inputs, assigns = lift_inputs_and_assigns(exp)
 
   print_exp(exp)
   print()
   print_inputs(inputs)
+  print()
+  print_assigns(assigns)
 
 if __name__ == "__main__":
   try:
