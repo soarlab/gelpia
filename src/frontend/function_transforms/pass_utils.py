@@ -56,6 +56,7 @@ def expand(exp, assigns=None, consts=None):
     return ["Box"] + [cache_expand(e, assigns, consts) for e in exp[1:]]
 
   print("Internal error in expand: {}".format(exp))
+  (1/0)
   sys.exit(-1)
 
 
