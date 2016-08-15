@@ -74,7 +74,7 @@ def reverse_diff(exp, inputs, assigns, consts=None):
       return
 
     if tag == 'acos':
-      _reverse_diff(exp[1], ['Neg', ['/', adjoint, ['sqrt', ['-', ['Integer', '1'], ['pow', exp[1], ['Integer', '2']]]]]])
+      _reverse_diff(exp[1], ['neg', ['/', adjoint, ['sqrt', ['-', ['Integer', '1'], ['pow', exp[1], ['Integer', '2']]]]]])
       return
 
     if tag == "sin":
