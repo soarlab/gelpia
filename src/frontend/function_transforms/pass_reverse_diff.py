@@ -73,22 +73,38 @@ def reverse_diff(exp, inputs, assigns, consts=None):
       _reverse_diff(exp[1], ['*', ["neg", ["sin", exp[1]]], adjoint])
       return
 
+    if tag == 'acos':
+      _reverse_diff(exp[1], ['Neg', ['/', adjoint, ['sqrt', ['-', ['Integer', '1'], ['pow', exp[1], ['Integer', '2']]]]]])
+      return
+
     if tag == "sin":
       _reverse_diff(exp[1], ['*', ["cos", exp[1]], adjoint])
       return
 
+    if tag == 'asin':
+      _reverse_diff(exp[1], ['/', adjoint, ['sqrt', ['-', ['Integer', '1'], ['pow', exp[1], ['Integer', '2']]]]])
+      return
+    
     if tag == "tan":
       _reverse_diff(exp[1], ['*', ['+', ["Integer", "1"], ["pow", ["tan", exp[1]], ["Integer", "2"]]], adjoint])
       return
+
+    if tag == 'atan':
+      _reverse_diff(exp[1], ['/', adjoint, ['+', ['Integer', '1'], ['pow', exp[1], ['Integer', '2']]]])
 
     if tag == "cosh":
       _reverse_diff(exp[1], ['*', ['sinh', exp[1]], adjoint])
       return
 
+    
     if tag == "sinh":
       _reverse_diff(exp[1], ['*', ['cosh', exp[1]], adjoint])
       return
 
+    if tag == "asinh":
+      _reverse_diff(exp[1], ['/', adjoint, ['sqrt', ['+', ['pow', exp[1], ['Integer', '2']], ["Integer", "1"]]]])
+      return
+    
     if tag == "tanh":
       _reverse_diff(exp[1], ['*', ['-', ["Integer", "1"], ["pow", ["tanh", exp[1]], ["Integer", "2"]]], adjoint])
       return
