@@ -9,11 +9,12 @@ import re
 import ian_utils as iu
 
 from lexed_to_parsed import parse_function
-from pass_lift_inputs import lift_inputs
+from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
 from pass_lift_consts import lift_consts
-from pass_lift_assigns import lift_assigns
 from pass_single_assignment import single_assignment
 from pass_reverse_diff import reverse_diff
+from pass_simplify import simplify
+from pass_dead_removal import dead_removal
 #from pass_pow import pow_replacement
 #from pass_div_zero import div_by_zero
 from output_rust import to_rust
@@ -258,11 +259,11 @@ def finish_parsing_args(args, function, epsilons):
         iu.set_log_level(max(1, args.verbose))
 
     exp = parse_function(function)
-    inputs = lift_inputs(exp)
-    assigns = lift_assigns(exp, inputs)
+    inputs, assigns = lift_inputs_and_assigns(exp)
     consts = lift_consts(exp, inputs, assigns)
+    simplify(exp, inputs, assigns, consts)
+    dead_removal(exp, inputs, assigns, consts)
     rev_diff = reverse_diff(exp, inputs, assigns, consts)
-    consts = lift_consts(rev_diff, inputs, assigns, consts)
     single_assignment(rev_diff, inputs, assigns, consts)
     # IB I'm leaving these commented out. We need to vet them and put them back in
     #    pow_replacement(exp, inputs, consts, assign)
