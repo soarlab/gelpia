@@ -120,9 +120,6 @@ def reverse_diff(exp, inputs, assigns, consts=None):
   result = ["Box"]+[d for d in gradient.values()]
   retval = ["Return", ["Tuple", exp[1], result]]
 
-  if consts != None:
-    lift_consts(retval, inputs, assigns, consts)
-
   return retval
 
 

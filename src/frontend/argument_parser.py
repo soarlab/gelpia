@@ -264,17 +264,16 @@ def finish_parsing_args(args, function, epsilons):
     simplify(exp, inputs, assigns, consts)
     dead_removal(exp, inputs, assigns, consts)
     rev_diff = reverse_diff(exp, inputs, assigns, consts)
+    consts = lift_consts(rev_diff, inputs, assigns, consts)
+    simplify(rev_diff, inputs, assigns, consts)
     single_assignment(rev_diff, inputs, assigns, consts)
-    # IB I'm leaving these commented out. We need to vet them and put them back in
-    #    pow_replacement(exp, inputs, consts, assign)
-
-    #    divides_by_zero = div_by_zero(exp, inputs, consts, assign)
-
-    #    if divides_by_zero:
-    #        print("ERROR: Division by zero")
-    #        sys.exit(-2)
+    dead_removal(rev_diff, inputs, assigns, consts)
+    consts = lift_consts(rev_diff, inputs, assigns, consts)
+    dead_removal(rev_diff, inputs, assigns, consts)
 
     rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
+
+    consts = lift_consts(exp, inputs, assigns, consts)
     interp_func = to_interp(exp, inputs, assigns, consts)
 
     return {"input_epsilon"      : epsilons[0],

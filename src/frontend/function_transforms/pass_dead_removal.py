@@ -32,7 +32,8 @@ def dead_removal(exp, inputs, assigns, consts=None):
       return
 
     if typ in BINOPS.union(UNOPS).union({"Return", "ConstantInterval",
-                                         "PointInterval", "Float", "Integer"}):
+                                         "PointInterval", "Float", "Integer",
+                                         "Box", "Tuple"}):
       for e in exp[1:]:
         _dead_removal(e)
       return
@@ -48,10 +49,10 @@ def dead_removal(exp, inputs, assigns, consts=None):
   for k in list(assigns):
     if k not in used_assigns:
       del assigns[k]
-
-  for k in list(consts):
-    if k not in used_consts:
-      del consts[k]
+  if consts:
+    for k in list(consts):
+      if k not in used_consts:
+        del consts[k]
 
   return
 

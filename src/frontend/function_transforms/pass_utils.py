@@ -15,26 +15,33 @@ bops = {'+': lambda l,r:str(int(l[1])+int(r[1])),
         '*': lambda l,r:str(int(l[1])*int(r[1])),}
 uops = {'neg': lambda a:str(-int(a[1]))}
 
+
+def cache_expand(exp, assigns, consts, cache=dict()):
+  s = str(exp)
+  if s not in cache:
+    cache[s] =  expand(exp, assigns, consts)
+  return cache[s]
+
 def expand(exp, assigns=None, consts=None):
   typ = exp[0]
   if typ in bops:
-    l = expand(exp[1], assigns, consts)
-    r = expand(exp[2], assigns, consts)
+    l = cache_expand(exp[1], assigns, consts)
+    r = cache_expand(exp[2], assigns, consts)
     if l[0] == "Integer" and r[0] == "Integer":
       return ["Integer", bops[typ](l, r)]
     # purposely fall through
 
   if typ in uops:
-    a = expand(exp[1], assigns, consts)
+    a = cache_expand(exp[1], assigns, consts)
     if a[0] == "Integer":
       return ["Integer", uops[typ](a)]
     # purposely fall through
 
   if typ in BINOPS:
-    return [typ, expand(exp[1], assigns, consts), expand(exp[2], assigns, consts)]
+    return [typ, cache_expand(exp[1], assigns, consts), cache_expand(exp[2], assigns, consts)]
 
   if typ in UNOPS:
-    return [typ, expand(exp[1], assigns, consts)]
+    return [typ, cache_expand(exp[1], assigns, consts)]
 
   if typ in {"Const"}:
     return consts[exp[1]][:]
@@ -46,7 +53,7 @@ def expand(exp, assigns=None, consts=None):
     return exp
 
   if typ in {"Box"}:
-    return ["Box"] + [expand(e, assigns, consts) for e in exp[1:]]
+    return ["Box"] + [cache_expand(e, assigns, consts) for e in exp[1:]]
 
   print("Internal error in expand: {}".format(exp))
   sys.exit(-1)

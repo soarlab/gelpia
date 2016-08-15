@@ -27,14 +27,14 @@ def to_rust(exp, inputs, assigns, consts):
           "pub extern \"C\"\n"
           "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI) {\n"]
   powi = ["powi"]
+  doing_consts = False
   input_names = [name for name in inputs]
   const_names = [name for name in consts]
 
   def _to_rust(exp):
     nonlocal decl
     typ = exp[0]
-
-    if typ in {"Integer", "Float"}:
+    if doing_consts and typ in {"Integer", "Float"}:
       return lb + [exp[1]] + rb
 
     if typ == "pow":
@@ -43,10 +43,14 @@ def to_rust(exp, inputs, assigns, consts):
       return ["pow"] + lp + _to_rust(exp[1]) + cm + [e[1]] + rp
 
     if typ == "powi":
+      e = expand(exp[2], assigns, consts)
+      assert(e[0] != "Integer")
       return powi + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
 
     if typ in INFIX:
-      return lp + _to_rust(exp[1]) + [exp[0]] + _to_rust(exp[2]) + rp
+      l = _to_rust(exp[1])
+      r = _to_rust(exp[2])
+      return lp + l + [exp[0]] + r + rp
 
     if typ in BINOPS:
       return [exp[0]] + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
@@ -58,8 +62,7 @@ def to_rust(exp, inputs, assigns, consts):
       return [exp[0]] + lp + _to_rust(exp[1]) + rp
 
     if typ in {"InputInterval", "ConstantInterval"}:
-      inside = _to_rust(exp[1]) + cm + _to_rust(exp[2])
-      inside = [part for part in inside if part[0] not in  {'[', ']'}]
+      inside = [expand(exp[1], assigns, consts)[1]] + cm + [expand(exp[2], assigns, consts)[1]]
       return lb + inside + rb
 
     if typ in {"Const"}:
@@ -79,13 +82,17 @@ def to_rust(exp, inputs, assigns, consts):
       val = ["Some(vec!"] + lb
       for part in exp[1:]:
         val += _to_rust(part) + cm + sp
-      if val[-2:] == [cm, sp]:
+      if val[-2:] == [',', ' ']:
         del val[-2:]
       val += rb + rp
       return val
 
-    if typ in {"Return", "PointInterval"}:
+    if typ == "Return":
       return _to_rust(exp[1])
+
+    if typ == "PointInterval":
+      return expand(exp[1], assigns, consts)[1]
+
 
     print("to_rust error unknown: '{}'".format(exp))
     sys.exit(-1)
@@ -97,6 +104,7 @@ def to_rust(exp, inputs, assigns, consts):
   new_inputs = collections.OrderedDict(new_inputs)
 
   powi = ["pow"]
+  doing_consts = True
   new_consts = [(n, ''.join(_to_rust(v))) for n,v in consts.items()]
   new_consts = collections.OrderedDict(new_consts)
 

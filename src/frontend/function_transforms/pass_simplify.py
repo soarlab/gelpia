@@ -11,13 +11,11 @@ def simplify(exp, inputs, assigns, consts=None):
   def _simplify(exp):
     typ = exp[0]
 
-    if typ == "pow":
+    if typ in {"pow", "powi"}:
       e = expand(exp[2], assigns, consts)
-      assert(e[0] == "Integer")
-      if e[1] == "1":
+      if e[0] == "Integer" and e[1] == "1":
         replace_exp(exp, exp[1])
         return True
-
 
     if typ == "+":
       l = expand(exp[1], assigns, consts)
@@ -30,6 +28,24 @@ def simplify(exp, inputs, assigns, consts=None):
       if l == r:
         new_r = exp[1] if exp[1][0] == "Variable" else exp[2]
         new_exp = ["*", ["Integer", "2"], new_r]
+      if l[0] == "neg" and l[1] == r:
+        new_exp = ["Integer", "0"]
+      if r[0] == "neg" and r[1] == l:
+        new_exp = ["Integer", "0"]
+      if new_exp:
+        replace_exp(exp, new_exp)
+        return True
+
+    if typ == '-':
+      l = expand(exp[1], assigns, consts)
+      r = expand(exp[2], assigns, consts)
+      new_exp = None
+      if l[0] == "Integer" and l[1] == "0":
+        new_exp = exp[2]
+      if r[0] == "Integer" and r[1] == "0":
+        new_exp = exp[1]
+      if l == r:
+        new_exp = ["Integer", "0"]
       if new_exp:
         replace_exp(exp, new_exp)
         return True
@@ -43,9 +59,9 @@ def simplify(exp, inputs, assigns, consts=None):
       if r[0] == "Integer" and r[1] == "1":
         new_exp = exp[1]
       if l[0] == "Integer" and l[1] == "-1":
-        new_exp = ["Neg", exp[2]]
+        new_exp = ["neg", exp[2]]
       if r[0] == "Integer" and r[1] == "-1":
-        new_exp = ["Neg", exp[1]]
+        new_exp = ["neg", exp[1]]
       if r == l:
         b = exp[1] if exp[1][0] == "Variable" else exp[2]
         new_exp = ["pow", b, ["Integer", "2"]]
@@ -61,6 +77,7 @@ def simplify(exp, inputs, assigns, consts=None):
       if new_exp:
         replace_exp(exp, new_exp)
         return True
+
 
 
     if typ in BINOPS.union({"Tuple"}):
@@ -87,9 +104,6 @@ def simplify(exp, inputs, assigns, consts=None):
 
   while _simplify(exp):
     pass
-
-  if consts != None:
-    lift_consts(exp, inputs, assigns, consts)
 
   return None
 
