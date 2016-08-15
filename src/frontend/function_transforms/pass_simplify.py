@@ -43,7 +43,7 @@ def simplify(exp, inputs, assigns, consts=None):
       r = expand(exp[2], assigns, consts)
       new_exp = None
       if l[0] == "Integer" and l[1] == "0":
-        new_exp = exp[2]
+        new_exp = ['neg', exp[2]]
       if r[0] == "Integer" and r[1] == "0":
         new_exp = exp[1]
       if l == r:
