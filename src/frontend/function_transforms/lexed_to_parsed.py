@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 
-from function_to_lexed import *
-from function_to_lexed import _function_lexer
-from pass_manager import *
-
-import ply.yacc as yacc
 import sys
 
+try:
+  import ply.yacc as yacc
+except:
+  print("PLY must be installed for python3")
+
+from function_to_lexed import *
+# underscore names are not imported by default
+from function_to_lexed import _function_lexer
+
+
+
 def strip_arc(f):
+  """Normalizes the names of inverse trig functions"""
   d = {"arccos"  : "acos",
        "arcsin"  : "asin",
        "arctan"  : "atan",
@@ -20,9 +27,8 @@ def strip_arc(f):
        "arctanh" : "atanh",
        "argtanh" : "atanh",
        "artanh"  : "atanh"}
-  if f in d.keys():
-    return d[f]
-  return f
+  return d.get(f, f)
+
 
 
 
@@ -56,20 +62,12 @@ def p_expression(t):
                  | MINUS expression %prec UMINUS
                  | base'''
   if len(t) == 4:
-    if t[2] == '^' and t[3][0] == "Integer":
-      t[0] = ["pow", t[1], t[3]]
-    elif t[2] == '^':
+    if t[2] == '^':
       t[0] = ["powi", t[1], t[3]]
     else:
       t[0] = [t[2], t[1], t[3]]
   elif len(t) == 3:
-    if t[1] == '-':
-      t[0] = ["Neg", t[2]]
-    elif t[1] == '+':
-      t[0] = t[2]
-    else:
-      print("Internal parse error in p_expression")
-      sys.exit(-1)
+    t[0] = ["neg", t[2]]
   elif len(t) == 2:
     t[0] = t[1]
   else:
@@ -84,7 +82,6 @@ def p_base(t):
            | const
            | group
            | func '''
-
   t[0] = t[1]
 
 
@@ -99,23 +96,23 @@ def p_interval(t):
                | INTERVAL LPAREN   negconst RPAREN
                | LBRACE   negconst RBRACE '''
   if len(t) == 7:
-    left = t[3]
+    left  = t[3]
     right = t[5]
   elif len(t) == 6:
-    left = t[2]
+    left  = t[2]
     right = t[4]
   elif len(t) == 5:
-    left = t[3]
+    left  = t[3]
     right = left
   elif len(t) == 4:
-    left = t[2]
+    left  = t[2]
     right = left
   else:
     print("Internal parse error in p_interval")
     sys.exit(-1)
 
   if left == right:
-    t[0] = ["ConstantInterval", left]
+    t[0] = ["PointInterval", left]
   else:
     if float(left[1]) > float(right[1]):
       print("Upside down intervals not allowed: [{}, {}]".format(left[1], right[1]))
@@ -141,16 +138,9 @@ def p_negconst(t):
 
 
 def p_const(t):
-  ''' const : PLUS const
-            | integer
+  ''' const : integer
             | float '''
-  if len(t) == 3:
-    t[0] = t[2]
-  elif len(t) == 2:
-    t[0] = t[1]
-  else:
-    print("Internal parse error in p_const")
-    sys.exit(-1)
+  t[0] = t[1]
 
 
 def p_integer(t):
@@ -170,9 +160,9 @@ def p_group(t):
 
 def p_func(t):
   ''' func : BINOP LPAREN expression COMMA expression RPAREN
-           | UNOP LPAREN expression RPAREN '''
+           | UNOP  LPAREN expression RPAREN '''
   if len(t) == 7:
-    if t[1] == "pow" and t[5][0] != "Integer":
+    if t[1] == "pow":
       t[0] = ["powi", t[3], t[5]]
     else:
       t[0] = [t[1], t[3], t[5]]
@@ -201,17 +191,22 @@ def p_error(t):
     sys.exit(-1)
 
 
-_function_parser = yacc.yacc(debug=0, write_tables=0, optimize=1,)
-                             #tabmodule="functiontable")
+
+
+
+
+
+try:
+  from gelpia import bin_dir
+  _function_parser = yacc.yacc(debug=False, write_tables=True, optimize=True,
+                               outputdir=bin_dir, tabmodule="main_parsetab.py")
+except:
+  _function_parser = yacc.yacc(debug=False, write_tables=False,
+                               outputdir="./__pycache__")
+
 
 def parse_function(text):
   return _function_parser.parse(text, lexer=_function_lexer)
-
-
-
-
-
-
 
 
 def runmain():
@@ -222,6 +217,7 @@ def runmain():
 
 if __name__ == "__main__":
   try:
+    from pass_utils import *
     runmain()
   except KeyboardInterrupt:
     print("\nGoodbye")
