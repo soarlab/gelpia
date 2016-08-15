@@ -3,10 +3,10 @@
 try:
   from gelpia import bin_dir
 except:
-  print("gelpia not found, gaol_repl must be in your PATH")
+  print("gelpia not found, gaol_repl must be in your PATH\n")
   bin_dir = ""
 
-from pass_manager import *
+from pass_utils import *
 from output_flatten import flatten
 
 import re
@@ -22,9 +22,10 @@ def div_by_zero(exp, inputs, assigns, consts):
                                 universal_newlines=True,
                                 bufsize=0)
   root = exp
+  bad_exp = None
 
   def gaol_eval(exp):
-    flat_exp = flatten(root, exp, inputs, consts, assigns)
+    flat_exp = flatten(exp, inputs, consts, assigns)
     query_proc.stdin.write('{}\n'.format(flat_exp))
     result = query_proc.stdout.readline()
     try:
@@ -50,48 +51,58 @@ def div_by_zero(exp, inputs, assigns, consts):
 
 
   def _div_by_zero(exp):
-    if exp[0] in {'Float', 'Integer', 'ConstantInterval',
+    nonlocal bad_exp
+    typ = exp[0]
+    if typ in {'Float', 'Integer', 'ConstantInterval',
                   'InputInterval', 'Input', 'Symbol'}:
       return False
 
-    if exp[0] in {'/'}:
-      return (contains_zero(exp[2]) or
+    if typ == '/':
+      retval = (contains_zero(exp[2]) or
               _div_by_zero(exp[1]) or
               _div_by_zero(exp[2]))
+      if retval:
+        bad_exp = exp
+      return retval
 
-    if exp[0] in {"powi"}:
+    if typ == "powi":
       temp = False
       if less_than_zero(exp[2]):
         temp = contains_zero(exp[1])
-      return temp or _div_by_zero(exp[1]) or _div_by_zero(exp[2])
+      retval = temp or _div_by_zero(exp[1]) or _div_by_zero(exp[2])
+      if retval:
+        bad_exp = exp
+      return retval
 
-    if exp[0] in {"pow"}:
+    if typ == "pow":
       temp = False
-      if int(exp[2][1]) < 0:
+      e = expand(exp[2], assigns, consts)
+      assert(e[0] == "Integer")
+      if int(e[1]) < 0:
         temp = contains_zero(exp[1])
-      return temp or _div_by_zero(exp[1])
+      retval = temp or _div_by_zero(exp[1])
+      if retval:
+        bad_exp = exp
+      return retval
 
-    if exp[0] in BINOPS:
+    if typ in BINOPS:
       return _div_by_zero(exp[1]) or _div_by_zero(exp[2])
 
-    if exp[0] in UNOPS:
+    if typ in UNOPS.union({"Return"}):
       return _div_by_zero(exp[1])
 
-    if exp[0] in {"Variable"}:
+    if typ in {"Variable"}:
       return _div_by_zero(assigns[exp[1]])
 
-    if exp[0] in {"Const"}:
-      return _div_by_zero(consts[int(exp[1])])
-
-    if exp[0] in {"Return"}:
-      return _div_by_zero(exp[1])
+    if typ in {"Const"}:
+      return _div_by_zero(consts[exp[1]])
 
     print("div_by_zero error unknown: '{}'".format(exp))
     sys.exit(-1)
 
   result = _div_by_zero(exp)
   query_proc.communicate()
-  return result
+  return (result, bad_exp)
 
 
 
@@ -102,22 +113,24 @@ def div_by_zero(exp, inputs, assigns, consts):
 
 def runmain():
   from lexed_to_parsed import parse_function
-  from pass_lift_inputs import lift_inputs
+  from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
   from pass_lift_consts import lift_consts
-  from pass_lift_assigns import lift_assigns
-  from pass_pow import pow_replacement
+  from pass_simplify import simplify
 
   data = get_runmain_input()
   exp = parse_function(data)
-  inputs = lift_inputs(exp)
-  assigns = lift_assigns(exp, inputs)
+  inputs, assigns = lift_inputs_and_assigns(exp)
   consts = lift_consts(exp, inputs, assigns)
+  simplify(exp, inputs, assigns, consts)
 
-  pow_replacement(exp, inputs, assigns, consts)
-  has_div_zero = div_by_zero(exp, inputs, assigns, consts)
+  has_div_zero, bad_exp = div_by_zero(exp, inputs, assigns, consts)
 
   print("divides by zero:")
   print(has_div_zero)
+  if has_div_zero:
+    print()
+    print("offending exp:")
+    print(bad_exp)
   print()
   print_exp(exp)
   print()
