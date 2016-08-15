@@ -13,7 +13,7 @@ def to_interp(exp, inputs, assigns, consts):
     typ = exp[0]
 
     if typ in {"pow"}:
-      e = expand(exp[2])
+      e = expand(exp[2], assigns, consts)
       assert(e[0] == "Integer")
       return _to_interp(exp[1]) + ["p"+e[1]]
 
@@ -27,7 +27,7 @@ def to_interp(exp, inputs, assigns, consts):
       return _to_interp(exp[1]) + ['f'+exp[0].lower()]
 
     if typ in {"Const"}:
-      return ['c'+str(input_names.index(exp[1]))]
+      return ['c'+str(const_names.index(exp[1]))]
 
     if typ in {"Input"}:
       return ['i'+str(input_names.index(exp[1]))]

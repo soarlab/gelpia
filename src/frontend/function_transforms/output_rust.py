@@ -51,6 +51,9 @@ def to_rust(exp, inputs, assigns, consts):
     if typ in BINOPS:
       return [exp[0]] + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
 
+    if typ == "neg":
+      return ["-"] + lp + _to_rust(exp[1]) + rp
+
     if typ in UNOPS:
       return [exp[0]] + lp + _to_rust(exp[1]) + rp
 

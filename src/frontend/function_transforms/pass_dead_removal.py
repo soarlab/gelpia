@@ -41,15 +41,15 @@ def dead_removal(exp, inputs, assigns, consts=None):
     sys.exit(-1)
 
   _dead_removal(exp)
-  for k in inputs:
+  for k in list(inputs):
     if k not in used_inputs:
       del inputs[k]
 
-  for k in assigns:
+  for k in list(assigns):
     if k not in used_assigns:
       del assigns[k]
 
-  for k in consts:
+  for k in list(consts):
     if k not in used_consts:
       del consts[k]
 
