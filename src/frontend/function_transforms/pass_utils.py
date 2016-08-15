@@ -3,20 +3,65 @@
 import re
 import sys
 
-from lexed_to_parsed import BINOPS, UNOPS
+from function_to_lexed import BINOPS, UNOPS
 
 BINOPS.update({'+', '-', '*', '/', 'powi'})
-UNOPS.update({'Neg', "dabs", "datanh"})
+UNOPS.update({'neg', "dabs", "datanh"})
 INFIX = {'+', '-', '*', '/'}
 
+
+bops = {'+': lambda l,r:str(int(l[1])+int(r[1])),
+        '-': lambda l,r:str(int(l[1])-int(r[1])),
+        '*': lambda l,r:str(int(l[1])*int(r[1])),}
+uops = {'neg': lambda a:str(-int(a[1]))}
+
+def expand(exp, assigns=None, consts=None):
+  typ = exp[0]
+  if typ in bops:
+    l = expand(exp[1], assigns, consts)
+    r = expand(exp[2], assigns, consts)
+    if l[0] == "Integer" and r[0] == "Integer":
+      return ["Integer", bops[typ](l, r)]
+    # purposely fall through
+
+  if typ in uops:
+    a = expand(exp[1], assigns, consts)
+    if a[0] == "Integer":
+      return ["Integer", uops[typ](a)]
+    # purposely fall through
+
+  if typ in BINOPS:
+    return [typ, expand(exp[1], assigns, consts), expand(exp[2], assigns, consts)]
+
+  if typ in UNOPS:
+    return [typ, expand(exp[1], assigns, consts)]
+
+  if typ in {"Const"}:
+    return consts[exp[1]][:]
+
+  if typ in {"Variable"}:
+    return assigns[exp[1]][:]
+
+  if typ in {"Input", "Integer", "Float", "ConstantInterval"}:
+    return exp
+
+  if typ in {"Box"}:
+    return ["Box"] + [expand(e, assigns, consts) for e in exp[1:]]
+
+  print("Internal error in expand: {}".format(exp))
+  sys.exit(-1)
+
+
 def replace_exp(exp, new_exp):
+  """Allow changing the contents of a list (to allow mutation)"""
+  new_exp = new_exp[:]
   for i in range(len(new_exp)):
     try:
       exp[i] = new_exp[i]
     except IndexError:
       exp.append(new_exp[i])
   del exp[len(new_exp):]
-
+  return None
 
 
 def print_exp(exp):
@@ -85,7 +130,7 @@ def get_runmain_input():
   try:
     start = lines.index("cost:")
   except:
-    print("Malformed query file, no cost section: {}".format(args.query_file))
+    print("Malformed query file, no cost section: {}".format(filename))
     sys.exit(-1)
   function = list()
   for line in lines[start+1:]:
@@ -115,16 +160,15 @@ def get_runmain_input():
   return '\n'.join((var_lines, constraints, function))
 
 
-def exp_hash(exp, hashed=dict()):
-    h = hash(str(exp))
-    if h not in hashed:
-        hashed[h] = len(hashed)
-    return hashed[h]
+def const_hash(exp, hashed=dict()):
+  h = hash(str(exp))
+  if h not in hashed:
+    hashed[h] = len(hashed)
+  return "_const_{}".format(hashed[h])
 
-def const_hash(exp):
-    h = exp_hash(exp)
-    return "_const_{}".format(h)
 
-def cache_hash(exp):
-    h = exp_hash(exp)
-    return "_expr_{}".format(h)
+def cache_hash(exp, hashed=dict()):
+  h = hash(str(exp))
+  if h not in hashed:
+    hashed[h] = len(hashed)
+  return "_expr_{}".format(hashed[h])
