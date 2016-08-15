@@ -10,7 +10,7 @@ extern crate gr;
 
 use ga::{ea, Individual};
 
-use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol};
+use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol, check_diff};
 
 use gr::{GI, width_box, split_box, midpoint_box};
 
@@ -66,10 +66,10 @@ fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
 /// # Arguments
 /// * `f` - The function to evaluate with
 /// * `input` - The input domain
-fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI) {
+fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI, Option<Vec<GI>>) {
     let mid = midpoint_box(input);
     let (est_m, _) = f.call(&mid);
-    let (fsx, _) = f.call(&input);
+    let (fsx, dfsx) = f.call(&input);
     let (fsx_u, _) = f.call(&input.iter()
                        .map(|&si| GI::new_p(si.upper()))
                        .collect::<Vec<_>>());
@@ -77,7 +77,7 @@ fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI) {
                        .map(|&si| GI::new_p(si.lower()))
                        .collect::<Vec<_>>());
     let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
-    (est_max, fsx)
+    (est_max, fsx, dfsx)
 }
 
 // Returns the upper bound, the domain where this bound occurs and a status
@@ -95,10 +95,10 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
     let mut best_x = x_0.clone();
 
     let mut iters: u32 = 0;
-    let (est_max, first_val) = est_func(&f, &x_0);
+    let (est_max, first_val, _) = est_func(&f, &x_0);
 
     q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
-                                  fdata: first_val});
+                                  fdata: first_val, dfdata: None});
     let mut f_best_low = est_max;
     let mut f_best_high = est_max;
 
@@ -130,11 +130,15 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             log_max(&q, f_best_low, f_best_high);
         }
 
-        let (ref x, iter_est, fx, gen) =
+        let (ref x, iter_est, fx, ref dfx, gen) =
             match q.pop() {
-                Some(y) => (y.data, y.p, y.fdata, y.pf),
+                Some(y) => (y.data, y.p, y.fdata, y.dfdata, y.pf),
                 None    => unreachable!()
             };
+
+        if check_diff(dfx.clone(), x, &x_0) {
+            continue;
+        }
         if fx.upper() < f_best_low ||
             width_box(x, e_x) ||
             eps_tol(fx, iter_est, e_f, e_f_r) {
@@ -152,7 +156,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         else {
             let (x_s, is_split) = split_box(&x);
             for sx in x_s {
-                let (est_max, fsx) = est_func(&f, &sx);
+                let (est_max, fsx, dfsx) = est_func(&f, &sx);
                 if f_best_low < est_max  {
                     f_best_low = est_max;
                     *x_bestbb.write().unwrap() = sx.clone();
@@ -162,7 +166,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     q.push(Quple{p: est_max,
                                  pf: gen+1,
                                  data: sx,
-                                 fdata: fsx});
+                                 fdata: fsx,
+                                 dfdata:dfsx});
                 }
             }
         }
@@ -245,7 +250,8 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
                 if px < fp {
                     q[j] = Quple{p: fp, pf: q[j].pf,
                                  data: q[j].data.clone(),
-                                 fdata: q[j].fdata }.clone();
+                                 fdata: q[j].fdata,
+                                 dfdata: q[j].dfdata.clone()}.clone();
                 }
             }
             else {

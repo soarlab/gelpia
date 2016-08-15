@@ -69,10 +69,10 @@ fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
 /// # Arguments
 /// * `f` - The function to evaluate with
 /// * `input` - The input domain
-fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI) {
+fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI, Option <Vec<GI>>) {
     let mid = midpoint_box(input);
     let (est_m, _) = f.call(&mid);
-    let (fsx, _) = f.call(&input);
+    let (fsx, dfsx) = f.call(&input);
     let (fsx_u, _) = f.call(&input.iter()
                        .map(|&si| GI::new_p(si.upper()))
                        .collect::<Vec<_>>());
@@ -80,7 +80,7 @@ fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI) {
                        .map(|&si| GI::new_p(si.lower()))
                        .collect::<Vec<_>>());
     let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
-    (est_max, fsx)
+    (est_max, fsx, dfsx)
 }
 
 // Returns the upper bound, the domain where this bound occurs and a status
@@ -98,10 +98,10 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
     let mut best_x = x_0.clone();
 
     let iters = Arc::new(AtomicUsize::new(0));
-    let (est_max, first_val) = est_func(&f, &x_0);
+    let (est_max, first_val, _) = est_func(&f, &x_0);
     {
         q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
-                                      fdata: first_val});
+                                      fdata: first_val, dfdata: None});
     }
     let mut f_best_low = est_max;
     let mut f_best_high = est_max;
@@ -215,7 +215,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     else {
                         let (x_s, is_split) = split_box(&x);
                         for sx in x_s {
-                            let (est_max, fsx) = est_func(&_f, &sx);
+                            let (est_max, fsx, dfsx) = est_func(&_f, &sx);
                             if l_f_best_low < est_max {
                                 l_f_best_low = est_max;
                                 l_best_low_x = sx.clone();
@@ -227,7 +227,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                                     lqo.push(Quple{p: est_max,
                                                    pf: gen+1,
                                                    data: sx,
-                                                   fdata: fsx});
+                                                   fdata: fsx,
+                                                   dfdata: dfsx});
                                 }
                         }
                     }

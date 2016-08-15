@@ -1,4 +1,4 @@
-/* 
+/*
 Basic interval implementation and other common functions/data structures
  */
 #![feature(float_extras)]
@@ -53,14 +53,15 @@ pub struct Parameters {
 }
 // Evolutionary algo end
 
-// Quple 
+// Quple
 // Data structure for insertion of a box into a priority queue
 #[derive(Clone)]
 pub struct Quple {
     pub p: Flt,
     pub pf: u32,
     pub data: Vec<GI>,
-    pub fdata: GI
+    pub fdata: GI,
+    pub dfdata: Option<Vec<GI>>
 }
 
 // Allow ordering of Quples
@@ -117,6 +118,29 @@ impl Ord for Quple {
 
 pub fn eps_tol(fx: GI, est: f64, e_f: f64, e_f_r: f64) -> bool {
     (fx.upper() - est).abs() <= e_f_r*est +  e_f
+}
+
+pub fn check_diff(odfx: Option<Vec<GI>>, x: &Vec<GI>, x_0: &Vec<GI>) -> bool {
+    if odfx.is_none() {
+        return false;
+    }
+    let ref dfx = odfx.unwrap();
+
+    for i in 0..x.len() {
+        let d_i = dfx[i];
+        let x_i = x[i];
+        let x_0_i = x_0[i];
+
+        if (x_i.lower() - x_0_i.lower()).abs() < 0.001 || (x_i.upper() - x_0_i.upper()).abs() < 0.001 {
+            return false;
+        }
+
+        if d_i.lower() <= 0.0 && d_i.upper() >= 0.0 {
+            return false;
+        }
+    }
+
+    true
 }
 
 pub fn printerval(input: &Vec<GI>) -> () {
