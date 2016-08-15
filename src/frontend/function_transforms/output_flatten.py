@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-from pass_manager import *
+from pass_utils import *
 
 import sys
 
 
-def flatten(root, exp, inputs, assigns, consts):
+def flatten(exp, inputs, assigns, consts):
   lp = ['(']
   rp = [')']
   cm = [',']
@@ -13,39 +13,35 @@ def flatten(root, exp, inputs, assigns, consts):
   rb = [']']
 
   def _flatten(exp):
-    if type(exp[0]) is list:
-      return _flatten(exp[1])
+    typ = exp[0]
 
-    if exp[0] in INFIX:
+    if typ in INFIX:
       return lp + _flatten(exp[1]) + [exp[0]] + _flatten(exp[2]) + rp
 
-    if exp[0] in BINOPS:
+    if typ in BINOPS:
       return [exp[0]] + lp + _flatten(exp[1]) + cm + _flatten(exp[2]) + rp
 
-    if exp[0] in UNOPS:
+    if typ in UNOPS:
       return [exp[0]] + lp + _flatten(exp[1]) + rp
 
-    if exp[0] in {"Integer", "Float"}:
+    if typ in {"Integer", "Float"}:
       return lb + [exp[1]] + rb
 
-    if exp[0] in {"InputInterval"}:
+    if typ in {"InputInterval", "ConstantInterval"}:
       inside = _flatten(exp[1]) + cm + _flatten(exp[2])
-      inside = [part for part in inside if part != ']' and part != '[']
+      inside = [part for part in inside if part[0] not in  {'[', ']'}]
       return lb + inside + rb
 
-    if exp[0] in {"Const"}:
+    if typ == "Const":
       return _flatten(consts[exp[1]])
 
-    if exp[0] in {"Input"}:
+    if typ == "Input":
       return _flatten(inputs[exp[1]])
 
-    if exp[0] in {"Variable"}:
+    if typ == "Variable":
       return _flatten(assigns[exp[1]])
 
-    if exp[0] in {"Symbol"}:
-      return exp[1]
-
-    if exp[0] in {"Return", "ConstantInterval"}:
+    if typ in {"Return", "PointInterval"}:
       return _flatten(exp[1])
 
     print("flatten error unknown: '{}'".format(exp))
@@ -63,17 +59,17 @@ def flatten(root, exp, inputs, assigns, consts):
 
 def runmain():
   from lexed_to_parsed import parse_function
-  from pass_lift_inputs import lift_inputs
+  from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
   from pass_lift_consts import lift_consts
-  from pass_lift_assigns import lift_assigns
+  from pass_simplify import simplify
 
   data = get_runmain_input()
   exp = parse_function(data)
-  inputs = lift_inputs(exp)
-  assigns = lift_assigns(exp, inputs)
+  inputs, assigns = lift_inputs_and_assigns(exp)
   consts = lift_consts(exp, inputs, assigns)
+  simplify(exp, inputs, assigns, consts)
 
-  flattened = flatten(exp, exp, inputs, assigns, consts)
+  flattened = flatten(exp, inputs, assigns, consts)
 
   print("flattened:")
   print(flattened)
