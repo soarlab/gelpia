@@ -10,7 +10,7 @@ extern crate gr;
 
 use ga::{ea, Individual};
 
-use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol};
+use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol, check_diff};
 
 use gr::{GI, width_box, split_box, midpoint_box};
 
@@ -147,24 +147,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             q.len()/n_workers + 1
         };
 
-/*        let mut p_q = vec![];
-        {
-            let mut total_len = 0;
-            let q = q.write().unwrap();
-            let q_len = q.len();
-            for i in 0..n_workers {
-                let mut elems = vec![];
-                for j in 0..p_q_len {
-                    if i + j*n_workers >= q_len {
-                        break;
-                    }
-                    elems.push(q[i+j*n_workers].clone());
-                }
-                total_len += elems.len();
-                p_q.push(elems);
-            }
-        } */
-
         let outer_barr = Arc::new(Barrier::new(n_workers + 1));
 
         let (qtx, qrx) = channel();
@@ -181,6 +163,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             let f_bestag = f_bestag.clone();
             let iters = iters.clone();
             let lqi = q.clone();
+            let x_0 = x_0.clone();
             pool.execute(move || {
                 let mut l_f_best_high = f_best_high;
                 let mut l_best_x = vec![];
@@ -191,7 +174,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                 let mut lqo = vec![];
                 let mut used = false;
                 let lqi = lqi.read().unwrap();
-//                let elems_len = elems.len();
 
                 for j in 0..p_q_len {
                     if i + j*n_workers >= lqi.len() { break };
@@ -201,15 +183,19 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     let ref iter_est = elem.p;
                     let ref fx = elem.fdata;
                     let ref gen = elem.pf;
-                    //let (ref x, iter_est, fx, gen) = ;
+                    let ref dfx = elem.dfdata;
 
+                    if check_diff(dfx.clone(), x, &x_0) {
+                        continue;
+                    }
+
+                    
                     if fx.upper() < l_f_best_low ||
                         width_box(&x, e_x) ||
                         eps_tol(*fx, *iter_est, e_f, e_f_r) {
                             if l_f_best_high < fx.upper() {
                                 l_f_best_high = fx.upper();
                                 l_best_x = x.clone();
-                                // htx.send((fx.upper(), x.clone())).unwrap();
                             }
                         }
                     else {
@@ -401,15 +387,58 @@ fn main() {
         let (min, mut max, mut interval) = result.unwrap();
         // Go through all remaining intervals from IBBA to find the true
         // max
-        let mut lq = q.write().unwrap();
+        let n_workers = 11;
+        let n_jobs = n_workers;
+        let pool = ThreadPool::new(n_workers);
+        let (mtx, mrx) = channel();
+        let outer_barr = Arc::new(Barrier::new(n_workers + 1));
+        let p_q_len = {
+            let q = q.read().unwrap();
+            q.len()/n_workers + 1
+        };
+
+        
+        for i in 0..n_workers {
+            let inner_barr = outer_barr.clone();
+            let mtx = mtx.clone();
+            let q = q.clone();
+            pool.execute(move || {
+                let lq = q.read().unwrap();
+                let mut lmax = max;
+                let mut ldom: Option<Vec<GI>> = None;
+                let q = q.clone();
+                for j in 0..p_q_len {
+                    if i + j*n_workers >= lq.len() { break };
+                    let ref xn = lq[i+j*n_workers];
+                    let (ub, dom) = (xn.fdata.upper(), &xn.data);
+                    if ub > lmax {
+                        lmax = ub;
+                        ldom = Some(dom.clone());
+                    }
+                }
+                mtx.send((lmax, ldom));
+                inner_barr.wait();
+            });
+        }
+        outer_barr.wait();
+        drop(mtx);
+        for x in mrx.iter() {
+            let (ub, dom) = x;
+            if ub > max && !dom.is_none() {
+                max = ub;
+                interval = dom.unwrap().clone();
+            }
+        }
+        
+        
+/*        let mut lq = q.write().unwrap();
         while lq.len() != 0 {
             let ref top = lq.pop().unwrap();
             let (ub, dom) = (top.fdata.upper(), &top.data);
             if ub > max {
             max = ub;
             interval = dom.clone();
-        }
-    }
+    }*/
     println!("[[{},{}], {{", min, max);
     for i in 0..args.names.len() {
         println!("'{}' : {},", args.names[i], interval[i].to_string());
