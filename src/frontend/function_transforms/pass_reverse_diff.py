@@ -84,7 +84,7 @@ def reverse_diff(exp, inputs, assigns, consts=None):
     if tag == 'asin':
       _reverse_diff(exp[1], ['/', adjoint, ['sqrt', ['-', ['Integer', '1'], ['pow', exp[1], ['Integer', '2']]]]])
       return
-    
+
     if tag == "tan":
       _reverse_diff(exp[1], ['*', ['+', ["Integer", "1"], ["pow", ["tan", exp[1]], ["Integer", "2"]]], adjoint])
       return
@@ -96,7 +96,7 @@ def reverse_diff(exp, inputs, assigns, consts=None):
       _reverse_diff(exp[1], ['*', ['sinh', exp[1]], adjoint])
       return
 
-    
+
     if tag == "sinh":
       _reverse_diff(exp[1], ['*', ['cosh', exp[1]], adjoint])
       return
@@ -104,7 +104,7 @@ def reverse_diff(exp, inputs, assigns, consts=None):
     if tag == "asinh":
       _reverse_diff(exp[1], ['/', adjoint, ['sqrt', ['+', ['pow', exp[1], ['Integer', '2']], ["Integer", "1"]]]])
       return
-    
+
     if tag == "tanh":
       _reverse_diff(exp[1], ['*', ['-', ["Integer", "1"], ["pow", ["tanh", exp[1]], ["Integer", "2"]]], adjoint])
       return
@@ -135,6 +135,9 @@ def reverse_diff(exp, inputs, assigns, consts=None):
   _reverse_diff(exp, ["Integer", "1"])
   result = ["Box"]+[d for d in gradient.values()]
   retval = ["Return", ["Tuple", exp[1], result]]
+
+  if consts != None:
+    lift_consts(retval, inputs, assigns, consts)
 
   return retval
 
