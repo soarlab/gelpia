@@ -15,6 +15,9 @@ static_assert(sizeof(interval) == sizeof(gaol_int),
 static_assert(alignof(interval) == alignof(gaol_int),
 	      "Alignment of punned type gaol_int does not match alignment of interval.");
 
+static_assert(true == 1 && false == 0,
+	      "true is not 1 or false is not 0");
+
 void make_interval_dd(double inf, double sup, gaol_int* out) {
     TO_INTERVAL(out) = interval(inf, sup);
 }
@@ -340,4 +343,8 @@ gaol_int midpoint_g(const gaol_int* x) {
 
 void split_g(const gaol_int* in, gaol_int* out_1, gaol_int* out_2) {
   TO_INTERVAL_C(in).split(TO_INTERVAL(out_1), TO_INTERVAL(out_2));
+}
+
+char is_empty_g(const gaol_int* x) {
+  return TO_INTERVAL_C(x).is_empty();
 }

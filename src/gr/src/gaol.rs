@@ -222,8 +222,11 @@ extern {
 
     fn split_g(input: *const gaol_int, out_1: *mut gaol_int, 
                out_2: *mut gaol_int);
-    // Returns a string representation of the interval.
 
+    // Determine if interval is empty.
+    fn is_empty_g(x: *const gaol_int) -> c_char;
+    
+    // Returns a string representation of the interval.
     fn to_str(a: *const gaol_int) -> *const c_char;
 }
 
@@ -401,6 +404,10 @@ impl GI {
     
     pub fn width(&self) -> f64 {
         unsafe{width_g(&self.data) as f64}
+    }
+
+    pub fn is_empty(&self) -> bool {
+        unsafe{is_empty_g(&self.data) == 1}
     }
 
 }
@@ -667,6 +674,9 @@ pub fn split_box(_x: &Vec<GI>) -> (Vec<Vec<GI>>, bool) {
     }
 }
 
+pub fn is_empty(x: &GI) -> bool {
+    x.is_empty()
+}
 
 pub fn func(_x: &Vec<GI>) -> GI {
     GI::new_d(0.0, 0.0)
