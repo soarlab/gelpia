@@ -348,3 +348,10 @@ void split_g(const gaol_int* in, gaol_int* out_1, gaol_int* out_2) {
 char is_empty_g(const gaol_int* x) {
   return TO_INTERVAL_C(x).is_empty();
 }
+
+char straddles_zero_g(const gaol_int* x) {
+  return TO_INTERVAL_C(x).straddles_zero();
+}
+char is_canonoical_g(const gaol_int* x) {
+  return TO_INTERVAL_C(x).is_canonical();
+}

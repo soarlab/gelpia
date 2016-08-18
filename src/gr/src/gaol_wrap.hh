@@ -89,7 +89,12 @@ extern "C" {
   double width_g(const gaol_int*);
   gaol_int midpoint_g(const gaol_int*);
   void split_g(const gaol_int*, gaol_int*, gaol_int*);
+
+  // Set relations
   char is_empty_g(const gaol_int*);
+  char straddles_zero_g(const gaol_int*);
+  char is_canonoical_g(const gaol_int*);
+  
 #ifdef __cplusplus
 }
 #endif

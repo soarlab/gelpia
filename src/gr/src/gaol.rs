@@ -225,6 +225,10 @@ extern {
 
     // Determine if interval is empty.
     fn is_empty_g(x: *const gaol_int) -> c_char;
+
+    // Interval predicates
+    fn straddles_zero_g(x: *const gaol_int) -> c_char;
+    fn is_canonoical_g(x: *const gaol_int) -> c_char;
     
     // Returns a string representation of the interval.
     fn to_str(a: *const gaol_int) -> *const c_char;
@@ -410,6 +414,12 @@ impl GI {
         unsafe{is_empty_g(&self.data) == 1}
     }
 
+    pub fn straddles_zero(&self) -> bool {
+        unsafe{straddles_zero_g(&self.data) == 1}
+    }
+    pub fn is_canonical(&self) -> bool {
+        unsafe{is_canonoical_g(&self.data) == 1}
+    }
 }
 
 
@@ -676,6 +686,14 @@ pub fn split_box(_x: &Vec<GI>) -> (Vec<Vec<GI>>, bool) {
 
 pub fn is_empty(x: &GI) -> bool {
     x.is_empty()
+}
+
+pub fn straddles_zero(x: &GI) -> bool {
+    x.straddles_zero()
+}
+
+pub fn is_canonical(x: &GI) -> bool {
+    x.is_canonical()
 }
 
 pub fn func(_x: &Vec<GI>) -> GI {
