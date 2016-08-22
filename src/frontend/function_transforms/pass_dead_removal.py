@@ -13,25 +13,25 @@ def dead_removal(exp, inputs, assigns, consts=None):
   def _dead_removal(exp):
     if type(exp) is not list:
       return
-    typ = exp[0]
+    tag = exp[0]
 
-    if typ == "Const":
+    if tag == "Const":
       assert(exp[1] in consts)
       used_consts.add(exp[1])
       return
 
-    if typ == "Variable":
+    if tag == "Variable":
       assert(exp[1] in assigns)
       used_assigns.add(exp[1])
       _dead_removal(assigns[exp[1]])
       return
 
-    if typ == "Input":
+    if tag == "Input":
       assert(exp[1] in inputs)
       used_inputs.add(exp[1])
       return
 
-    if typ in BINOPS.union(UNOPS).union({"Return", "ConstantInterval",
+    if tag in BINOPS.union(UNOPS).union({"Return", "ConstantInterval",
                                          "PointInterval", "Float", "Integer",
                                          "Box", "Tuple"}):
       for e in exp[1:]:
@@ -42,6 +42,7 @@ def dead_removal(exp, inputs, assigns, consts=None):
     sys.exit(-1)
 
   _dead_removal(exp)
+
   for k in list(inputs):
     if k not in used_inputs:
       del inputs[k]
@@ -49,6 +50,7 @@ def dead_removal(exp, inputs, assigns, consts=None):
   for k in list(assigns):
     if k not in used_assigns:
       del assigns[k]
+
   if consts:
     for k in list(consts):
       if k not in used_consts:
