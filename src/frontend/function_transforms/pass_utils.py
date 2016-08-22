@@ -49,7 +49,7 @@ def expand(exp, assigns=None, consts=None):
   if typ in {"Variable"}:
     return assigns[exp[1]][:]
 
-  if typ in {"Input", "Integer", "Float", "ConstantInterval"}:
+  if typ in {"Input", "Integer", "Float", "ConstantInterval", "PointInterval"}:
     return exp
 
   if typ in {"Box"}:

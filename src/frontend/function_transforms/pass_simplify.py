@@ -100,7 +100,7 @@ def simplify(exp, inputs, assigns, consts=None):
       return False
 
     if typ in {"ConstantInterval", "InputInterval", "Float", "Integer",
-                  "Const", "Input", "Symbol"}:
+                  "Const", "Input", "Symbol", "PointInterval"}:
       return False
 
     print("simplify error unknown: '{}'".format(exp))
