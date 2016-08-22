@@ -17,6 +17,7 @@ def to_rust(exp, inputs, assigns, consts):
   diff_decl = ["extern crate gr;\n"
                "use gr::*;\n"
                "\n"
+               "#[allow(unused_parens)]\n"
                "#[no_mangle]\n"
                "pub extern \"C\"\n"
                "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {\n"]
@@ -87,11 +88,8 @@ def to_rust(exp, inputs, assigns, consts):
       val += rb + rp
       return val
 
-    if typ == "Return":
+    if typ in {"Return", "PointInterval"}:
       return _to_rust(exp[1])
-
-    if typ == "PointInterval":
-      return expand(exp[1], assigns, consts)[1]
 
 
     print("to_rust error unknown: '{}'".format(exp))
