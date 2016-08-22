@@ -9,7 +9,7 @@ import os.path as path
 
 
 def lift_inputs_and_assigns(exp):
-  """Extracts input variables and assignmentsfrom an expression """
+  """Extracts input variables and assignments from an expression """
   assigns = collections.OrderedDict()
   inputs = collections.OrderedDict()
   implicit_input_count = 0

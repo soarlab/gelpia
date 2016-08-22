@@ -14,20 +14,20 @@ def lift_consts(exp, inputs, assigns, consts=None):
     if exp[0] == "Const":
       assert(exp[1] in consts)
       return exp
-    exp = expand(exp, assigns, consts)
-    key = const_hash(exp)
+    new_exp = expand(exp, assigns, consts)
+    key = const_hash(new_exp)
     if key not in consts:
-      consts[key] = exp[:]
+      consts[key] = new_exp[:]
     return ['Const', key]
 
   def _lift_consts(exp):
-    typ = exp[0]
+    tag = exp[0]
 
-    if typ in {"Const"}:
+    if tag in {"Const"}:
       assert(exp[1] in consts)
       return True
 
-    if typ in {"sinh", "cosh", "tanh", "dabs", "datanh"}:
+    if tag in {"sinh", "cosh", "tanh", "dabs", "datanh"}:
       # MB: Crlibm is claimed to not be ULP accurate by GAOL. Hence, we must
       # MB: defer to implementations based on the exponential function.
       inner = _lift_consts(exp[1])
@@ -35,7 +35,7 @@ def lift_consts(exp, inputs, assigns, consts=None):
         make_constant(exp[1])
       return False;
 
-    if typ in {"powi"}:
+    if tag == "powi":
       e = expand(exp[2], assigns, consts)
       if e[0] == "Integer":
         exp[0] = "pow"
@@ -45,10 +45,10 @@ def lift_consts(exp, inputs, assigns, consts=None):
         # purposely fall through
         pass
 
-    if typ in UNOPS:
+    if tag in UNOPS:
       return _lift_consts(exp[1])
 
-    if typ in BINOPS:
+    if tag in BINOPS:
       first  = _lift_consts(exp[1])
       second = _lift_consts(exp[2])
       if first and second:
@@ -59,10 +59,10 @@ def lift_consts(exp, inputs, assigns, consts=None):
         exp[2] = make_constant(exp[2])
       return False
 
-    if typ in {"InputInterval", "Input"}:
+    if tag in {"InputInterval", "Input"}:
       return False
 
-    if typ in {"Variable"}:
+    if tag in {"Variable"}:
       assignment = assigns[exp[1]]
       if _lift_consts(assignment):
         new_exp = make_constant(assignment)
@@ -70,24 +70,25 @@ def lift_consts(exp, inputs, assigns, consts=None):
         return True
       return False
 
-    if typ in {"ConstantInterval", "PointInterval", "Float", "Integer"}:
+    if tag in {"ConstantInterval", "PointInterval", "Float", "Integer"}:
       return True
 
-    if typ in {"Return"}:
+    if tag in {"Return"}:
       if _lift_consts(exp[1]):
         exp[1] = make_constant(exp[1])
       return False
 
-    if typ in {"Tuple"}:
+    if tag in {"Tuple"}:
       if _lift_consts(exp[1]):
         exp[1] = make_constant(exp[1])
       if _lift_consts(exp[2]):
         exp[2] = make_constant(exp[2])
       return False
 
-    if typ in {"Box"}:
+    if tag in {"Box"}:
       for i in range(1, len(exp)):
-        _lift_consts(exp[i])
+        if _lift_consts(exp[i]):
+          exp[i] = make_constant(exp[i])
       return False
 
     print("lift_consts error unknown: '{}'".format(exp))
