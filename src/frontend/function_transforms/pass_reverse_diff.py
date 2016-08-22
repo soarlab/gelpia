@@ -91,7 +91,8 @@ def reverse_diff(exp, inputs, assigns, consts=None):
 
     if tag == 'atan':
       _reverse_diff(exp[1], ['/', adjoint, ['+', ['Integer', '1'], ['pow', exp[1], ['Integer', '2']]]])
-
+      return
+    
     if tag == "cosh":
       _reverse_diff(exp[1], ['*', ['sinh', exp[1]], adjoint])
       return
@@ -128,7 +129,7 @@ def reverse_diff(exp, inputs, assigns, consts=None):
     if tag in {"Integer", "Float"}:
       return
 
-    print("reverse_diff error unknown: '{}'".format(exp))
+    print("reverse_diff error unknown: tag = '{}'\nfull={}".format(tag, exp))
     sys.exit(-1)
 
 
