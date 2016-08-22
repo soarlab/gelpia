@@ -260,15 +260,18 @@ def finish_parsing_args(args, function, epsilons):
 
     exp = parse_function(function)
     inputs, assigns = lift_inputs_and_assigns(exp)
-    consts = lift_consts(exp, inputs, assigns)
-    simplify(exp, inputs, assigns, consts)
-    dead_removal(exp, inputs, assigns, consts)
-    rev_diff = reverse_diff(exp, inputs, assigns, consts)
-    simplify(rev_diff, inputs, assigns, consts)
+    #consts = lift_consts(exp, inputs, assigns)
+    simplify(exp, inputs, assigns)
+    dead_removal(exp, inputs, assigns)
+    rev_diff = reverse_diff(exp, inputs, assigns)
+    simplify(rev_diff, inputs, assigns)
+    consts = lift_consts(rev_diff, inputs, assigns)
     single_assignment(rev_diff, inputs, assigns, consts)
-
+    dead_removal(rev_diff, inputs, assigns, consts)
+    
     rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
-    interp_func = to_interp(exp, inputs, assigns, consts)
+
+    interp_func = to_interp(["Return", rev_diff[1][1]], inputs, assigns, consts)
 
     return {"input_epsilon"      : epsilons[0],
             "output_epsilon"     : epsilons[1],
