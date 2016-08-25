@@ -24,13 +24,18 @@ def single_assignment(exp, inputs, assigns, consts):
     return ["Variable", key]
 
   def search_replace(var, val, exp):
-    if type(exp) is not list or len(exp) < 1:
-      return
-    if exp[0] == "Variable" and exp[1] == var:
-      replace_exp(exp, val)
-      return
-    for e in exp[1:]:
-      search_replace(var, val, e)
+    def _search_replace(exp):
+      if type(exp) is not list or len(exp) < 1:
+        return
+      if exp[0] == "Variable" and exp[1] == var:
+        replace_exp(exp, val)
+        return
+      for e in exp[1:]:
+        _search_replace(e)
+
+    if str(var) in str(exp):
+      _search_replace(exp)
+    return
 
   def collapse(exp):
     assert(exp[0] == "Return")
@@ -40,7 +45,7 @@ def single_assignment(exp, inputs, assigns, consts):
       boxvars = str(assigns[retval[2][1]])
     usages = "\n".join([str(k) for k in assigns.values()]) + str(retval)
     single_used = dict()
-    for var in assigns.keys():
+    for var in assigns:
       if usages.count(var) == 1 and boxvars.count(var) == 0:
         single_used[var] = assigns[var]
     for var in single_used:
@@ -86,7 +91,9 @@ def single_assignment(exp, inputs, assigns, consts):
     sys.exit(-1)
 
   result = _single_assignment(exp)
-  collapse(result)
+  # to be reinabled at a later date
+  # collapse(result)
+
   return result
 
 

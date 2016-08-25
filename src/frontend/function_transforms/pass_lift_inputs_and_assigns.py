@@ -11,17 +11,18 @@ import os.path as path
 def lift_inputs_and_assigns(exp):
   """Extracts input variables and assignments from an expression """
   assigns = collections.OrderedDict()
-  inputs = collections.OrderedDict()
+  inputs  = collections.OrderedDict()
   implicit_input_count = 0
 
   def _lift_inputs_and_assigns(exp):
     nonlocal implicit_input_count
-    typ = exp[0]
-    if type(typ) is list:
+    tag = exp[0]
+
+    if type(tag) is list:
       assignment = exp[0]
       assert(assignment[0] == "Assign")
       name = assignment[1]
-      val = assignment[2]
+      val  = assignment[2]
       if val[0] == "InputInterval":
         inputs[name[1]] = val
       else:
@@ -31,24 +32,23 @@ def lift_inputs_and_assigns(exp):
       _lift_inputs_and_assigns(exp)
       return
 
-    if typ in BINOPS:
+    if tag in BINOPS:
       _lift_inputs_and_assigns(exp[1])
       _lift_inputs_and_assigns(exp[2])
       return
 
-    if typ in UNOPS.union({"Return"}):
+    if tag in UNOPS.union({"Return"}):
       _lift_inputs_and_assigns(exp[1])
       return
 
-    if typ in {"ConstantInterval", "PointInterval", "Float", "Integer", "Input",
+    if tag in {"ConstantInterval", "PointInterval", "Float", "Integer", "Input",
                "Variable"}:
       return
 
-    if typ == "InputInterval":
+    if tag == "InputInterval":
       interval = exp[:]
       new_exp = ["Input", "$Implicit_Input_{}".format(implicit_input_count)]
       replace_exp(exp, new_exp)
-      used_inputs.add(exp[1])
       implicit_input_count += 1
       inputs[exp[1]] = interval
       return

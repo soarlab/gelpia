@@ -6,6 +6,8 @@ import os.path as path
 import sys
 import re
 
+from time import time
+
 import ian_utils as iu
 
 from lexed_to_parsed import parse_function
@@ -15,8 +17,6 @@ from pass_single_assignment import single_assignment
 from pass_reverse_diff import reverse_diff
 from pass_simplify import simplify
 from pass_dead_removal import dead_removal
-#from pass_pow import pow_replacement
-#from pass_div_zero import div_by_zero
 from output_rust import to_rust
 from output_interp import to_interp
 
@@ -252,27 +252,23 @@ def add_dop_args(arg_parser):
     return (args, reformatted_query, [ie, oe, oer])
 
 
-
-
 def finish_parsing_args(args, function, epsilons):
     if args.debug or args.verbose:
         iu.set_log_level(max(1, args.verbose))
 
     exp = parse_function(function)
     inputs, assigns = lift_inputs_and_assigns(exp)
-    #consts = lift_consts(exp, inputs, assigns)
-    simplify(exp, inputs, assigns)
+    exp = simplify(exp, inputs, assigns)
     dead_removal(exp, inputs, assigns)
+
     rev_diff = reverse_diff(exp, inputs, assigns)
-    simplify(rev_diff, inputs, assigns)
     consts = lift_consts(rev_diff, inputs, assigns)
     single_assignment(rev_diff, inputs, assigns, consts)
+    rev_diff = simplify(rev_diff, inputs, assigns, consts)
     dead_removal(rev_diff, inputs, assigns, consts)
-    
+
     rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
-
     interp_func = to_interp(["Return", rev_diff[1][1]], inputs, assigns, consts)
-
     return {"input_epsilon"      : epsilons[0],
             "output_epsilon"     : epsilons[1],
             "rel_output_epsilon" : epsilons[2],

@@ -12,22 +12,21 @@ from function_to_lexed import *
 from function_to_lexed import _function_lexer
 
 
-
+strip_arc_dict = {"arccos"  : "acos",
+                  "arcsin"  : "asin",
+                  "arctan"  : "atan",
+                  "arccosh" : "acosh",
+                  "argcosh" : "acosh",
+                  "arcosh"  : "acosh",
+                  "arcsinh" : "asinh",
+                  "argsinh" : "asinh",
+                  "arsinh"  : "asinh",
+                  "arctanh" : "atanh",
+                  "argtanh" : "atanh",
+                  "artanh"  : "atanh"}
 def strip_arc(f):
   """Normalizes the names of inverse trig functions"""
-  d = {"arccos"  : "acos",
-       "arcsin"  : "asin",
-       "arctan"  : "atan",
-       "arccosh" : "acosh",
-       "argcosh" : "acosh",
-       "arcosh"  : "acosh",
-       "arcsinh" : "asinh",
-       "argsinh" : "asinh",
-       "arsinh"  : "asinh",
-       "arctanh" : "atanh",
-       "argtanh" : "atanh",
-       "artanh"  : "atanh"}
-  return d.get(f, f)
+  return strip_arc_dict.get(f, f)
 
 
 

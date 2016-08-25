@@ -14,8 +14,7 @@ def simplify(exp, inputs, assigns, consts=None):
     if typ in {"pow", "powi"}:
       e = expand(exp[2], assigns, consts)
       if e[0] == "Integer" and e[1] == "1":
-        replace_exp(exp, exp[1])
-        return True
+        return _simplify(exp[1])
 
     if typ == "+":
       l = expand(exp[1], assigns, consts)
@@ -35,8 +34,7 @@ def simplify(exp, inputs, assigns, consts=None):
       if r[0] == "neg" and r[1] == l:
         new_exp = ["Integer", "0"]
       if new_exp:
-        replace_exp(exp, new_exp)
-        return True
+        return _simplify(new_exp)
 
     if typ == '-':
       l = expand(exp[1], assigns, consts)
@@ -51,8 +49,7 @@ def simplify(exp, inputs, assigns, consts=None):
       if exp[2][0] == "neg":
         new_exp = ["+", exp[1], exp[2][1]]
       if new_exp:
-        replace_exp(exp, new_exp)
-        return True
+        return _simplify(new_exp)
 
     if typ in {"*"}:
       l = expand(exp[1], assigns, consts)
@@ -79,40 +76,34 @@ def simplify(exp, inputs, assigns, consts=None):
         b = exp[1][1] if exp[1][1][0] == "Variable" else exp[2][1]
         new_exp = ["pow", exp[1][1][:], ["Integer", str(int(exp[1][2][1])+int(exp[2][2][1]))]]
       if new_exp:
-        replace_exp(exp, new_exp)
-        return True
+        return _simplify(new_exp)
 
 
 
     if typ in BINOPS.union({"Tuple"}):
-      return _simplify(exp[2]) or _simplify(exp[1])
+      return [exp[0],  _simplify(exp[1]), _simplify(exp[2])]
 
     if typ in UNOPS.union({"Return"}):
-      return _simplify(exp[1])
+      return [exp[0], _simplify(exp[1])]
 
     if typ == "Variable":
-      return  _simplify(assigns[exp[1]])
+      return exp
 
     if typ == "Box":
-      for b in exp[1:]:
-        if _simplify(b):
-          return True
-      return False
+      return [exp[0]] + [_simplify(b) for b in exp[1:]]
 
     if typ in {"ConstantInterval", "InputInterval", "Float", "Integer",
                   "Const", "Input", "Symbol", "PointInterval"}:
-      return False
+      return exp
 
     print("simplify error unknown: '{}'".format(exp))
     sys.exit(-1)
 
-  while _simplify(exp):
-    pass
+  for var,val in assigns.items():
+    assigns[var] = _simplify(val)
+  new_exp =  _simplify(exp)
 
-  if consts != None:
-    lift_consts(exp, inputs, assigns, consts)
-
-  return None
+  return new_exp
 
 
 
