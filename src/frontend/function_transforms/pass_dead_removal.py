@@ -10,30 +10,41 @@ def dead_removal(exp, inputs, assigns, consts=None):
   used_assigns = set()
   used_consts = set()
 
+
+  TWO_ITEMS = BINOPS.union({"Tuple"})
+  ONE_ITEM  = UNOPS.union({"Return"})
+  UNUSED = {"ConstantInterval", "PointInterval", "Float", "Integer"}
+
   def _dead_removal(exp):
-    if type(exp) is not list:
-      return
     tag = exp[0]
 
+    if tag == "Variable":
+      if exp[1] not in used_assigns:
+        used_assigns.add(exp[1])
+        _dead_removal(assigns[exp[1]])
+      return
+
+    if tag in TWO_ITEMS:
+      _dead_removal(exp[1])
+      _dead_removal(exp[2])
+      return
+
     if tag == "Const":
-      assert(exp[1] in consts)
       used_consts.add(exp[1])
       return
 
-    if tag == "Variable":
-      assert(exp[1] in assigns)
-      used_assigns.add(exp[1])
-      _dead_removal(assigns[exp[1]])
-      return
-
     if tag == "Input":
-      assert(exp[1] in inputs)
       used_inputs.add(exp[1])
       return
 
-    if tag in BINOPS.union(UNOPS).union({"Return", "ConstantInterval",
-                                         "PointInterval", "Float", "Integer",
-                                         "Box", "Tuple"}):
+    if tag in ONE_ITEM:
+      _dead_removal(exp[1])
+      return
+
+    if tag in UNUSED:
+      return
+
+    if tag == "Box":
       for e in exp[1:]:
         _dead_removal(e)
       return
@@ -43,17 +54,17 @@ def dead_removal(exp, inputs, assigns, consts=None):
 
   _dead_removal(exp)
 
-  for k in list(inputs):
-    if k not in used_inputs:
+  dead_inputs = set(inputs).difference(used_inputs)
+  for k in dead_inputs:
       del inputs[k]
 
-  for k in list(assigns):
-    if k not in used_assigns:
+  dead_assigns = set(assigns).difference(used_assigns)
+  for k in dead_assigns:
       del assigns[k]
 
   if consts:
-    for k in list(consts):
-      if k not in used_consts:
+    dead_consts = set(consts).difference(used_consts)
+    for k in dead_consts:
         del consts[k]
 
   return

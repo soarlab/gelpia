@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
 from pass_utils import *
-from pass_lift_consts import lift_consts
 
 import sys
 
 
 def simplify(exp, inputs, assigns, consts=None):
 
+
   def _simplify(exp):
     typ = exp[0]
 
-    if typ in {"pow", "powi"}:
+    if typ == "pow":
       e = expand(exp[2], assigns, consts)
       if e[0] == "Integer" and e[1] == "1":
         return _simplify(exp[1])

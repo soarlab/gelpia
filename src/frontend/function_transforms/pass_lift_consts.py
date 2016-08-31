@@ -10,9 +10,9 @@ def lift_consts(exp, inputs, assigns, consts=None):
   if consts == None:
     consts = collections.OrderedDict()
 
+
   def make_constant(exp):
     if exp[0] == "Const":
-      assert(exp[1] in consts)
       return exp
     new_exp = expand(exp, assigns, consts)
     key = const_hash(new_exp)
@@ -20,35 +20,18 @@ def lift_consts(exp, inputs, assigns, consts=None):
       consts[key] = new_exp[:]
     return ['Const', key]
 
+
+  CONST = {"Const", "ConstantInterval", "PointInterval", "Integer", "Float"}
+
   def _lift_consts(exp):
     tag = exp[0]
 
-    if tag in {"Const"}:
-      assert(exp[1] in consts)
-      return True
-
-    if tag in {"sinh", "cosh", "tanh", "dabs", "datanh"}:
-      # MB: Crlibm is claimed to not be ULP accurate by GAOL. Hence, we must
-      # MB: defer to implementations based on the exponential function.
-      inner = _lift_consts(exp[1])
-      if inner:
-        make_constant(exp[1])
-      return False;
-
-    if tag == "powi":
-      e = expand(exp[2], assigns, consts)
-      if e[0] == "Integer":
-        exp[0] = "pow"
-        exp[2] = e
-        return _lift_consts(exp)
-      else:
-        # purposely fall through
-        pass
-
-    if tag in UNOPS:
-      return _lift_consts(exp[1])
-
     if tag in BINOPS:
+      if tag == "powi":
+        e = expand(exp[2], assigns, consts)
+        if e[0] == "Integer":
+          exp[2] = e
+          exp[0] = "pow"
       first  = _lift_consts(exp[1])
       second = _lift_consts(exp[2])
       if first and second:
@@ -59,33 +42,34 @@ def lift_consts(exp, inputs, assigns, consts=None):
         exp[2] = make_constant(exp[2])
       return False
 
-    if tag in {"InputInterval", "Input"}:
-      return False
-
-    if tag in {"Variable"}:
-      assignment = assigns[exp[1]]
-      if _lift_consts(assignment):
-        new_exp = make_constant(assignment)
-        replace_exp(exp, new_exp)
-        return True
-      return False
-
-    if tag in {"ConstantInterval", "PointInterval", "Float", "Integer"}:
+    if tag in CONST:
       return True
 
-    if tag in {"Return"}:
+    if tag == "Input" or tag == "Variable":
+      return False
+
+    if tag in UNOPS:
+      if tag in {"sinh", "cosh", "tanh", "dabs", "datanh"}:
+        # MB: Crlibm is claimed to not be ULP accurate by GAOL. Hence, we must
+        # MB: defer to implementations based on the exponential function.
+        if _lift_consts(exp[1]):
+          exp[1] = make_constant(exp[1])
+        return False;
+      return _lift_consts(exp[1])
+
+    if tag == "Return":
       if _lift_consts(exp[1]):
         exp[1] = make_constant(exp[1])
       return False
 
-    if tag in {"Tuple"}:
+    if tag == "Tuple":
       if _lift_consts(exp[1]):
         exp[1] = make_constant(exp[1])
       if _lift_consts(exp[2]):
         exp[2] = make_constant(exp[2])
       return False
 
-    if tag in {"Box"}:
+    if tag == "Box":
       for i in range(1, len(exp)):
         if _lift_consts(exp[i]):
           exp[i] = make_constant(exp[i])
@@ -94,6 +78,9 @@ def lift_consts(exp, inputs, assigns, consts=None):
     print("lift_consts error unknown: '{}'".format(exp))
     sys.exit(-1)
 
+  for var,val in assigns.items():
+    if _lift_consts(val):
+      assigns[var] = make_constant(val)
   _lift_consts(exp)
 
   return consts

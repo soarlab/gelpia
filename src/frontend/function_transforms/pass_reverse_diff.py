@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from pass_utils import *
-from pass_lift_consts import lift_consts
 
 import collections
 import re
@@ -10,11 +9,19 @@ import subprocess
 import os.path as path
 import math
 
+
 def reverse_diff(exp, inputs, assigns, consts=None):
   gradient = collections.OrderedDict([(k,["Integer","0"][:]) for k in inputs])
 
+
+  UNUSED = {"Const", "ConstantInterval", "PointInterval", "Integer", "Float"}
+  POWS = {"pow", "powi"}
+
   def _reverse_diff(exp, adjoint):
     tag = exp[0]
+
+    if tag in UNUSED:
+      return
 
     if tag == "Input":
       old = gradient[exp[1]]
@@ -22,9 +29,6 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         gradient[exp[1]] = adjoint
       else:
         gradient[exp[1]] = ["+", old, adjoint]
-      return
-
-    if tag in {"Const", "ConstantInterval", "PointInterval", "Integer", "Float"}:
       return
 
     if tag == "+":
@@ -52,6 +56,20 @@ def reverse_diff(exp, inputs, assigns, consts=None):
                              ["pow", lower, ["Integer", "2"]]])
       return
 
+    if tag in POWS:
+      base = exp[1]
+      expo = exp[2]
+      _reverse_diff(exp[1], ["*", adjoint, ["*", expo,
+                                            ["powi", base,
+                                             ["-", expo, ["Integer", "1"]]]]])
+      _reverse_diff(exp[2], ["*", adjoint, ["*", ["log", base],
+                                            ["powi", base, expo]]])
+      return
+
+    if tag =="neg":
+      _reverse_diff(exp[1], ["neg", adjoint])
+      return
+
     if tag == "exp":
       expo = exp[1]
       _reverse_diff(exp[1], ["*", ["exp", expo], adjoint])
@@ -62,93 +80,79 @@ def reverse_diff(exp, inputs, assigns, consts=None):
       _reverse_diff(exp[1], ["/", adjoint, base])
       return
 
-    if tag in {"pow", "powi"}:
-      base = exp[1]
-      expo = exp[2]
-      _reverse_diff(exp[1], ['*', adjoint, ['*', expo,
-                                            ['powi', base,
-                                             ['-', expo, ['Integer', "1"]]]]])
-      _reverse_diff(exp[2], ['*', adjoint, ['*', ['log', base],
-                                            ['powi', base, expo]]])
-      return
-
     if tag == "sqrt":
       x = exp[1]
-      _reverse_diff(exp[1], ['/', adjoint, ['*', ['Integer', '2'],
-                                            ['sqrt', x]]])
+      _reverse_diff(exp[1], ["/", adjoint, ["*", ["Integer", "2"],
+                                            ["sqrt", x]]])
       return
 
     if tag == "cos":
       x = exp[1]
-      _reverse_diff(exp[1], ['*', ["neg", ["sin", x]], adjoint])
+      _reverse_diff(exp[1], ["*", ["neg", ["sin", x]], adjoint])
       return
 
-    if tag == 'acos':
+    if tag == "acos":
       x = exp[1]
-      _reverse_diff(exp[1], ['neg', ['/', adjoint,
-                                     ['sqrt', ['-',
-                                               ['Integer', '1'],
-                                               ['pow', x,
-                                                ['Integer', '2']]]]]])
+      _reverse_diff(exp[1], ["neg", ["/", adjoint,
+                                     ["sqrt", ["-",
+                                               ["Integer", "1"],
+                                               ["pow", x,
+                                                ["Integer", "2"]]]]]])
       return
 
     if tag == "sin":
       x = exp[1]
-      _reverse_diff(exp[1], ['*', ["cos", x], adjoint])
+      _reverse_diff(exp[1], ["*", ["cos", x], adjoint])
       return
 
-    if tag == 'asin':
+    if tag == "asin":
       x = exp[1]
-      _reverse_diff(exp[1], ['/', adjoint, ['sqrt', ['-', ['Integer', '1'],
-                                                     ['pow', x,
-                                                      ['Integer', '2']]]]])
+      _reverse_diff(exp[1], ["/", adjoint, ["sqrt", ["-", ["Integer", "1"],
+                                                     ["pow", x,
+                                                      ["Integer", "2"]]]]])
       return
 
     if tag == "tan":
       x = exp[1]
-      _reverse_diff(exp[1], ['*', ['+', ["Integer", "1"],
+      _reverse_diff(exp[1], ["*", ["+", ["Integer", "1"],
                                    ["pow", ["tan", x],
                                     ["Integer", "2"]]], adjoint])
       return
 
-    if tag == 'atan':
+    if tag == "atan":
       x = exp[1]
-      _reverse_diff(exp[1], ['/', adjoint, ['+', ['Integer', '1'],
-                                            ['pow', x, ['Integer', '2']]]])
+      _reverse_diff(exp[1], ["/", adjoint, ["+", ["Integer", "1"],
+                                            ["pow", x, ["Integer", "2"]]]])
       return
 
     if tag == "cosh":
       x = exp[1]
-      _reverse_diff(exp[1], ['*', ['sinh', x], adjoint])
+      _reverse_diff(exp[1], ["*", ["sinh", x], adjoint])
       return
 
 
     if tag == "sinh":
       x = exp[1]
-      _reverse_diff(exp[1], ['*', ['cosh', x], adjoint])
+      _reverse_diff(exp[1], ["*", ["cosh", x], adjoint])
       return
 
     if tag == "asinh":
       x = exp[1]
-      _reverse_diff(exp[1], ['/', adjoint,
-                             ['sqrt', ['+', ['pow', x, ['Integer', '2']],
+      _reverse_diff(exp[1], ["/", adjoint,
+                             ["sqrt", ["+", ["pow", x, ["Integer", "2"]],
                                        ["Integer", "1"]]]])
       return
 
     if tag == "tanh":
       x = exp[1]
-      _reverse_diff(exp[1], ['*', ['-', ["Integer", "1"],
+      _reverse_diff(exp[1], ["*", ["-", ["Integer", "1"],
                                    ["pow", ["tanh", x],
                                     ["Integer", "2"]]], adjoint])
       return
 
     if tag == "abs":
       x = exp[1]
-      _reverse_diff(exp[1], ['*', ["dabs", x], adjoint])
-      return
-
-    if tag =="neg":
-      _reverse_diff(exp[1], ["neg", adjoint])
+      _reverse_diff(exp[1], ["*", ["dabs", x], adjoint])
       return
 
     if tag == "Variable":
@@ -192,7 +196,7 @@ def runmain():
   dead_removal(exp, inputs, assigns, consts)
 
   exp = reverse_diff(exp, inputs, assigns, consts)
-  simplify(exp, inputs, assigns, consts)
+  exp = simplify(exp, inputs, assigns, consts)
 
   if len(sys.argv) == 3 and sys.argv[2] == "test":
     assert(exp[0] == "Return")

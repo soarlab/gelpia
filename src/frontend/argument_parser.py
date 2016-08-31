@@ -262,10 +262,10 @@ def finish_parsing_args(args, function, epsilons):
     dead_removal(exp, inputs, assigns)
 
     rev_diff = reverse_diff(exp, inputs, assigns)
+    rev_diff = single_assignment(rev_diff, inputs, assigns)
+    rev_diff = simplify(rev_diff, inputs, assigns)
+    dead_removal(rev_diff, inputs, assigns)
     consts = lift_consts(rev_diff, inputs, assigns)
-    single_assignment(rev_diff, inputs, assigns, consts)
-    rev_diff = simplify(rev_diff, inputs, assigns, consts)
-    dead_removal(rev_diff, inputs, assigns, consts)
 
     rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
     interp_func = to_interp(["Return", rev_diff[1][1]], inputs, assigns, consts)

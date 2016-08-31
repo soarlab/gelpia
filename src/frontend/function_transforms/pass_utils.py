@@ -16,6 +16,13 @@ bops = {'+': lambda l,r:str(int(l[1])+int(r[1])),
 uops = {'neg': lambda a:str(-int(a[1]))}
 
 
+def const_hash(exp, hashed=dict()):
+  s = str(exp)
+  if s not in hashed:
+    hashed[s] = len(hashed)
+  return "_const_{}".format(hashed[s])
+
+
 def cache_expand(exp, assigns, consts, cache=dict()):
   s = str(exp)
   if s not in cache:
@@ -166,17 +173,3 @@ def get_runmain_input():
 
   # combining and parsing
   return '\n'.join((var_lines, constraints, function))
-
-
-def const_hash(exp, hashed=dict()):
-  h = hash(str(exp))
-  if h not in hashed:
-    hashed[h] = len(hashed)
-  return "_const_{}".format(hashed[h])
-
-
-def cache_hash(exp, hashed=dict()):
-  h = hash(str(exp))
-  if h not in hashed:
-    hashed[h] = len(hashed)
-  return "_expr_{}".format(hashed[h])

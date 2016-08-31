@@ -9,90 +9,59 @@ import subprocess
 import os.path as path
 
 
-def single_assignment(exp, inputs, assigns, consts):
+def single_assignment(exp, inputs, assigns, consts=None):
+  PASSTHROUGH = {"Integer", "Float", "Input", "Const", "ConstantInterval",
+                 "PointInterval"}
+  UNCACHED    = PASSTHROUGH.union({"Tuple", "Variable"})
+  TWO_ITEMS   = BINOPS.union({"Tuple"})
+  ONE_ITEM    = UNOPS.union({"Return"})
 
-  def cache(exp):
-    if exp[0] in {"Integer", "Float", "InputInterval",
-                  "PointInterval", "Input", "Const", "Tuple"}:
+  
+  def cache(exp, hashed=dict()):
+    if exp[0] in UNCACHED:
       return exp
-    if exp[0] == "Variable":
-      assert(exp[1] in assigns)
-      return exp
-    key = cache_hash(exp)
+    s = str(exp)
+    if s not in hashed:
+      hashed[s] = len(hashed)
+    key = "_expr_{}".format(hashed[s])
     if key not in assigns:
-      assigns[key] = exp[:]
+      assigns[key] = exp
     return ["Variable", key]
 
-  def search_replace(var, val, exp):
-    def _search_replace(exp):
-      if type(exp) is not list or len(exp) < 1:
-        return
-      if exp[0] == "Variable" and exp[1] == var:
-        replace_exp(exp, val)
-        return
-      for e in exp[1:]:
-        _search_replace(e)
-
-    if str(var) in str(exp):
-      _search_replace(exp)
-    return
-
-  def collapse(exp):
-    assert(exp[0] == "Return")
-    retval = exp[1]
-    boxvars = ""
-    if retval[0] == "Tuple":
-      boxvars = str(assigns[retval[2][1]])
-    usages = "\n".join([str(k) for k in assigns.values()]) + str(retval)
-    single_used = dict()
-    for var in assigns:
-      if usages.count(var) == 1 and boxvars.count(var) == 0:
-        single_used[var] = assigns[var]
-    for var in single_used:
-      del assigns[var]
-      for val in assigns.values():
-        search_replace(var, single_used[var], val)
-      search_replace(var, single_used[var], exp)
 
   def _single_assignment(exp):
-    typ = exp[0]
+    tag = exp[0]
 
-    if typ in {"Input", "InputInterval", "Const", "Integer", "Float", "Const"}:
+    if tag in PASSTHROUGH:
       return exp
 
-    if typ in BINOPS:
-      left = cache(_single_assignment(exp[1]))
-      right = cache(_single_assignment(exp[2]))
-      return [typ, left, right]
+    if tag in TWO_ITEMS:
+      left  = _single_assignment(exp[1])
+      left  = cache(left)
+      right = _single_assignment(exp[2])
+      right = cache(right)
+      return [exp[0], left, right]
 
-    if typ in UNOPS:
-      arg = cache(_single_assignment(exp[1]))
-      return [typ, arg]
+    if tag in ONE_ITEM:
+      arg = _single_assignment(exp[1])
+      arg = cache(arg)
+      return [exp[0], arg]
 
-    if typ == "Variable":
+    if tag == "Variable":
       _single_assignment(assigns[exp[1]])
       return exp
 
-    if typ == "Return":
-      ret = cache(_single_assignment(exp[1]))
-      return ["Return", ret]
-
-    if typ =="Tuple":
-      exp[1] = cache(_single_assignment(exp[1]))
-      exp[2] = cache(_single_assignment(exp[2]))
-      return exp
-
-    if typ == "Box":
+    if tag == "Box":
       for i in range(1, len(exp)):
-        exp[i] = cache(_single_assignment(exp[i]))
+        part = _single_assignment(exp[i])
+        part = cache(part)
+        exp[i] = part
       return exp
 
     print("single_assignment error unknown: '{}'".format(exp))
     sys.exit(-1)
 
   result = _single_assignment(exp)
-  # to be reinabled at a later date
-  # collapse(result)
 
   return result
 
