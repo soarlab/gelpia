@@ -14,62 +14,60 @@ def lift_inputs_and_assigns(exp):
   inputs  = collections.OrderedDict()
   implicit_input_count = 0
 
+
   def _lift_inputs_and_assigns(exp):
     nonlocal implicit_input_count
     tag = exp[0]
 
-    if type(tag) is list:
+    if type(tag) is tuple:
       assignment = exp[0]
-      assert(assignment[0] == "Assign")
       name = assignment[1]
       val  = assignment[2]
       if val[0] == "InputInterval":
         inputs[name[1]] = val
       else:
-        assigns[name[1]] = val
-        _lift_inputs_and_assigns(val)
-      replace_exp(exp, exp[1])
-      _lift_inputs_and_assigns(exp)
-      return
+        assigns[name[1]] = _lift_inputs_and_assigns(val)
+      return  _lift_inputs_and_assigns(exp[1])
 
     if tag in BINOPS:
-      _lift_inputs_and_assigns(exp[1])
-      _lift_inputs_and_assigns(exp[2])
-      return
+      l = _lift_inputs_and_assigns(exp[1])
+      r = _lift_inputs_and_assigns(exp[2])
+      return (exp[0], l, r)
 
     if tag in UNOPS.union({"Return"}):
-      _lift_inputs_and_assigns(exp[1])
-      return
+      arg = _lift_inputs_and_assigns(exp[1])
+      return (exp[0], arg)
 
     if tag in {"ConstantInterval", "PointInterval", "Float", "Integer", "Input",
                "Variable"}:
-      return
+      return exp
 
     if tag == "InputInterval":
       interval = exp[:]
-      new_exp = ["Input", "$Implicit_Input_{}".format(implicit_input_count)]
-      replace_exp(exp, new_exp)
+      name = "$Implicit_Input_{}".format(implicit_input_count)
+      new_exp = ("Input", name)
       implicit_input_count += 1
-      inputs[exp[1]] = interval
-      return
+      inputs[name] = interval
+      return new_exp
 
-    if exp[0] == "Name":
+    if tag == "Name":
+      typ = None
       if exp[1] in inputs:
-        exp[0] = "Input"
+        typ = "Input"
       elif exp[1] in assigns:
-        exp[0] = "Variable"
+        typ = "Variable"
       else:
         print("Use of undeclared name: {}".format(exp[1]))
         sys.exit(-1)
-      return
+      return (typ, exp[1])
 
     print("lift_inputs_and_assigns error unknown: '{}'".format(exp))
     sys.exit(-1)
 
 
-  _lift_inputs_and_assigns(exp)
+  new_exp = _lift_inputs_and_assigns(exp)
 
-  return inputs, assigns
+  return new_exp, inputs, assigns
 
 
 
@@ -83,7 +81,7 @@ def runmain():
 
   data = get_runmain_input()
   exp = parse_function(data)
-  inputs, assigns = lift_inputs_and_assigns(exp)
+  exp, inputs, assigns = lift_inputs_and_assigns(exp)
 
   print_exp(exp)
   print()

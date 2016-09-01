@@ -10,9 +10,11 @@ UNOPS.update({'neg', "dabs", "datanh"})
 INFIX = {'+', '-', '*', '/'}
 
 
-bops = {'+': lambda l,r:str(int(l[1])+int(r[1])),
-        '-': lambda l,r:str(int(l[1])-int(r[1])),
-        '*': lambda l,r:str(int(l[1])*int(r[1])),}
+bops = {'+'    : lambda l,r:str(int(l[1])+int(r[1])),
+        '-'    : lambda l,r:str(int(l[1])-int(r[1])),
+        '*'    : lambda l,r:str(int(l[1])*int(r[1])),
+        'pow'  : lambda l,r:str(int(l[1])**int(r[1])),
+        'powi' : lambda l,r:str(int(l[1])**int(r[1])),}
 uops = {'neg': lambda a:str(-int(a[1]))}
 
 
@@ -24,10 +26,9 @@ def const_hash(exp, hashed=dict()):
 
 
 def cache_expand(exp, assigns, consts, cache=dict()):
-  s = str(exp)
-  if s not in cache:
-    cache[s] =  expand(exp, assigns, consts)
-  return cache[s]
+  if exp not in cache:
+    cache[exp] =  expand(exp, assigns, consts)
+  return cache[exp]
 
 def expand(exp, assigns=None, consts=None):
   typ = exp[0]
@@ -35,53 +36,41 @@ def expand(exp, assigns=None, consts=None):
     l = cache_expand(exp[1], assigns, consts)
     r = cache_expand(exp[2], assigns, consts)
     if l[0] == "Integer" and r[0] == "Integer":
-      return ["Integer", bops[typ](l, r)]
+      return ("Integer", bops[typ](l, r))
     # purposely fall through
 
   if typ in uops:
     a = cache_expand(exp[1], assigns, consts)
     if a[0] == "Integer":
-      return ["Integer", uops[typ](a)]
+      return ("Integer", uops[typ](a))
     # purposely fall through
 
   if typ in BINOPS:
-    return [typ, cache_expand(exp[1], assigns, consts), cache_expand(exp[2], assigns, consts)]
+    return (typ, cache_expand(exp[1], assigns, consts), cache_expand(exp[2], assigns, consts))
 
   if typ in UNOPS:
-    return [typ, cache_expand(exp[1], assigns, consts)]
+    return (typ, cache_expand(exp[1], assigns, consts))
 
   if typ in {"Const"}:
-    return consts[exp[1]][:]
+    return cache_expand(consts[exp[1]], assigns, consts)
 
   if typ in {"Variable"}:
-    return assigns[exp[1]][:]
+    return cache_expand(assigns[exp[1]], assigns, consts)
 
   if typ in {"Input", "Integer", "Float", "ConstantInterval", "PointInterval"}:
     return exp
 
   if typ in {"Box"}:
-    return ["Box"] + [cache_expand(e, assigns, consts) for e in exp[1:]]
+    return ("Box",) + tuple(cache_expand(e, assigns, consts) for e in exp[1:])
 
   print("Internal error in expand: {}".format(exp))
   (1/0)
   sys.exit(-1)
 
 
-def replace_exp(exp, new_exp):
-  """Allow changing the contents of a list (to allow mutation)"""
-  new_exp = new_exp[:]
-  for i in range(len(new_exp)):
-    try:
-      exp[i] = new_exp[i]
-    except IndexError:
-      exp.append(new_exp[i])
-  del exp[len(new_exp):]
-  return None
-
-
 def print_exp(exp):
   print("expressions:")
-  while type(exp[0]) is list:
+  while type(exp[0]) is tuple:
     print(exp[0])
     exp = exp[1]
   print(exp)

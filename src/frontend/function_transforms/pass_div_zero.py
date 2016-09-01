@@ -119,9 +119,9 @@ def runmain():
 
   data = get_runmain_input()
   exp = parse_function(data)
-  inputs, assigns = lift_inputs_and_assigns(exp)
-  consts = lift_consts(exp, inputs, assigns)
-  simplify(exp, inputs, assigns, consts)
+  exp, inputs, assigns = lift_inputs_and_assigns(exp)
+  exp, consts = lift_consts(exp, inputs, assigns)
+  exp = simplify(exp, inputs, assigns, consts)
 
   has_div_zero, bad_exp = div_by_zero(exp, inputs, assigns, consts)
 

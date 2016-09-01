@@ -257,7 +257,7 @@ def finish_parsing_args(args, function, epsilons):
         iu.set_log_level(max(1, args.verbose))
 
     exp = parse_function(function)
-    inputs, assigns = lift_inputs_and_assigns(exp)
+    exp, inputs, assigns = lift_inputs_and_assigns(exp)
     exp = simplify(exp, inputs, assigns)
     dead_removal(exp, inputs, assigns)
 
@@ -265,10 +265,14 @@ def finish_parsing_args(args, function, epsilons):
     rev_diff = single_assignment(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns)
     dead_removal(rev_diff, inputs, assigns)
-    consts = lift_consts(rev_diff, inputs, assigns)
+    rev_diff, consts = lift_consts(rev_diff, inputs, assigns)
+    rev_diff = simplify(rev_diff, inputs, assigns, consts)
+    dead_removal(rev_diff, inputs, assigns)
+
 
     rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
-    interp_func = to_interp(["Return", rev_diff[1][1]], inputs, assigns, consts)
+    interp_func = to_interp(("Return", rev_diff[1][1]), inputs, assigns, consts)
+
     return {"input_epsilon"      : epsilons[0],
             "output_epsilon"     : epsilons[1],
             "rel_output_epsilon" : epsilons[2],

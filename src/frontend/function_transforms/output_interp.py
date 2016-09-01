@@ -10,32 +10,32 @@ def to_interp(exp, inputs, assigns, consts):
   const_names = [name for name in consts]
 
   def _to_interp(exp):
-    typ = exp[0]
+    tag = exp[0]
 
-    if typ in {"pow"}:
+    if tag in {"pow"}:
       e = expand(exp[2], assigns, consts)
       assert(e[0] == "Integer")
       return _to_interp(exp[1]) + ["p"+e[1]]
 
-    if typ in {"powi"}:
+    if tag in {"powi"}:
       return _to_interp(exp[1]) + _to_interp(exp[2]) + ['op']
 
-    if typ in INFIX:
+    if tag in INFIX:
       return _to_interp(exp[1]) + _to_interp(exp[2]) + ['o'+exp[0]]
 
-    if typ in UNOPS:
+    if tag in UNOPS:
       return _to_interp(exp[1]) + ['f'+exp[0].lower()]
 
-    if typ in {"Const"}:
+    if tag in {"Const"}:
       return ['c'+str(const_names.index(exp[1]))]
 
-    if typ in {"Input"}:
+    if tag in {"Input"}:
       return ['i'+str(input_names.index(exp[1]))]
 
-    if typ in {"Variable"}:
+    if tag in {"Variable"}:
       return _to_interp(assigns[exp[1]])
 
-    if typ in {"Return"}:
+    if tag in {"Return"}:
       return _to_interp(exp[1])
 
     print("to_interp error unknown: '{}'".format(exp))

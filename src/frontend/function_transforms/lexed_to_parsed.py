@@ -44,9 +44,9 @@ def p_function(t):
                | expression
                | expression SEMICOLON '''
   if len(t) == 6:
-    t[0] = [["Assign", t[1], t[3]], t[5]]
+    t[0] = (("Assign", t[1], t[3]), t[5])
   elif len(t) == 2 or len(t) == 3:
-    t[0] = ["Return", t[1]]
+    t[0] = ("Return", t[1])
   else:
     print("Internal parse error in p_function")
     sys.exit(-1)
@@ -62,11 +62,11 @@ def p_expression(t):
                  | base'''
   if len(t) == 4:
     if t[2] == '^':
-      t[0] = ["powi", t[1], t[3]]
+      t[0] = ("powi", t[1], t[3])
     else:
-      t[0] = [t[2], t[1], t[3]]
+      t[0] = (t[2], t[1], t[3])
   elif len(t) == 3:
-    t[0] = ["neg", t[2]]
+    t[0] = ("neg", t[2])
   elif len(t) == 2:
     t[0] = t[1]
   else:
@@ -86,7 +86,7 @@ def p_base(t):
 
 def p_variable(t):
   ''' variable : NAME '''
-  t[0] = ["Name", t[1]]
+  t[0] = ("Name", t[1])
 
 
 def p_interval(t):
@@ -111,12 +111,12 @@ def p_interval(t):
     sys.exit(-1)
 
   if left == right:
-    t[0] = ["PointInterval", left]
+    t[0] = ("PointInterval", left)
   else:
     if float(left[1]) > float(right[1]):
       print("Upside down intervals not allowed: [{}, {}]".format(left[1], right[1]))
       sys.exit(-1)
-    t[0] = ["InputInterval", left, right]
+    t[0] = ("InputInterval", left, right)
 
 
 def p_negconst(t):
@@ -126,9 +126,9 @@ def p_negconst(t):
     typ = t[2][0]
     val = t[2][1]
     if val[0] == '-':
-      t[0] = [typ, val[1:]]
+      t[0] = (typ, val[1:])
     else:
-      t[0] = [typ, '-'+val]
+      t[0] = (typ, '-'+val)
   elif len(t) == 2:
     t[0] = t[1]
   else:
@@ -144,12 +144,12 @@ def p_const(t):
 
 def p_integer(t):
   ''' integer : INTEGER '''
-  t[0] = ["Integer", t[1]]
+  t[0] = ("Integer", t[1])
 
 
 def p_float(t):
   ''' float : FLOAT '''
-  t[0] = ["Float", t[1]]
+  t[0] = ("Float", t[1])
 
 
 def p_group(t):
@@ -162,11 +162,11 @@ def p_func(t):
            | UNOP  LPAREN expression RPAREN '''
   if len(t) == 7:
     if t[1] == "pow":
-      t[0] = ["powi", t[3], t[5]]
+      t[0] = ("powi", t[3], t[5])
     else:
-      t[0] = [t[1], t[3], t[5]]
+      t[0] = (t[1], t[3], t[5])
   elif len(t) == 5:
-    t[0] = [strip_arc(t[1]), t[3]]
+    t[0] = (strip_arc(t[1]), t[3])
   else:
     print("Internal parse error in p_func")
     sys.exit(-1)
@@ -175,7 +175,8 @@ def p_func(t):
 def p_symbolic_const(t):
   ''' symbolic_const : SYMBOLIC_CONST '''
   if t[1] in SYMBOLIC_CONSTS:
-    t[0] = ["ConstantInterval"]+list(SYMBOLIC_CONSTS[t[1]])
+    val = SYMBOLIC_CONSTS[t[1]]
+    t[0] = ("ConstantInterval", val[0], val[1])
   else:
     print("Internal parse errir in p_symbolic_const")
     sys.exit(-1)

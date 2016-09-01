@@ -16,17 +16,17 @@ def single_assignment(exp, inputs, assigns, consts=None):
   TWO_ITEMS   = BINOPS.union({"Tuple"})
   ONE_ITEM    = UNOPS.union({"Return"})
 
-  
+
   def cache(exp, hashed=dict()):
     if exp[0] in UNCACHED:
       return exp
-    s = str(exp)
-    if s not in hashed:
-      hashed[s] = len(hashed)
-    key = "_expr_{}".format(hashed[s])
-    if key not in assigns:
+    try:
+      key = hashed[exp]
+    except KeyError:
+      key = "_expr_"+str(len(hashed))
+      hashed[exp] = key
       assigns[key] = exp
-    return ["Variable", key]
+    return ("Variable", key)
 
 
   def _single_assignment(exp):
@@ -40,23 +40,24 @@ def single_assignment(exp, inputs, assigns, consts=None):
       left  = cache(left)
       right = _single_assignment(exp[2])
       right = cache(right)
-      return [exp[0], left, right]
+      return (exp[0], left, right)
 
     if tag in ONE_ITEM:
       arg = _single_assignment(exp[1])
       arg = cache(arg)
-      return [exp[0], arg]
+      return (exp[0], arg)
 
     if tag == "Variable":
       _single_assignment(assigns[exp[1]])
       return exp
 
     if tag == "Box":
+      rest = list()
       for i in range(1, len(exp)):
         part = _single_assignment(exp[i])
         part = cache(part)
-        exp[i] = part
-      return exp
+        rest.append(part)
+      return ("Box",) + tuple(rest)
 
     print("single_assignment error unknown: '{}'".format(exp))
     sys.exit(-1)
@@ -81,9 +82,9 @@ def runmain():
   data = get_runmain_input()
   exp = parse_function(data)
   inputs, assigns = lift_inputs_and_assigns(exp)
-  consts = lift_consts(exp, inputs, assigns)
-  simplify(exp, inputs, assigns, consts)
-  consts = lift_consts(exp, inputs, assigns, consts)
+  exp, consts = lift_consts(exp, inputs, assigns)
+  exp = simplify(exp, inputs, assigns, consts)
+  exp = consts = lift_consts(exp, inputs, assigns, consts)
 
   exp = single_assignment(exp, inputs, assigns, consts)
 

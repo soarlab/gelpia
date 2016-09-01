@@ -26,13 +26,13 @@ def simplify(exp, inputs, assigns, consts=None):
         new_exp = exp[1]
       if l == r:
         new_r = exp[1] if exp[1][0] == "Variable" else exp[2]
-        new_exp = ["*", ["Integer", "2"], new_r]
+        new_exp = ("*", ("Integer", "2"), new_r)
       if exp[2][0] == "neg":
-        new_exp = ["-", exp[1], exp[2][1]]
+        new_exp = ("-", exp[1], exp[2][1])
       if l[0] == "neg" and l[1] == r:
-        new_exp = ["Integer", "0"]
+        new_exp = ("Integer", "0")
       if r[0] == "neg" and r[1] == l:
-        new_exp = ["Integer", "0"]
+        new_exp = ("Integer", "0")
       if new_exp:
         return _simplify(new_exp)
 
@@ -41,13 +41,13 @@ def simplify(exp, inputs, assigns, consts=None):
       r = expand(exp[2], assigns, consts)
       new_exp = None
       if l[0] == "Integer" and l[1] == "0":
-        new_exp = ['neg', exp[2]]
+        new_exp = ('neg', exp[2])
       if r[0] == "Integer" and r[1] == "0":
         new_exp = exp[1]
       if l == r:
-        new_exp = ["Integer", "0"]
+        new_exp = ("Integer", "0")
       if exp[2][0] == "neg":
-        new_exp = ["+", exp[1], exp[2][1]]
+        new_exp = ("+", exp[1], exp[2][1])
       if new_exp:
         return _simplify(new_exp)
 
@@ -60,37 +60,37 @@ def simplify(exp, inputs, assigns, consts=None):
       if r[0] == "Integer" and r[1] == "1":
         new_exp = exp[1]
       if l[0] == "Integer" and l[1] == "-1":
-        new_exp = ["neg", exp[2]]
+        new_exp = ("neg", exp[2])
       if r[0] == "Integer" and r[1] == "-1":
-        new_exp = ["neg", exp[1]]
+        new_exp = ("neg", exp[1])
       if r == l:
         b = exp[1] if exp[1][0] == "Variable" else exp[2]
-        new_exp = ["pow", b, ["Integer", "2"]]
+        new_exp = ("pow", b, ("Integer", "2"))
       if l[0] == "pow" and l[1] == r:
         b = exp[1][1] if exp[1][1][0] == "Variable" else exp[2][1]
-        new_exp = ["pow", exp[1][1][:], ["Integer", str(int(exp[1][2][1])+1)]]
+        new_exp = ("pow", exp[1][1][:], ("Integer", str(int(exp[1][2][1])+1)))
       if r[0] == "pow" and r[1] == l:
         b = exp[1][1] if exp[1][1][0] == "Variable" else exp[2][1]
-        new_exp = ["pow", exp[2][1][:], ["Integer", str(int(exp[2][2][1])+1)]]
+        new_exp = ("pow", exp[2][1][:], ("Integer", str(int(exp[2][2][1])+1)))
       if r[0] == "pow" and l[0] == "pow" and r[1] ==l[1]:
         b = exp[1][1] if exp[1][1][0] == "Variable" else exp[2][1]
-        new_exp = ["pow", exp[1][1][:], ["Integer", str(int(exp[1][2][1])+int(exp[2][2][1]))]]
+        new_exp = ("pow", exp[1][1][:], ("Integer", str(int(exp[1][2][1])+int(exp[2][2][1]))))
       if new_exp:
         return _simplify(new_exp)
 
 
 
     if typ in BINOPS.union({"Tuple"}):
-      return [exp[0],  _simplify(exp[1]), _simplify(exp[2])]
+      return (exp[0],  _simplify(exp[1]), _simplify(exp[2]))
 
     if typ in UNOPS.union({"Return"}):
-      return [exp[0], _simplify(exp[1])]
+      return (exp[0], _simplify(exp[1]))
 
     if typ == "Variable":
       return exp
 
     if typ == "Box":
-      return [exp[0]] + [_simplify(b) for b in exp[1:]]
+      return ("Box",) + tuple(_simplify(b) for b in exp[1:])
 
     if typ in {"ConstantInterval", "InputInterval", "Float", "Integer",
                   "Const", "Input", "Symbol", "PointInterval"}:

@@ -18,7 +18,7 @@ def lift_consts(exp, inputs, assigns, consts=None):
     key = const_hash(new_exp)
     if key not in consts:
       consts[key] = new_exp[:]
-    return ['Const', key]
+    return ('Const', key)
 
 
   CONST = {"Const", "ConstantInterval", "PointInterval", "Integer", "Float"}
@@ -30,60 +30,75 @@ def lift_consts(exp, inputs, assigns, consts=None):
       if tag == "powi":
         e = expand(exp[2], assigns, consts)
         if e[0] == "Integer":
-          exp[2] = e
-          exp[0] = "pow"
-      first  = _lift_consts(exp[1])
-      second = _lift_consts(exp[2])
-      if first and second:
-        return True
-      elif first:
-        exp[1] = make_constant(exp[1])
-      elif second:
-        exp[2] = make_constant(exp[2])
-      return False
+          f, first = _lift_consts(exp[1])
+          if f:
+            return True, ("pow", first, e)
+          return False, ("pow", first, e)
+
+      f, first  = _lift_consts(exp[1])
+      s, second = _lift_consts(exp[2])
+      if f and s:
+        return True, (exp[0], first, second)
+      elif f:
+        first = make_constant(exp[1])
+      elif s:
+        second = make_constant(exp[2])
+      return False, (exp[0], first, second)
 
     if tag in CONST:
-      return True
+      return True, exp
 
     if tag == "Input" or tag == "Variable":
-      return False
+      return False, exp
 
     if tag in UNOPS:
       if tag in {"sinh", "cosh", "tanh", "dabs", "datanh"}:
         # MB: Crlibm is claimed to not be ULP accurate by GAOL. Hence, we must
         # MB: defer to implementations based on the exponential function.
-        if _lift_consts(exp[1]):
-          exp[1] = make_constant(exp[1])
-        return False;
-      return _lift_consts(exp[1])
+        a, arg = _lift_consts(exp[1])
+        if a:
+          arg = make_constant(exp[1])
+        return False, (exp[0], arg)
+      a, arg = _lift_consts(exp[1])
+      return a, (exp[0], arg)
 
     if tag == "Return":
-      if _lift_consts(exp[1]):
-        exp[1] = make_constant(exp[1])
-      return False
+      n, new_exp = _lift_consts(exp[1])
+      if n:
+        new_exp = make_constant(exp[1])
+      return False, ("Return", new_exp)
 
     if tag == "Tuple":
-      if _lift_consts(exp[1]):
-        exp[1] = make_constant(exp[1])
-      if _lift_consts(exp[2]):
-        exp[2] = make_constant(exp[2])
-      return False
+      f, first  = _lift_consts(exp[1])
+      s, second = _lift_consts(exp[2])
+      if f:
+        first = make_constant(exp[1])
+      if s:
+        second = make_constant(exp[2])
+      return False, ("Tuple", first, second)
 
     if tag == "Box":
+      rest = list()
       for i in range(1, len(exp)):
-        if _lift_consts(exp[i]):
-          exp[i] = make_constant(exp[i])
-      return False
+        p, part = _lift_consts(exp[i])
+        if p:
+          part = make_constant(exp[i])
+        rest.append(part)
+      return False, ("Box",)+tuple(rest)
 
     print("lift_consts error unknown: '{}'".format(exp))
     sys.exit(-1)
 
   for var,val in assigns.items():
-    if _lift_consts(val):
-      assigns[var] = make_constant(val)
-  _lift_consts(exp)
+    n, new_exp = _lift_consts(val)
+    if n:
+      assigns[var] = make_constant(new_exp)
+    else:
+      assigns[var] = new_exp
 
-  return consts
+  _, new_exp = _lift_consts(exp)
+
+  return new_exp, consts
 
 
 
@@ -98,8 +113,8 @@ def runmain():
 
   data = get_runmain_input()
   exp = parse_function(data)
-  inputs, assigns = lift_inputs_and_assigns(exp)
-  consts = lift_consts(exp, inputs, assigns)
+  exp, inputs, assigns = lift_inputs_and_assigns(exp)
+  exp, consts = lift_consts(exp, inputs, assigns)
 
   print_exp(exp)
   print()

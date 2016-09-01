@@ -56,11 +56,11 @@ def dead_removal(exp, inputs, assigns, consts=None):
 
   dead_inputs = set(inputs).difference(used_inputs)
   for k in dead_inputs:
-      del inputs[k]
+    del inputs[k]
 
   dead_assigns = set(assigns).difference(used_assigns)
   for k in dead_assigns:
-      del assigns[k]
+    del assigns[k]
 
   if consts:
     dead_consts = set(consts).difference(used_consts)
@@ -84,9 +84,9 @@ def runmain():
 
   data = get_runmain_input()
   exp = parse_function(data)
-  inputs, assigns = lift_inputs_and_assigns(exp)
-  consts = lift_consts(exp, inputs, assigns)
-  simplify(exp, inputs, assigns, consts)
+  exp, inputs, assigns = lift_inputs_and_assigns(exp)
+  exp, consts = lift_consts(exp, inputs, assigns)
+  exp = simplify(exp, inputs, assigns, consts)
 
   dead_removal(exp, inputs, assigns, consts)
 
