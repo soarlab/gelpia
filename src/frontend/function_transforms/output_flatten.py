@@ -5,44 +5,69 @@ from pass_utils import *
 import sys
 
 
-def flatten(exp, inputs, assigns, consts):
+def flatten(exp, inputs, assigns, consts, human_readable_p=False):
   lp = ['(']
   rp = [')']
   cm = [',']
   lb = ['[']
   rb = [']']
+  nl = ['\n']
+  co = [': ']
 
   def _flatten(exp):
-    typ = exp[0]
+    tag = exp[0]
 
-    if typ in INFIX:
+    if tag in INFIX:
       return lp + _flatten(exp[1]) + [exp[0]] + _flatten(exp[2]) + rp
 
-    if typ in BINOPS:
+    if tag in BINOPS:
       return [exp[0]] + lp + _flatten(exp[1]) + cm + _flatten(exp[2]) + rp
 
-    if typ in UNOPS:
-      return [exp[0]] + lp + _flatten(exp[1]) + rp
+    if tag in UNOPS:
+      head = exp[0]
+      if head == "neg":
+        head = "-"
+      return [head] + lp + _flatten(exp[1]) + rp
 
-    if typ in {"Integer", "Float"}:
+    if tag in {"Integer", "Float"}:
+      if human_readable_p:
+        if tag == "Float":
+          return [str(float(exp[1]))]
+        return [exp[1]]
       return lb + [exp[1]] + rb
 
-    if typ in {"InputInterval", "ConstantInterval"}:
+    if tag in {"InputInterval", "ConstantInterval"}:
       inside = _flatten(exp[1]) + cm + _flatten(exp[2])
       inside = [part for part in inside if part[0] not in  {'[', ']'}]
       return lb + inside + rb
 
-    if typ == "Const":
+    if tag == "Const":
       return _flatten(consts[exp[1]])
 
-    if typ == "Input":
+    if tag == "Input":
+      if human_readable_p:
+        return [exp[1]]
       return _flatten(inputs[exp[1]])
 
-    if typ == "Variable":
+    if tag == "Variable":
       return _flatten(assigns[exp[1]])
 
-    if typ in {"Return", "PointInterval"}:
+    if tag in {"Return", "PointInterval"}:
       return _flatten(exp[1])
+
+    if human_readable_p:
+      if tag == "Box":
+        inputs_list = list(inputs)
+        maxlen = max([0]+[len(i) for i in inputs_list])
+        ret = list()
+        for var, ex in zip(inputs, exp[1:]):
+          var = " "*(maxlen-len(var))+var
+          ret += ["    "] + [var] + co + _flatten(ex) + nl
+        return ret
+
+      if tag == "Tuple":
+        return (["Original: "] + _flatten(exp[1]) + nl +
+                ["  Derivatives:"] + nl + _flatten(exp[2]))
 
     print("flatten error unknown: '{}'".format(exp))
     sys.exit(-1)

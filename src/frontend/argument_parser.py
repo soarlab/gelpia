@@ -19,6 +19,7 @@ from pass_simplify import simplify
 from pass_dead_removal import dead_removal
 from output_rust import to_rust
 from output_interp import to_interp
+from output_flatten import flatten
 
 from input_parser import process
 
@@ -272,6 +273,7 @@ def finish_parsing_args(args, function, epsilons):
 
     rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
     interp_func = to_interp(("Return", rev_diff[1][1]), inputs, assigns, consts)
+    human_readable = lambda :flatten(rev_diff, inputs, assigns, consts, True)
 
     return {"input_epsilon"      : epsilons[0],
             "output_epsilon"     : epsilons[1],
@@ -281,6 +283,7 @@ def finish_parsing_args(args, function, epsilons):
             "rust_function"      : rust_func,
             "interp_function"    : interp_func,
             "expression"         : exp,
+            "human_readable"     : human_readable,
             "debug"              : args.debug,
             "timeout"            : args.timeout,
             "grace"              : args.grace,

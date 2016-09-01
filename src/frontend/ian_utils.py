@@ -18,7 +18,7 @@ class AsyncReader(threading.Thread):
         output = "empty"
         while output != "":
             output = self.fil.readline()
-            self.q.put(output)        
+            self.q.put(output)
 
 # optional color printing
 if SYS.stdout.isatty():
@@ -77,9 +77,9 @@ def set_log_level(level):
 def get_log_level():
     return LOG_LEVEL
 
-def log(level, *objs):
+def log(level, func):
     if (level <= LOG_LEVEL):
-        print(*objs)
+        print(func())
 
 
 
@@ -135,7 +135,7 @@ def run(cmd, args_list, error_string="An Error has occured", expected_return=0):
                       stdout=SP.PIPE, stderr=SP.STDOUT) as proc:
             output = proc.stdout.read().decode("utf-8")
             proc.wait()
-            
+
             if (expected_return != None) and (proc.returncode != expected_return):
                 error(error_string)
                 error("Return code: {}".format(proc.returncode))
@@ -154,7 +154,7 @@ def run(cmd, args_list, error_string="An Error has occured", expected_return=0):
 
     return output
 
-def run_async(cmd, args_list, term_time, error_string="An Error has occured", 
+def run_async(cmd, args_list, term_time, error_string="An Error has occured",
               expected_return=0):
     command = [cmd]+args_list
     should_exit = None
@@ -185,7 +185,7 @@ def run_async(cmd, args_list, term_time, error_string="An Error has occured",
                 if not stdout_q.empty():
                     yield stdout_q.get()
 
-            proc.wait()            
+            proc.wait()
             if (expected_return != None) and (proc.returncode not in
                                               (expected_return, -9)):
                 error(error_string)
@@ -233,4 +233,3 @@ class IanArgumentParser(AP.ArgumentParser):
             error("Unable to parse argument string")
             error("given string: {}".format(line))
             SYS.exit(-1)
-

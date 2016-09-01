@@ -9,6 +9,7 @@ import os.path as path
 import ian_utils as iu
 import argument_parser as ap
 
+
 def mk_file_hash(function):
     h  = hash(function)
     h *= hash(time.time())
@@ -125,11 +126,12 @@ def main():
                        "-L" if arg_dict["logfile"] else "",]
 
 
-    iu.log(1, iu.cyan("Interpreted: ") + arg_dict["interp_function"])
-    iu.log(1, iu.cyan("Rust: ") + arg_dict["rust_function"])
-    iu.log(1, iu.cyan("Domain: ") + inputs)
-    iu.log(1, iu.cyan("Variables: ") + ", ".join(b for b in arg_dict["inputs"]))
-    iu.log(1, iu.cyan("Command: ") + ' '.join([executable] + executable_args))
+    iu.log(1, lambda :iu.cyan("Human Readable:\n") + arg_dict["human_readable"]())
+    iu.log(1, lambda :iu.cyan("Interpreted:\n") + arg_dict["interp_function"])
+    iu.log(1, lambda :iu.cyan("Rust:\n") + arg_dict["rust_function"])
+    iu.log(1, lambda :iu.cyan("Domain: ") + inputs)
+    iu.log(1, lambda :iu.cyan("Variables: ") + ", ".join(b for b in arg_dict["inputs"]))
+    iu.log(1, lambda :iu.cyan("Command: ") + ' '.join([executable] + executable_args))
 
     parsing_end = time.time()
 
@@ -155,7 +157,7 @@ def main():
             else:
                 term_time = start + arg_dict["grace"]
 
-        iu.log(1, iu.cyan("Running"))
+        iu.log(1, lambda :iu.cyan("Running"))
         for line in iu.run_async(executable, executable_args, term_time):
             if line.startswith("lb:"): # Hacky
                 if logging:
@@ -217,8 +219,8 @@ def main():
             print("Maximum: {}".format(lst[0][1]) + "\n" +
                   "Minimum: {}".format(lst[0][0]))
 
-    iu.log(log_level, iu.green("Parsing time: ")+str(parsing_end-parsing_start))
-    iu.log(log_level, iu.green("Solver time: ")+str(end-start))
+    iu.log(log_level, lambda: iu.green("Parsing time: ")+str(parsing_end-parsing_start))
+    iu.log(log_level, lambda: iu.green("Solver time: ")+str(end-start))
 
 
 if __name__ == "__main__":
