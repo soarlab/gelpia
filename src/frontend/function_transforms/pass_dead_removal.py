@@ -10,6 +10,7 @@ def dead_removal(exp, inputs, assigns, consts=None):
   used_assigns = set()
   used_consts = set()
 
+  work_stack = list()
 
   TWO_ITEMS = BINOPS.union({"Tuple"})
   ONE_ITEM  = UNOPS.union({"Return"})
@@ -21,7 +22,7 @@ def dead_removal(exp, inputs, assigns, consts=None):
     if tag == "Variable":
       if exp[1] not in used_assigns:
         used_assigns.add(exp[1])
-        _dead_removal(assigns[exp[1]])
+        work_stack.append(assigns[exp[1]])
       return
 
     if tag in TWO_ITEMS:
@@ -38,8 +39,7 @@ def dead_removal(exp, inputs, assigns, consts=None):
       return
 
     if tag in ONE_ITEM:
-      _dead_removal(exp[1])
-      return
+      return  _dead_removal(exp[1])
 
     if tag in UNUSED:
       return
@@ -53,6 +53,10 @@ def dead_removal(exp, inputs, assigns, consts=None):
     sys.exit(-1)
 
   _dead_removal(exp)
+  while len(work_stack) > 0:
+    next_exp = work_stack.pop()
+    _dead_removal(next_exp)
+
 
   dead_inputs = set(inputs).difference(used_inputs)
   for k in dead_inputs:

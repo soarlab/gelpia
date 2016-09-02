@@ -95,6 +95,7 @@ def to_rust(exp, inputs, assigns, consts):
     print("to_rust error unknown: '{}'".format(exp))
     sys.exit(-1)
 
+
   function = [let.format(n, ''.join(_to_rust(v))) for n,v in assigns.items()]
   function += ["    "] + _to_rust(exp) + ["\n}\n"]
 

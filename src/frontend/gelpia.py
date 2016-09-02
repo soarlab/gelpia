@@ -202,6 +202,7 @@ def main():
                     del lst[-1][k]
         except:
             print(output)
+            iu.log(log_level, lambda: iu.green("Parsing time: ")+str(parsing_end-parsing_start))
             sys.exit(-1)
 
         if arg_dict["dreal"]:

@@ -13,7 +13,8 @@ def lift_inputs_and_assigns(exp):
   assigns = collections.OrderedDict()
   inputs  = collections.OrderedDict()
   implicit_input_count = 0
-
+  inplace = dict()
+  ATOMS = {"ConstantInterval", "PointInterval", "Float", "Integer"}
 
   def _lift_inputs_and_assigns(exp):
     nonlocal implicit_input_count
@@ -25,6 +26,8 @@ def lift_inputs_and_assigns(exp):
       val  = assignment[2]
       if val[0] == "InputInterval":
         inputs[name[1]] = val
+      elif val[0] in ATOMS:
+        inplace[name[1]] = val
       else:
         assigns[name[1]] = _lift_inputs_and_assigns(val)
       return  _lift_inputs_and_assigns(exp[1])
@@ -56,6 +59,8 @@ def lift_inputs_and_assigns(exp):
         typ = "Input"
       elif exp[1] in assigns:
         typ = "Variable"
+      elif exp[1] in inplace:
+        return inplace[exp[1]]
       else:
         print("Use of undeclared name: {}".format(exp[1]))
         sys.exit(-1)

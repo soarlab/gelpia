@@ -6,7 +6,7 @@ import collections
 import sys
 
 
-def lift_consts(exp, inputs, assigns, consts=None):
+def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
   if consts == None:
     consts = collections.OrderedDict()
 
@@ -15,9 +15,12 @@ def lift_consts(exp, inputs, assigns, consts=None):
     if exp[0] == "Const":
       return exp
     new_exp = expand(exp, assigns, consts)
-    key = const_hash(new_exp)
-    if key not in consts:
-      consts[key] = new_exp[:]
+    try:
+      key = hashed[new_exp]
+    except KeyError:
+      key = "_const_"+str(len(hashed))
+      hashed[new_exp] = key
+      consts[key] = new_exp
     return ('Const', key)
 
 

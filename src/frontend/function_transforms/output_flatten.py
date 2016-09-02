@@ -21,6 +21,9 @@ def flatten(exp, inputs, assigns, consts, human_readable_p=False):
       return lp + _flatten(exp[1]) + [exp[0]] + _flatten(exp[2]) + rp
 
     if tag in BINOPS:
+      if human_readable_p:
+        if tag in {"pow", "powi"}:
+          return lp + _flatten(exp[1]) + ["^"] + _flatten(exp[2]) + rp
       return [exp[0]] + lp + _flatten(exp[1]) + cm + _flatten(exp[2]) + rp
 
     if tag in UNOPS:
@@ -72,7 +75,7 @@ def flatten(exp, inputs, assigns, consts, human_readable_p=False):
     print("flatten error unknown: '{}'".format(exp))
     sys.exit(-1)
 
-
+  sys.setrecursionlimit(10000)
   return ''.join(_flatten(exp))
 
 

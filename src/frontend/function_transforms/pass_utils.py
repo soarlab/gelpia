@@ -18,53 +18,42 @@ bops = {'+'    : lambda l,r:str(int(l[1])+int(r[1])),
 uops = {'neg': lambda a:str(-int(a[1]))}
 
 
-def const_hash(exp, hashed=dict()):
-  s = str(exp)
-  if s not in hashed:
-    hashed[s] = len(hashed)
-  return "_const_{}".format(hashed[s])
+def expand(exp, assigns=None, consts=None, cache=dict()):
+  if exp in cache:
+    return cache[exp]
 
+  tag = exp[0]
 
-def cache_expand(exp, assigns, consts, cache=dict()):
-  if exp not in cache:
-    cache[exp] =  expand(exp, assigns, consts)
-  return cache[exp]
+  if tag in BINOPS:
+    l = expand(exp[1], assigns, consts)
+    r = expand(exp[2], assigns, consts)
+    if tag in bops:
+      if l[0] == "Integer" and r[0] == "Integer":
+        return ("Integer", bops[tag](l, r))
+      if tag == "powi" and r[0] == "Integer":
+        return ("pow", l, r)
+    return (exp[0], l, r)
 
-def expand(exp, assigns=None, consts=None):
-  typ = exp[0]
-  if typ in bops:
-    l = cache_expand(exp[1], assigns, consts)
-    r = cache_expand(exp[2], assigns, consts)
-    if l[0] == "Integer" and r[0] == "Integer":
-      return ("Integer", bops[typ](l, r))
-    # purposely fall through
+  if tag in UNOPS:
+    a = expand(exp[1], assigns, consts)
+    if tag in uops:
+      if a[0] == "Integer":
+        return ("Integer", uops[tag](a))
+    return (exp[0], a)
 
-  if typ in uops:
-    a = cache_expand(exp[1], assigns, consts)
-    if a[0] == "Integer":
-      return ("Integer", uops[typ](a))
-    # purposely fall through
+  if tag in {"Const"}:
+    return consts[exp[1]]
 
-  if typ in BINOPS:
-    return (typ, cache_expand(exp[1], assigns, consts), cache_expand(exp[2], assigns, consts))
+  if tag in {"Variable"}:
+    return expand(assigns[exp[1]], assigns, consts)
 
-  if typ in UNOPS:
-    return (typ, cache_expand(exp[1], assigns, consts))
-
-  if typ in {"Const"}:
-    return cache_expand(consts[exp[1]], assigns, consts)
-
-  if typ in {"Variable"}:
-    return cache_expand(assigns[exp[1]], assigns, consts)
-
-  if typ in {"Input", "Integer", "Float", "ConstantInterval", "PointInterval"}:
+  if tag in {"Input", "Integer", "Float", "ConstantInterval", "PointInterval"}:
     return exp
 
-  if typ in {"Box"}:
-    return ("Box",) + tuple(cache_expand(e, assigns, consts) for e in exp[1:])
+  if tag in {"Box"}:
+    return ("Box",) + tuple(expand(e, assigns, consts) for e in exp[1:])
 
   print("Internal error in expand: {}".format(exp))
-  (1/0)
   sys.exit(-1)
 
 

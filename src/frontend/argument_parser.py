@@ -10,6 +10,7 @@ from time import time
 
 import ian_utils as iu
 
+from function_to_lexed import SYMBOLIC_CONSTS
 from lexed_to_parsed import parse_function
 from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
 from pass_lift_consts import lift_consts
@@ -205,6 +206,10 @@ def add_dop_args(arg_parser):
         if match:
             val = match.group(1)
             name = match.group(2)
+            if name in SYMBOLIC_CONSTS:
+                iu.log(1, lambda :(iu.yellow("Warning: ") +
+                                   "disregarding assignment to {}".format(name)))
+                continue
             if name in names:
                 print("Duplicate variable definition {}".format(name))
                 sys.exit(-1)
@@ -270,10 +275,11 @@ def finish_parsing_args(args, function, epsilons):
     rev_diff = simplify(rev_diff, inputs, assigns, consts)
     dead_removal(rev_diff, inputs, assigns)
 
+    interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
 
     rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
-    interp_func = to_interp(("Return", rev_diff[1][1]), inputs, assigns, consts)
-    human_readable = lambda :flatten(rev_diff, inputs, assigns, consts, True)
+    interp_func = to_interp(interp_exp, inputs, assigns, consts)
+    human_readable = lambda : "DISABLED"#flatten(rev_diff, inputs, assigns, consts, True)
 
     return {"input_epsilon"      : epsilons[0],
             "output_epsilon"     : epsilons[1],
