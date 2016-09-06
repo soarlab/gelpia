@@ -23,6 +23,7 @@ from output_interp import to_interp
 from output_flatten import flatten
 
 from input_parser import process
+from gelpia import base_dir
 
 def parse_args():
     exe = path.basename(sys.argv[0])
@@ -85,8 +86,11 @@ def create_common_option_parser(use_ampersand):
                             help="relative error cutoff for function output size",
                             type=float, default=None);
     arg_parser.add_argument("-oe", "--output-epsilon",
-                        help="cuttoff for function output size",
+                            help="cuttoff for function output size",
                             type=float, default=None)
+    arg_parser.add_argument("-lq", "--log-query",
+                            help="Saves a copy of the query for later examination/benchmarking",
+                            action="store_true")
     return arg_parser
 
 
@@ -121,6 +125,16 @@ def add_gelpia_args(arg_parser):
 
     # actually parse
     args = arg_parser.parse_args()
+
+    # dump query for later examination/benchmarking
+    if args.log_query:
+        qlog_dir = path.join(base_dir, "query_log")
+        fname = hash(args.function+args.input)+".txt"
+        with open(path.join(qlog_dir, fname), 'w') as f:
+            if args.deal:
+                f.write("--dreal")
+            f.write('--input "{}"'.format(args.input))
+            f.write('--function "{}"'.format(args.function))
 
     # reformat query
     function = ' '.join(args.function)
