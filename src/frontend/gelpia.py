@@ -6,6 +6,14 @@ import re
 import os
 import os.path as path
 
+# Directory names used in this script
+full_dir = path.abspath(path.dirname(sys.argv[0])) # Directory for this file
+base_dir = path.split(full_dir)[0] # One directory up
+src_dir = path.join(base_dir, "src")
+bin_dir = path.join(base_dir, "bin")
+assert(full_dir == bin_dir)
+
+
 import ian_utils as iu
 import argument_parser as ap
 
@@ -50,13 +58,6 @@ def setup_requirements(base_dir):
     cplus_inc_addition = path.join(base_dir, "requirements/include")
     append_to_environ("CPLUS_INCLUDE_PATH", cplus_inc_addition)
 
-
-# Directory names used in this script
-full_dir = path.abspath(path.dirname(sys.argv[0])) # Directory for this file
-base_dir = path.split(full_dir)[0] # One directory up
-src_dir = path.join(base_dir, "src")
-bin_dir = path.join(base_dir, "bin")
-assert(full_dir == bin_dir)
 
 def var_ordered_output(inputs, lst):
     # Assumes inputs is an ordered dict
@@ -135,7 +136,7 @@ def main():
 
     parsing_end = time.time()
 
-# Use try so that we can catch control-c easily
+    # Use try so that we can catch control-c easily
     output = ""
     logging = bool(arg_dict["logfile"])
     log_file = arg_dict["logfile"] if type(arg_dict["logfile"]) is str else None

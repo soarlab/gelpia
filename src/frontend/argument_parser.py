@@ -129,11 +129,17 @@ def add_gelpia_args(arg_parser):
     # dump query for later examination/benchmarking
     if args.log_query:
         qlog_dir = path.join(base_dir, "query_log")
-        fname = hash(args.function+args.input)+".txt"
-        with open(path.join(qlog_dir, fname), 'w') as f:
+        base = "fptaylor_" if args.fptaylor else ""
+        core = "query_"+hash(' '.join(args.function)+' '.join(args.input))
+        fname = base+core
+        i = 2
+        while os.exists(path.join(qlog_dir, fname+".txt")):
+            fname = base+core+"_"+str(i)
+            i += 1
+        with open(path.join(qlog_dir, fname+".txt"), 'w') as f:
             if args.deal:
                 f.write("--dreal")
-            f.write('--input "{}"'.format(args.input))
+            f.write('--input "{}"\n'.format(args.input))
             f.write('--function "{}"'.format(args.function))
 
     # reformat query
@@ -285,15 +291,17 @@ def finish_parsing_args(args, function, epsilons):
     rev_diff = single_assignment(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns)
     dead_removal(rev_diff, inputs, assigns)
+
     rev_diff, consts = lift_consts(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns, consts)
-    dead_removal(rev_diff, inputs, assigns)
+    dead_removal(rev_diff, inputs, assigns, consts)
 
     interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
+    interp_exp = simplify(interp_exp, inputs, assigns, consts)
 
     rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
     interp_func = to_interp(interp_exp, inputs, assigns, consts)
-    human_readable = lambda : "DISABLED"#flatten(rev_diff, inputs, assigns, consts, True)
+    human_readable = lambda : flatten(rev_diff, inputs, assigns, consts, True)
 
     return {"input_epsilon"      : epsilons[0],
             "output_epsilon"     : epsilons[1],
