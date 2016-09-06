@@ -2,6 +2,7 @@
 
 import argparse
 import ast
+import hashlib
 import os.path as path
 import sys
 import re
@@ -130,17 +131,18 @@ def add_gelpia_args(arg_parser):
     if args.log_query:
         qlog_dir = path.join(base_dir, "query_log")
         base = "fptaylor_" if args.fptaylor else ""
-        core = "query_"+hash(' '.join(args.function)+' '.join(args.input))
-        fname = base+core
+        core = "query_"+hashlib.sha224(bytes(''.join(args.function)+''.join(args.input), "utf-8")).hexdigest()
+        fname = base+core+"_"+str(1)
         i = 2
-        while os.exists(path.join(qlog_dir, fname+".txt")):
+        while path.isfile(path.join(qlog_dir, fname+".txt")):
             fname = base+core+"_"+str(i)
             i += 1
         with open(path.join(qlog_dir, fname+".txt"), 'w') as f:
-            if args.deal:
+            if args.dreal:
                 f.write("--dreal")
             f.write('--input "{}"\n'.format(args.input))
-            f.write('--function "{}"'.format(args.function))
+            f.write('--function "{}"\n\n'.format(args.function))
+
 
     # reformat query
     function = ' '.join(args.function)
@@ -290,11 +292,9 @@ def finish_parsing_args(args, function, epsilons):
     rev_diff = reverse_diff(exp, inputs, assigns)
     rev_diff = single_assignment(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns)
-    dead_removal(rev_diff, inputs, assigns)
 
     rev_diff, consts = lift_consts(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns, consts)
-    dead_removal(rev_diff, inputs, assigns, consts)
 
     interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
     interp_exp = simplify(interp_exp, inputs, assigns, consts)
