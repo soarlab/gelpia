@@ -2,12 +2,47 @@
 
 import re
 import sys
+import subprocess
+import os.path as path
+
 
 from function_to_lexed import BINOPS, UNOPS
 
 BINOPS.update({'+', '-', '*', '/', 'powi'})
 UNOPS.update({'neg', "dabs", "datanh"})
 INFIX = {'+', '-', '*', '/'}
+
+
+try:
+  from gelpia import bin_dir
+  def gaol_eval(exp):
+    query_proc = subprocess.Popen(path.join(bin_dir, 'gaol_repl'),
+                                  stdout=subprocess.PIPE,
+                                  stdin=subprocess.PIPE,
+                                  universal_newlines=True,
+                                  bufsize=0)
+    query_proc.stdin.write('{}\n'.format(exp))
+    result = query_proc.stdout.readline()
+    try:
+      match = re.match("[<\[]([^,]+),([^>\]]+)[>\]]", result)
+      l = float(match.group(1))
+      r = float(match.group(2))
+    except:
+      print("Fatal error in gaol_eval")
+      print("       query was: '{}'".format(flat_exp))
+      print(" unable to match: '{}'".format(result))
+      sys.exit(-1)
+    finally:
+      query_proc.communicate()
+    return l,r
+
+except:
+  pass
+
+
+
+
+
 
 
 bops = {'+'    : lambda l,r:str(int(l[1])+int(r[1])),
@@ -49,6 +84,9 @@ def expand(exp, assigns=None, consts=None, cache=dict()):
 
   if tag in {"Input", "Integer", "Float", "ConstantInterval", "PointInterval"}:
     return exp
+
+  if tag == "Tuple":
+    return (exp[0], expand(exp[1], assigns, consts), expand(exp[2], assigns, consts))
 
   if tag in {"Box"}:
     return ("Box",) + tuple(expand(e, assigns, consts) for e in exp[1:])
