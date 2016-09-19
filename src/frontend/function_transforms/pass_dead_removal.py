@@ -2,6 +2,7 @@
 
 from pass_utils import *
 
+import collections
 import sys
 
 
@@ -58,20 +59,26 @@ def dead_removal(exp, inputs, assigns, consts=None):
     _dead_removal(next_exp)
 
 
-  dead_inputs = set(inputs).difference(used_inputs)
-  for k in dead_inputs:
-    del inputs[k]
+  new_inputs = collections.OrderedDict()
+  for k in inputs:
+    if k in used_inputs:
+      new_inputs[k] = inputs[k]
 
-  dead_assigns = set(assigns).difference(used_assigns)
-  for k in dead_assigns:
-    del assigns[k]
+  new_assigns = collections.OrderedDict()
+  for k in assigns:
+    if k in used_assigns:
+      new_assigns[k] = assigns[k]
 
-  if consts:
-    dead_consts = set(consts).difference(used_consts)
-    for k in dead_consts:
-        del consts[k]
+  if consts == None:
+    return new_inputs, new_assigns
 
-  return
+  new_consts = collections.OrderedDict()
+  for k in consts:
+    if k in used_consts:
+      new_consts[k] = consts[k]
+
+  return new_inputs, new_assigns, new_consts
+
 
 
 
