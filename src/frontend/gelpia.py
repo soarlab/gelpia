@@ -74,6 +74,14 @@ def main():
 
     parsing_start = time.time()
     arg_dict = ap.parse_args()
+
+    if "answer" in arg_dict:
+        parsing_end = time.time()
+        print("[{}, {{}}]".format(list(arg_dict["answer"])))
+        iu.log(log_level, lambda: iu.green("Parsing time: ")+str(parsing_end-parsing_start))
+        iu.log(log_level, lambda: iu.green("Solver time: ")+str(0.0))
+        return
+
     # For FPTaylor
     if arg_dict['fptaylor']:
         log_level = 1
@@ -130,6 +138,7 @@ def main():
     iu.log(1, lambda :iu.cyan("Human Readable:\n") + arg_dict["human_readable"]())
     iu.log(1, lambda :iu.cyan("Interpreted:\n") + arg_dict["interp_function"])
     iu.log(1, lambda :iu.cyan("Rust:\n") + arg_dict["rust_function"])
+    iu.log(1, lambda :iu.cyan("Constants:\n") + arg_dict["constants"]+"\n")
     iu.log(1, lambda :iu.cyan("Domain: ") + inputs)
     iu.log(1, lambda :iu.cyan("Variables: ") + ", ".join(b for b in arg_dict["inputs"]))
     iu.log(1, lambda :iu.cyan("Command: ") + ' '.join([executable] + executable_args))

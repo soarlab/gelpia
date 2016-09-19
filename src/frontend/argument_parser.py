@@ -19,6 +19,7 @@ from pass_single_assignment import single_assignment
 from pass_reverse_diff import reverse_diff
 from pass_simplify import simplify
 from pass_dead_removal import dead_removal
+from pass_utils import gaol_eval
 from output_rust import to_rust
 from output_interp import to_interp
 from output_flatten import flatten
@@ -287,19 +288,23 @@ def finish_parsing_args(args, function, epsilons):
     exp = parse_function(function)
     exp, inputs, assigns = lift_inputs_and_assigns(exp)
     exp = simplify(exp, inputs, assigns)
-    dead_removal(exp, inputs, assigns)
 
     rev_diff = reverse_diff(exp, inputs, assigns)
     rev_diff = single_assignment(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns)
 
-    rev_diff, consts = lift_consts(rev_diff, inputs, assigns)
+    r, rev_diff, consts = lift_consts(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns, consts)
+    _, new_assigns, _ = dead_removal(rev_diff, inputs, assigns, consts)
 
-    interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
+    i, interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
     interp_exp = simplify(interp_exp, inputs, assigns, consts)
 
-    rust_func, new_inputs, new_consts = to_rust(rev_diff, inputs, assigns, consts)
+    rust_func, new_inputs, new_consts = to_rust(rev_diff,
+                                                inputs, new_assigns, consts)
+    if i:
+        ans = gaol_eval(new_consts[interp_exp[1][1]])
+        return {"answer": ans}
     interp_func = to_interp(interp_exp, inputs, assigns, consts)
     human_readable = lambda : flatten(rev_diff, inputs, assigns, consts, True)
 
