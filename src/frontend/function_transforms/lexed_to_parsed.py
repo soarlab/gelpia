@@ -59,7 +59,7 @@ def p_expression(t):
                  | expression DIVIDE expression
                  | expression INFIX_POW expression
                  | MINUS expression %prec UMINUS
-                 | base'''
+                 | base '''
   if len(t) == 4:
     if t[2] == '^':
       t[0] = ("powi", t[1], t[3])

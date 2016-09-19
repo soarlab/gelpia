@@ -87,25 +87,25 @@ t_EQUALS = '='
 
 
 # Literals
-t_FLOAT    = ('('                 # match all floats
-              '('                 #  match float with '.'
-              '('                 #   match a number base
-              '(\d+\.\d+)'        #    <num.num>
-              '|'                 #    or
-              '(\d+\.)'           #    <num.>
-              '|'                 #    or
-              '(\.\d+)'           #    <.num>
-              ')'                 #
-              '('                 #   then match an exponent
-              '(e|E)(\+|-)?\d+'   #    <exponent>
-              ')?'                #    optionally
-              ')'                 #
-              '|'                 #  or
-              '('                 #  match float without '.'
-              '\d+'               #   <num>
-              '((e|E)(\+|-)?\d+)' #   <exponent>
-              ')'                 #
-              ')')
+t_FLOAT   = ('('                 # match all floats
+             '('                 #  match float with '.'
+             '('                 #   match a number base
+             '(\d+\.\d+)'        #    <num.num>
+             '|'                 #    or
+             '(\d+\.)'           #    <num.>
+             '|'                 #    or
+             '(\.\d+)'           #    <.num>
+             ')'                 #
+             '('                 #   then match an exponent
+             '(e|E)(\+|-)?\d+'   #    <exponent>
+             ')?'                #    optionally
+             ')'                 #
+             '|'                 #  or
+             '('                 #  match float without '.'
+             '\d+'               #   <num>
+             '((e|E)(\+|-)?\d+)' #   <exponent>
+             ')'                 #
+             ')')
 t_INTEGER  = '\d+'
 t_INTERVAL = 'interval'
 
