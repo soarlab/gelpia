@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 
-from pass_utils import *
+import collections # OrderedDict
+import sys         # exit
 
-import collections
-import re
-import sys
-import subprocess
-import os.path as path
-import math
+from pass_utils import *
 
 
 def reverse_diff(exp, inputs, assigns, consts=None):
-  gradient = collections.OrderedDict([(k,("Integer","0")[:]) for k in inputs])
+  """
+  Performs reverse accumulated automatic differentiation of the given exp
+    for all variables
+  """
 
-
+  # Constants
   UNUSED = {"Const", "ConstantInterval", "PointInterval", "Integer", "Float"}
-  POWS = {"pow", "powi"}
+  POWS   = {"pow", "powi"}
+
+  # Function local variables
+  gradient = collections.OrderedDict([(k,("Integer","0")) for k in inputs])
+
 
   def _reverse_diff(exp, adjoint):
     tag = exp[0]
@@ -30,6 +33,9 @@ def reverse_diff(exp, inputs, assigns, consts=None):
       else:
         gradient[exp[1]] = ("+", old, adjoint)
       return
+
+
+    # All the cases for supported operators
 
     if tag == "+":
        _reverse_diff(exp[1], adjoint)
@@ -66,7 +72,7 @@ def reverse_diff(exp, inputs, assigns, consts=None):
                                             ("powi", base, expo))))
       return
 
-    if tag =="neg":
+    if tag == "neg":
       _reverse_diff(exp[1], ("neg", adjoint))
       return
 
@@ -155,10 +161,12 @@ def reverse_diff(exp, inputs, assigns, consts=None):
       _reverse_diff(exp[1], ("*", ("dabs", x), adjoint))
       return
 
+    # Recur
     if tag == "Variable":
       _reverse_diff(assigns[exp[1]], adjoint)
       return
 
+    # Recur
     if tag == "Return":
       _reverse_diff(exp[1], adjoint)
       return
@@ -192,7 +200,7 @@ def runmain():
   data = get_runmain_input()
   exp = parse_function(data)
   exp, inputs, assigns = lift_inputs_and_assigns(exp)
-  exp, consts = lift_consts(exp, inputs, assigns)
+  e, exp, consts = lift_consts(exp, inputs, assigns)
   dead_removal(exp, inputs, assigns, consts)
 
   exp = reverse_diff(exp, inputs, assigns, consts)
