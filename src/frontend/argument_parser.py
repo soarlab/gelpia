@@ -299,12 +299,11 @@ def finish_parsing_args(args, function, epsilons):
 
     i, interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
     interp_exp = simplify(interp_exp, inputs, assigns, consts)
+    i, interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
 
     rust_func, new_inputs, new_consts = to_rust(rev_diff,
                                                 inputs, new_assigns, consts)
-    if i:
-        ans = gaol_eval(new_consts[interp_exp[1][1]])
-        return {"answer": ans}
+
     interp_func = to_interp(interp_exp, inputs, assigns, consts)
     human_readable = lambda : flatten(rev_diff, inputs, assigns, consts, True)
 
