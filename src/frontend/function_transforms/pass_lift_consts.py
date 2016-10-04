@@ -61,7 +61,7 @@ def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
         
        # Don't lift pow exponents
       if tag == "pow":
-        return l, (pow, left, right)
+        return l, ("pow", left, right)
 
       # If both are constant don't consolidate yet
       if l and r:
