@@ -80,6 +80,9 @@ def to_rust(exp, inputs, assigns, consts):
       return lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
 
     if typ in {"Box"}:
+      if len(exp) == 1 and len(inputs) != 0:
+        return ["None"]
+        
       val = ["Some(vec!"] + lb
       for part in exp[1:]:
         val += _to_rust(part) + cm + sp

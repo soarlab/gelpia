@@ -18,9 +18,10 @@ def reverse_diff(exp, inputs, assigns, consts=None):
 
   # Function local variables
   gradient = collections.OrderedDict([(k,("Integer","0")) for k in inputs])
-
+  seen_undiff = False
 
   def _reverse_diff(exp, adjoint):
+    nonlocal seen_undiff
     tag = exp[0]
 
     if tag in UNUSED:
@@ -171,12 +172,19 @@ def reverse_diff(exp, inputs, assigns, consts=None):
       _reverse_diff(exp[1], adjoint)
       return
 
+    if tag == "floor_power2" or tag == "sym_interval":
+      seen_undiff = True
+      return
+    
     print("reverse_diff error unknown: tag = '{}'\nfull={}".format(tag, exp))
     sys.exit(-1)
 
 
   _reverse_diff(exp, ("Integer", "1"))
-  result = ("Box",) + tuple(d for d in gradient.values())
+  if seen_undiff:
+    result = ("Box",)
+  else:
+    result = ("Box",) + tuple(d for d in gradient.values())
   retval = ("Return", ("Tuple", exp[1], result))
 
   return retval

@@ -14,7 +14,8 @@ def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
 
   # Constants
   CONST = {"Const", "ConstantInterval", "PointInterval", "Integer", "Float"}
-  NON_CONST_UNOPS = {"sinh", "cosh", "tanh", "dabs", "datanh"}
+  NON_CONST_UNOPS = {"sinh", "cosh", "tanh", "dabs", "datanh", "floor_power2",
+                     "sym_interval"}
 
   # Const dict can be updated or created
   if consts == None:

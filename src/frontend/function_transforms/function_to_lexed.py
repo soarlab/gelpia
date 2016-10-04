@@ -61,7 +61,8 @@ t_BINOP = "({})".format(")|(".join(BINOPS))
 UNOPS = {"abs", "acos", "acosh", "arccos", "arccosh", "arcosh", "arcsin",
          "arcsinh", "arctan", "arctanh", "argcosh", "argsinh", "argtanh",
          "arsinh", "artanh", "asin", "asinh", "atan", "atanh", "cos", "cosh",
-         "exp", "log", "sin", "sinh", "sqrt", "tan", "tanh"}
+         "exp", "log", "sin", "sinh", "sqrt", "tan", "tanh", "floor_power2",
+         "sym_interval"}
 t_UNOP = "({})".format(")|(".join(UNOPS))
 
 
