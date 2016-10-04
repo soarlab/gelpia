@@ -114,6 +114,8 @@ impl FuncObj {
                         "asinh" => op.asinh(),
                         "acosh" => op.acosh(),
                         "atanh" => op.atanh(),
+                        "floor_power2" => op.floor_power2(),
+                        "sym_interval" => op.sym_interval(),
                         _     => unreachable!()
                     };
                 },
