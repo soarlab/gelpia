@@ -2,6 +2,7 @@
 #include <string>
 #include "gaol/gaol.h"
 #include "gaol_wrap.hh"
+#include <cmath>
 #include <cstring>
 #include <cassert>
 #include <cfenv>
@@ -208,6 +209,50 @@ void atanh_g(const gaol_int* in, gaol_int* out) {
 
 void iatanh_g(gaol_int* x) {
   TO_INTERVAL(x) = atanh(TO_INTERVAL(x));
+}
+
+//
+static double
+fp2(double f) {
+  auto fc = std::fpclassify(f);
+  if(fc == FP_ZERO ||
+     fc == FP_INFINITE ||
+     fc == FP_NAN) {
+    return f;
+  }
+  if (f < 0) {
+    return -fp2(-f);
+  }
+  int exp;
+  double x = std::frexp(f, &exp);
+  if (x == 0.5) {
+    return std::ldexp(1.0, exp-2);
+  }
+  else {
+    return std::ldexp(1.0, exp-1);
+  }
+}
+
+void fp2_g(const gaol_int* a, gaol_int* out) {
+  const interval& x = TO_INTERVAL_C(a);
+  TO_INTERVAL(out) = interval(fp2(x.left()), fp2(x.right()));
+}
+
+void ifp2_g(gaol_int* a) {
+  interval& x = TO_INTERVAL(a);
+  x = interval(fp2(x.left()), fp2(x.right()));
+}
+
+void symint_g(const gaol_int* a, gaol_int* out) {
+  const interval& x = TO_INTERVAL_C(a);
+  double m = x.mag();
+  TO_INTERVAL(out) = interval(-m, m);
+}
+
+void isymint_g(gaol_int* a) {
+  interval& x = TO_INTERVAL(a);
+  double m = x.mag();
+  x = interval(-m, m);
 }
 
 //

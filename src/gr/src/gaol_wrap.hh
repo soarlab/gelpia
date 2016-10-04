@@ -69,6 +69,14 @@ extern "C" {
   void iatanh_g(gaol_int*);
 
 
+  void fp2_g(const gaol_int* a, gaol_int* out);
+  void ifp2_g(gaol_int* a);
+  
+  void symint_g(const gaol_int* a, gaol_int* out);
+  void isymint_g(gaol_int* a);
+  
+
+  
   
   void exp_g(const gaol_int*, gaol_int*);
   void iexp_g(gaol_int*);

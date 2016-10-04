@@ -204,6 +204,12 @@ extern {
 
     fn itanh_g(a: *mut gaol_int);
     fn iatanh_g(a: *mut gaol_int);
+
+    fn fp2_g(a: *const gaol_int, out: *mut gaol_int);
+    fn ifp2_g(a: *mut gaol_int);
+    
+    fn symint_g(a: *const gaol_int, out: *mut gaol_int);
+    fn isymint_g(a: *mut gaol_int);
     
     
     // Returns the supremum of a.
@@ -364,6 +370,7 @@ impl GI {
     pub fn atan(&mut self) {
         unsafe{iatan_g(&mut self.data)};
     }
+    
     // Hyperbolic functions
     pub fn sinh(&mut self) {
         unsafe{isinh_g(&mut self.data)};
@@ -387,6 +394,14 @@ impl GI {
 
     pub fn atanh(&mut self) {
         unsafe{iatanh_g(&mut self.data)};
+    }
+
+    pub fn floor_power2(&mut self) {
+        unsafe{ifp2_g(&mut self.data)};
+    }
+
+    pub fn sym_interval(&mut self) {
+        unsafe{isymint_g(&mut self.data)};
     }
 
     // Auxiliary functions
@@ -583,6 +598,18 @@ pub fn tanh(x: GI) -> GI {
 pub fn atanh(x: GI) -> GI {
     let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
     unsafe{atanh_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn floor_power2(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{fp2_g(&x.data, &mut result.data)};
+    result
+}
+
+pub fn sym_interval(x: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{symint_g(&x.data, &mut result.data)};
     result
 }
 
