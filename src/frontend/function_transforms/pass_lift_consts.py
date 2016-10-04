@@ -58,6 +58,10 @@ def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
         e = expand(exp[2], assigns, consts) # BAD
         if e[0] == "Integer":
           return l, ("pow", left, e)
+        
+       # Don't lift pow exponents
+      if tag == "pow":
+        return l, (pow, left, right)
 
       # If both are constant don't consolidate yet
       if l and r:
