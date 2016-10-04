@@ -85,11 +85,17 @@ void imul(gaol_int* a, const gaol_int* b) {
 }
 
 void div_g(const gaol_int* a, const gaol_int* b, gaol_int* out) {
-  TO_INTERVAL(out) = TO_INTERVAL_C(a) / TO_INTERVAL_C(b);
+  auto result = TO_INTERVAL_C(a) / TO_INTERVAL_C(b);
+  if (result.is_empty())
+    result = interval(-INFINITY, INFINITY);
+  TO_INTERVAL(out) = result;  
 }
 
 void idiv_g(gaol_int* a, const gaol_int* b) {
-  TO_INTERVAL(a) /= TO_INTERVAL_C(b);
+  auto result = TO_INTERVAL(a)/TO_INTERVAL_C(b);
+  if (result.is_empty())
+    result = interval(-INFINITY, INFINITY);
+  TO_INTERVAL(a) = result;
 }
 
 void neg_g(const gaol_int* in, gaol_int* out) {
