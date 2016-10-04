@@ -211,7 +211,7 @@ def main():
                 if k[0] == "$":
                     del lst[-1][k]
         except:
-            print(output)
+            print("Error unable to parse rust solver's output:",output)
             iu.log(log_level, lambda: iu.green("Parsing time: ")+str(parsing_end-parsing_start))
             sys.exit(-1)
 
