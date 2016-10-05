@@ -122,7 +122,7 @@ def lift_inputs_and_assigns(exp):
     del assigns[k]
 
   # reset stack size
-  sys.setrecursionlimit(old_limit)
+  #sys.setrecursionlimit(old_limit)
   return new_exp, inputs, assigns
 
 
