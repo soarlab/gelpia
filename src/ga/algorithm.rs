@@ -83,6 +83,14 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
         population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
 
         for iteration in 0..100 {
+            if stop.load(AtOrd::Acquire) {
+                let result = if !population.is_empty() {
+                    population[0].solution.clone()
+                } else {
+                    x_e.clone()
+                };
+                return result;
+                }
             population.truncate(param.elitism);
 
             for _ in 0..param.selection {
