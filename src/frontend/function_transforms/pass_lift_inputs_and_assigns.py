@@ -69,6 +69,8 @@ def lift_inputs_and_assigns(exp):
     # If we get here a bare range was given in the middle of an expression
     # This is turned into an implicit input
     if tag == "InputInterval":
+      return ("ConstantInterval", exp[1], exp[2])
+      # Temporarily disabled
       interval     = exp[:]
       name         = "$_implicit_Input_{}".format(implicit_input_count)
       new_exp      = ("Input", name)
