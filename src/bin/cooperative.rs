@@ -71,11 +71,11 @@ fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI, Option<Vec<GI>>) {
     let (est_m, _) = f.call(&mid);
     let (fsx, dfsx) = f.call(&input);
     let (fsx_u, _) = f.call(&input.iter()
-                       .map(|&si| GI::new_p(si.upper()))
-                       .collect::<Vec<_>>());
+                            .map(|&si| GI::new_p(si.upper()))
+                            .collect::<Vec<_>>());
     let (fsx_l, _) = f.call(&input.iter()
-                       .map(|&si| GI::new_p(si.lower()))
-                       .collect::<Vec<_>>());
+                            .map(|&si| GI::new_p(si.lower()))
+                            .collect::<Vec<_>>());
     let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
     (est_max, fsx, dfsx)
 }
@@ -390,26 +390,25 @@ fn main() {
     let ea_result = ea_thread.unwrap().join();
 
 
-    // Join EA and Update here pending stop signaling.
     if result.is_ok() {
         let (min, mut max, mut interval) = result.unwrap();
         // Go through all remaining intervals from IBBA to find the true
         // max
-        let mut lq = q.write().unwrap();
-        while lq.len() != 0 {
-            let ref top = lq.pop().unwrap();
+        let ref lq = q.read().unwrap();
+        for i in lq.iter() {
+            let ref top = *i;
             let (ub, dom) = (top.fdata.upper(), &top.data);
             if ub > max {
-            max = ub;
-            interval = dom.clone();
+                max = ub;
+                interval = dom.clone();
+            }
         }
-    }
-    println!("[[{},{}], {{", min, max);
-    for i in 0..args.names.len() {
-        println!("'{}' : {},", args.names[i], interval[i].to_string());
-    }
-    println!("}}]");
+        println!("[[{},{}], {{", min, max);
+        for i in 0..args.names.len() {
+            println!("'{}' : {},", args.names[i], interval[i].to_string());
+        }
+        println!("}}]");
 
-}
-else {println!("error")}
+    }
+    else {println!("error")}
 }
