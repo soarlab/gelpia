@@ -21,6 +21,9 @@ def lift_inputs_and_assigns(exp):
   used_inputs  = set()                     # inputs seen in the main exp
   implicit_input_count = 0                 # number of implicit inputs
 
+  # increase stack size for saftey
+  old_limit = sys.getrecursionlimit()
+  sys.setrecursionlimit(4000)
 
   def _lift_inputs_and_assigns(exp):
     nonlocal implicit_input_count
@@ -118,6 +121,8 @@ def lift_inputs_and_assigns(exp):
   for k in dead_assigns:
     del assigns[k]
 
+  # reset stack size
+  sys.setrecurionlimit(old_limit)
   return new_exp, inputs, assigns
 
 
