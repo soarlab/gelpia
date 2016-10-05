@@ -14,13 +14,23 @@ import os
 MAX = None
 MIN = None
 
-def get_max(out):
+def get_max(tup):
+  out, err = tup
   global MAX
-  MAX = out.split('\n')[0]
+  try:
+    MAX = out.split('\n')[0]
+  except:
+    pass
+    #print("MAX FAILED:", out, '\n', err, file=sys.stderr)
 
-def get_min(out):
+def get_min(tup):
+  out, err = tup
   global MIN
-  MIN = out.split('\n')[1]
+  try:
+    MIN = out.split('\n')[1]
+  except:
+    pass
+    #print("MIN FAILED:", out, '\n', err, file=sys.stderr)
 
 def run_command(cmd):
   p = subprocess.Popen(" ".join(cmd), shell=True, stdout=subprocess.PIPE,
@@ -28,7 +38,7 @@ def run_command(cmd):
   out, err  = p.communicate()
   out = out.decode('utf-8')
   err = err.decode('utf-8')
-  return out
+  return out, err
 
 def main():
   p = multiprocessing.pool.ThreadPool(processes=2)
