@@ -19,6 +19,8 @@ bin/gelpia: src/frontend/gelpia.py src/frontend/*.py src/frontend/function_trans
 	@cp src/frontend/*.py bin
 	@cp src/frontend/gelpia.py bin/gelpia
 	@chmod +x bin/gelpia
+	@cp src/frontend/gelpia_mm.py bin/gelpia_mm
+	@chmod +x bin/gelpia_mm
 	@cp src/frontend/gelpia.py bin/dop_gelpia
 	@chmod +x bin/dop_gelpia
 
@@ -42,6 +44,7 @@ clean: cl
 	$(RM) libfunc.so
 	$(RM) bin/*.py
 	$(RM) bin/gelpia
+	$(RM) bin/gelpia_mm
 	$(RM) bin/dop_gelpia
 	$(RM) bin/build_func.sh
 	$(RM) bin/parser.out
