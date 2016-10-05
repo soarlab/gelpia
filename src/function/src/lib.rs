@@ -189,27 +189,27 @@ impl FuncObj {
         if debug {
             println!("compile suffix: {}", suffix);
         }
-        let ignore = process.arg(suffix.clone()).output()
-            .unwrap_or_else(|e| {panic!("Could not compile: {}", e)});
-
-        if !ignore.status.success() {
-            panic!("Could not compile: {}\n----\n{}", String::from_utf8(ignore.stdout).unwrap(),
-                   String::from_utf8(ignore.stderr).unwrap());
+        let ignore = process.arg(suffix.clone()).output();
+        if !ignore.is_ok() {
+            return;
         }
-
+        let ignore2 = ignore.unwrap();
+        if !ignore2.status.success() {
+            return;
+        }
         DynamicLibrary::prepend_search_path(Path::new("./.compiled"));
         let dylib: String = "libfunc_".to_string() + suffix + ".so".into();
 
-        let f = match DynamicLibrary::open(Some(Path::new(&dylib)))
-        {
-            Ok(lib) => lib,
-            Err(err) => panic!("Could not load library: {}", err)
-        };
+        let fl = DynamicLibrary::open(Some(Path::new(&dylib)));
+        if !fl.is_ok() {
+            return;
+        }
+        let f = fl.unwrap();
+
         let g = unsafe{match f.symbol("gelpia_func") {
             Ok(func) => transmute::<*mut u32, fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>)>(func),
             Err(err) => panic!("Could not load function: {}", err),
         }};
-
         self.set(g, f);
     }
 }
