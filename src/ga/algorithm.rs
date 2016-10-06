@@ -32,18 +32,15 @@ pub fn ea(x_e: Vec<GI>,
           b2: Arc<Barrier>,
           stop: Arc<AtomicBool>,
           sync: Arc<AtomicBool>,
-          fo_c: FuncObj) -> (Flt, Vec<GI>, bool) {
+          fo_c: FuncObj) {
     // Constant function
     if x_e.len() == 0 {
-        return (0.0, x_e, true);
+        return;
     }
     let seed = param.seed;
-    let input = ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
-                        &x_bestbb, population, &fo_c, seed);
-    let (ans_i, _) = fo_c.call(&input);
-    let ans = ans_i.upper();
-
-    (ans, input, true)
+    ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
+            &x_bestbb, population, &fo_c, seed);
+    return;
 }
 
 
@@ -52,8 +49,7 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
            f_bestag: &Arc<RwLock<Flt>>,
            x_bestbb: &Arc<RwLock<Vec<GI>>>,
            population: Arc<RwLock<Vec<Individual>>>, fo_c: &FuncObj,
-           seed: u32)
-           -> (Vec<GI>) {
+           seed: u32) {
     let rng_seed: u32 =
         match seed {
             0 => 3735928579,
@@ -78,27 +74,27 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
             b2.wait();
         }
         let ref mut population = *population.write().unwrap();
-        sample(param.population, population, fo_c, &ranges, &mut rng);
+        if sample(param.population, population, fo_c, &ranges, &mut rng, stop) {
+            return;
+        }
 
         population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
 
         for iteration in 0..100 {
             if stop.load(AtOrd::Acquire) {
-                let result = if !population.is_empty() {
-                    population[0].solution.clone()
-                } else {
-                    x_e.clone()
-                };
-                return result;
-                }
+                return;
+            }
             population.truncate(param.elitism);
 
             for _ in 0..param.selection {
                 population.push(rand_individual(fo_c, &ranges, &mut rng));
             }
 
-            next_generation(param.population, population, fo_c, param.mutation,
-                            param.crossover, &dimension, &ranges, &mut rng);
+            if next_generation(param.population, population, fo_c, param.mutation,
+                               param.crossover, &dimension, &ranges, &mut rng,
+                               stop) {
+                return;
+            }
             population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
 
             // Report fittest of the fit.
@@ -128,24 +124,22 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
     }
 
     let ref population = *population.read().unwrap();
-    let result = if !population.is_empty() {
-        population[0].solution.clone()
-    } else {
-        x_e.clone()
-    };
-
-    result
+    return;
 }
 
 
 fn sample(population_size: usize, population: &mut Vec<Individual>,
-          fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng)
-          -> () {
-    for _ in 0..population_size-population.len() {
+          fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng,
+          stop: &Arc<AtomicBool>)
+          -> bool {
+    for i in 0..population_size-population.len() {
+        if i % 64 == 0 && stop.load(AtOrd::Acquire) {
+            return true;
+        }
         population.push(rand_individual(fo_c, ranges, rng));
     }
 
-    ()
+    false
 }
 
 
@@ -165,12 +159,15 @@ fn rand_individual(fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng)
 fn next_generation(population_size:usize, population: &mut Vec<Individual>,
                    fo_c: &FuncObj, mut_rate: f64, crossover: f64,
                    dimension: &Range<usize>, ranges: &Vec<Range<f64>>,
-                   rng: &mut GARng)
-                   -> () {
+                   rng: &mut GARng, stop: &Arc<AtomicBool>)
+                   -> bool {
 
     let elites = population.clone();
 
-    for _ in 0..population_size-population.len() {
+    for i in 0..population_size-population.len() {
+        if i % 64 == 0 && stop.load(AtOrd::Acquire) {
+                return true;
+        }
         if rng.gen::<f64>() < crossover {
             population.push(breed((&mut *rng).choose(&elites).unwrap(),
                                   rng.choose(&elites).unwrap(),
@@ -182,7 +179,7 @@ fn next_generation(population_size:usize, population: &mut Vec<Individual>,
         }
     }
 
-    ()
+    false
 }
 
 
