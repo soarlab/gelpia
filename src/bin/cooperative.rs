@@ -387,7 +387,6 @@ fn main() {
         });};
 
     let result = ibba_thread.unwrap().join();
-    let ea_result = ea_thread.unwrap().join();
 
 
     if result.is_ok() {
@@ -411,4 +410,7 @@ fn main() {
 
     }
     else {println!("error")}
+
+    // We don't need an answer from this...
+    let ea_result = ea_thread.unwrap().join();
 }
