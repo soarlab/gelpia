@@ -17,8 +17,10 @@ MIN = None
 def get_max(tup):
   out, err = tup
   global MAX
+  if "Killed" in out:
+    return
   try:
-    MAX = out.split('\n')[0]
+    MAX = out.split('\n')[0]    
   except:
     pass
     #print("MAX FAILED:", out, '\n', err, file=sys.stderr)
@@ -26,6 +28,8 @@ def get_max(tup):
 def get_min(tup):
   out, err = tup
   global MIN
+  if "Killed" in out:
+    return
   try:
     MIN = out.split('\n')[1]
   except:
