@@ -2,7 +2,7 @@
 
 set -e
 
-SCRIPT=`realpath $0`
+SCRIPT=DIR=$(cd -P -- "$(dirname -- "$0")" && printf '%s\n' "$(pwd -P)/$(basename -- "$0")")
 SCRIPTPATH=`dirname $SCRIPT`
 
 rm -f comp_comm.sh
