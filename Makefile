@@ -5,9 +5,8 @@ export LD_LIBRARY_PATH := $(CURDIR)/requirements/lib:${LD_LIBRARY_PATH}
 export CPLUS_INCLUDE_PATH := $(CURDIR)/requirements/include:${CPLUS_INCLUDE_PATH}
 export LIBRARY_PATH := $(CURDIR)/requirements/lib:${LIBRARY_PATH}
 
-RUSTFLAGS := "-A unused-imports"
-
 all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh bin/gaol_repl
+	@echo Building gelpia
 	@cargo build --release
 	@cargo build
 
@@ -59,11 +58,12 @@ clean: cl
 
 .PHONY: requirements
 requirements: requirements/build.sh
-	cd requirements && ./build.sh
+	@cd requirements && ./build.sh
 
 
 .PHONY: clean-requirements
 clean-requirements:
+	$(RM) requirements/build_log.txt
 	$(RM) -r requirements/bin
 	$(RM) -r requirements/etc
 	$(RM) -r requirements/include
