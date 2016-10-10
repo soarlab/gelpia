@@ -11,10 +11,6 @@ path = "src/bin/cooperative.rs"
 name = "serial"
 path = "src/bin/serial.rs"
 
-[[bin]]
-name = "cooperative-mt"
-path = "src/bin/cooperative-mt.rs"
-
 [dependencies]
 gr = { path = "src/gr" }
 gelpia_utils = { path = "src/gelpia_utils" }

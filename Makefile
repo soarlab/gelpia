@@ -5,6 +5,7 @@ export LD_LIBRARY_PATH := $(CURDIR)/requirements/lib:${LD_LIBRARY_PATH}
 export CPLUS_INCLUDE_PATH := $(CURDIR)/requirements/include:${CPLUS_INCLUDE_PATH}
 export LIBRARY_PATH := $(CURDIR)/requirements/lib:${LIBRARY_PATH}
 
+RUSTFLAGS := "-A unused-imports"
 
 all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh bin/gaol_repl
 	@cargo build --release
