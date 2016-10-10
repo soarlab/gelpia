@@ -2,6 +2,17 @@
 
 set -e
 
+function finish {
+    if [ ! $SUCCESS ]
+    then
+	echo "Gelpia build failed. See "$SCRIPT_LOCATION"/log.txt for details."
+    fi
+}
+trap finish EXIT
+
+
+SUCCESS=1
+
 SCRIPT_LOCATION="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 SOURCE_LOCATION=$SCRIPT_LOCATION/Sources
@@ -57,3 +68,5 @@ echo "export PATH=$SCRIPT_LOCATION/bin:\$PATH" > debug_eniroment.sh
 echo "export LIBRARY_PATH=$SCRIPT_LOCATION/lib:\$LIBRARY_PATH" >> debug_eniroment.sh
 echo "export LD_LIBRARY_PATH=$SCRIPT_LOCATION/lib:\$LD_LIBRARY_PATH" >> debug_eniroment.sh
 echo "export CPLUS_INCLUDE_PATH=$SCRIPT_LOCATION/include:\$CPLUS_INCLUDE_PATH" >> debug_eniroment.sh
+
+SUCCESS=0
