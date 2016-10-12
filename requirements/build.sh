@@ -52,7 +52,7 @@ tar xf gaol.tar.gz
 patch -p0 < $SCRIPT_LOCATION/../documents/gaol-4.2.0.patch >> $SCRIPT_LOCATION/log.txt
 mv gaol-4.2.0 gaol
 cd gaol
-export CFLAGS=" -msse3 "; export CXXFLAGS=" -msse3 ";
+export CFLAGS=" -msse3 "; export CXXFLAGS=" -msse3 -std=c++11";
 ./configure  --with-mathlib=crlibm --enable-simd --enable-preserve-rounding=yes\
 	     --disable-debug --enable-optimize --disable-verbose-mode \
 	     --prefix=$SCRIPT_LOCATION &>> $SCRIPT_LOCATION/log.txt
