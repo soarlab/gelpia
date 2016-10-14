@@ -127,7 +127,7 @@ def simplify(exp, inputs, assigns, consts=None):
         if l[0] == "*" and r == l[2]:
           if l[1][0] == "Integer":
             return ("*", ("Integer", str(int(l[1][1])+1)), r)
-          return ("*", ("+", l[1], ONE), l)
+          return ("*", ("+", l[1], ONE), r)
         # (x*n) + x -> (n+1)*x
         if l[0] == "*" and r == l[1]:
           if l[2][0] == "Integer":
@@ -206,7 +206,7 @@ def simplify(exp, inputs, assigns, consts=None):
         if l[0] == "*" and r == l[2]:
           if l[1][0] == "Integer":
             return ("*", ("Integer", str(int(l[1][1])-1)), r)
-          return ("*", ("-", l[1], ONE), l)
+          return ("*", ("-", l[1], ONE), r)
         # (x*n) - x -> (n-1)*x
         if l[0] == "*" and r == l[1]:
           if l[2][0] == "Integer":
