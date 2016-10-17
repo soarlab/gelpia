@@ -52,11 +52,12 @@ fn log_max(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
                      max);
 }
 
+#[allow(dead_code)]
 fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
     let mut lq: BinaryHeap<Quple> = (*q).clone();
     while lq.len() != 0 {
         let qi = lq.pop().unwrap();
-        let (gen, v, fx) = (qi.pf, qi.p, qi.fdata);
+        let (gen, v, _) = (qi.pf, qi.p, qi.fdata);
         print!("[{}, {}, {}], ", v, gen, qi.fdata.to_string());
     }
     println!("\n");
@@ -412,5 +413,5 @@ fn main() {
     else {println!("error")}
 
     // We don't need an answer from this...
-    let ea_result = ea_thread.unwrap().join();
+    let _ea_result = ea_thread.unwrap().join();
 }

@@ -1,16 +1,16 @@
-use std::sync::{Barrier, RwLock, Arc, RwLockWriteGuard};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Barrier, RwLock, Arc};
+use std::sync::atomic::{AtomicBool};
 use std::sync::atomic::Ordering as AtOrd;
 extern crate rand;
-use rand::{ThreadRng, Rng, SeedableRng, StdRng, XorShiftRng};
+use rand::{Rng, SeedableRng, XorShiftRng};
 use rand::distributions::{IndependentSample, Range};
 
 
 extern crate gr;
-use gr::{GI, width_box, split_box, midpoint_box, eps_tol};
+use gr::{GI};
 
 extern crate gelpia_utils;
-use gelpia_utils::{Quple, INF, NINF, Flt, Parameters};
+use gelpia_utils::{Flt, Parameters};
 
 extern crate function;
 use function::FuncObj;
@@ -80,7 +80,7 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
 
         population.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
 
-        for iteration in 0..100 {
+        for _ in 0..100 {
             if stop.load(AtOrd::Acquire) {
                 return;
             }
@@ -123,7 +123,6 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
         }
     }
 
-    let ref population = *population.read().unwrap();
     return;
 }
 
@@ -175,7 +174,7 @@ fn next_generation(population_size:usize, population: &mut Vec<Individual>,
                                   dimension, rng));
         } else {
             population.push(mutate(rng.choose(&elites).unwrap(), fo_c, mut_rate,
-                                   dimension, ranges, rng));
+                                   ranges, rng));
         }
     }
 
@@ -184,7 +183,7 @@ fn next_generation(population_size:usize, population: &mut Vec<Individual>,
 
 
 fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
-          dimension: &Range<usize>, ranges: &Vec<Range<f64>>, rng: &mut GARng)
+          ranges: &Vec<Range<f64>>, rng: &mut GARng)
           -> (Individual) {
     let mut output_sol = Vec::new();
 
