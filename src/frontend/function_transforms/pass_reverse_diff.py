@@ -4,6 +4,7 @@ import collections # OrderedDict
 import sys         # exit
 
 from pass_utils import *
+from expression_walker import no_mut_walk
 
 
 def reverse_diff(exp, inputs, assigns, consts=None):
@@ -20,167 +21,205 @@ def reverse_diff(exp, inputs, assigns, consts=None):
   gradient = collections.OrderedDict([(k,("Integer","0")) for k in inputs])
   seen_undiff = False
 
-  def _reverse_diff(exp, adjoint):
-    nonlocal seen_undiff
-    tag = exp[0]
 
-    if tag in UNUSED:
-      return
-
-    if tag == "Input":
-      old = gradient[exp[1]]
-      if old == ("Integer", "0"):
-        gradient[exp[1]] = adjoint
-      else:
-        gradient[exp[1]] = ("+", old, adjoint)
-      return
+  def _input(work_stack, count, exp):
+    assert(exp[0] == "Input")
+    old = gradient[exp[1]]
+    if old == ("Integer", "0"):
+      gradient[exp[1]] = exp[-1]
+    else:
+      gradient[exp[1]] = ("+", old, exp[-1])
 
 
     # All the cases for supported operators
 
-    if tag == "+":
-       _reverse_diff(exp[1], adjoint)
-       _reverse_diff(exp[2], adjoint)
-       return
-
-    if tag == "-":
-      _reverse_diff(exp[1], adjoint)
-      _reverse_diff(exp[2], ("neg", adjoint))
-      return
-
-    if tag == "*":
-      left = exp[1]
-      right = exp[2]
-      _reverse_diff(exp[1], ("*", adjoint, right))
-      _reverse_diff(exp[2], ("*", adjoint, left))
-      return
-
-    if tag == "/":
-      upper = exp[1]
-      lower = exp[2]
-      _reverse_diff(exp[1], ("/", adjoint, lower))
-      _reverse_diff(exp[2], ("/", ("*", ("neg", adjoint), upper),
-                             ("pow", lower, ("Integer", "2"))))
-      return
-
-    if tag in POWS:
-      base = exp[1]
-      expo = exp[2]
-      _reverse_diff(exp[1], ("*", adjoint, ("*", expo,
-                                            ("powi", base,
-                                             ("-", expo, ("Integer", "1"))))))
-      _reverse_diff(exp[2], ("*", adjoint, ("*", ("log", base),
-                                            ("powi", base, expo))))
-      return
-
-    if tag == "neg":
-      _reverse_diff(exp[1], ("neg", adjoint))
-      return
-
-    if tag == "exp":
-      expo = exp[1]
-      _reverse_diff(exp[1], ("*", ("exp", expo), adjoint))
-      return
-
-    if tag == "log":
-      base = exp[1]
-      _reverse_diff(exp[1], ("/", adjoint, base))
-      return
-
-    if tag == "sqrt":
-      x = exp[1]
-      _reverse_diff(exp[1], ("/", adjoint, ("*", ("Integer", "2"),
-                                            ("sqrt", x))))
-      return
-
-    if tag == "cos":
-      x = exp[1]
-      _reverse_diff(exp[1], ("*", ("neg", ("sin", x)), adjoint))
-      return
-
-    if tag == "acos":
-      x = exp[1]
-      _reverse_diff(exp[1], ("neg", ("/", adjoint,
-                                     ("sqrt", ("-",
-                                               ("Integer", "1"),
-                                               ("pow", x,
-                                                ("Integer", "2")))))))
-      return
-
-    if tag == "sin":
-      x = exp[1]
-      _reverse_diff(exp[1], ("*", ("cos", x), adjoint))
-      return
-
-    if tag == "asin":
-      x = exp[1]
-      _reverse_diff(exp[1], ("/", adjoint, ("sqrt", ("-", ("Integer", "1"),
-                                                     ("pow", x,
-                                                      ("Integer", "2"))))))
-      return
-
-    if tag == "tan":
-      x = exp[1]
-      _reverse_diff(exp[1], ("*", ("+", ("Integer", "1"),
-                                   ("pow", ("tan", x),
-                                    ("Integer", "2"))), adjoint))
-      return
-
-    if tag == "atan":
-      x = exp[1]
-      _reverse_diff(exp[1], ("/", adjoint, ("+", ("Integer", "1"),
-                                            ("pow", x, ("Integer", "2")))))
-      return
-
-    if tag == "cosh":
-      x = exp[1]
-      _reverse_diff(exp[1], ("*", ("sinh", x), adjoint))
-      return
+  def _add(work_stack, count, exp):
+    assert(exp[0] == "+")
+    assert(len(exp) == 4)
+    work_stack.append((False, count, (*exp[1], exp[-1])))
+    work_stack.append((False, count, (*exp[2], exp[-1])))
 
 
-    if tag == "sinh":
-      x = exp[1]
-      _reverse_diff(exp[1], ("*", ("cosh", x), adjoint))
-      return
-
-    if tag == "asinh":
-      x = exp[1]
-      _reverse_diff(exp[1], ("/", adjoint,
-                             ("sqrt", ("+", ("pow", x, ("Integer", "2")),
-                                       ("Integer", "1")))))
-      return
-
-    if tag == "tanh":
-      x = exp[1]
-      _reverse_diff(exp[1], ("*", ("-", ("Integer", "1"),
-                                   ("pow", ("tanh", x),
-                                    ("Integer", "2"))), adjoint))
-      return
-
-    if tag == "abs":
-      x = exp[1]
-      _reverse_diff(exp[1], ("*", ("dabs", x), adjoint))
-      return
-
-    # Recur
-    if tag == "Variable":
-      _reverse_diff(assigns[exp[1]], adjoint)
-      return
-
-    # Recur
-    if tag == "Return":
-      _reverse_diff(exp[1], adjoint)
-      return
-
-    if tag == "floor_power2" or tag == "sym_interval":
-      seen_undiff = True
-      return
-    
-    print("reverse_diff error unknown: tag = '{}'\nfull={}".format(tag, exp))
-    sys.exit(-1)
+  def _sub(work_stack, count, exp):
+    assert(exp[0] == "-")
+    assert(len(exp) == 4)
+    work_stack.append((False, count, (*exp[1], exp[-1])))
+    work_stack.append((False, count, (*exp[2], ("neg", exp[-1]))))
 
 
-  _reverse_diff(exp, ("Integer", "1"))
+  def _mul(work_stack, count, exp):
+    assert(exp[0] == "*")
+    assert(len(exp) == 4)
+    left = exp[1]
+    right = exp[2]
+    work_stack.append((False, count, (*exp[1], ("*", exp[-1], right))))
+    work_stack.append((False, count, (*exp[2], ("*", exp[-1], left))))
+
+
+  def _div(work_stack, count, exp):
+    assert(exp[0] == "/")
+    assert(len(exp) == 4)
+    upper = exp[1]
+    lower = exp[2]
+    work_stack.append((False, count, (*exp[1], ("/", exp[-1], lower))))
+    work_stack.append((False, count, (*exp[2], ("/", ("*", ("neg", exp[-1]), upper), ("pow", lower, ("Integer", "2"))))))
+
+
+  def _pow(work_stack,count, exp):
+    assert(exp[0] in {"pow", "powi"})
+    assert(len(exp) == 4)
+    base = exp[1]
+    expo = exp[2]
+    work_stack.append((False, count, (*exp[1], ("*", exp[-1], ("*", expo, ("powi", base, ("-", expo, ("Integer", "1"))))))))
+    work_stack.append((False, count, (*exp[2], ("*", exp[-1], ("*", ("log", base), ("powi", base, expo))))))
+
+
+  def _neg(work_stack, count, exp):
+    assert(exp[0] == "neg")
+    assert(len(exp) == 3)
+    work_stack.append((False, count, (*exp[1], ("neg", exp[-1]))))
+
+
+  def _exp(work_stack, count, exp):
+    assert(exp[0] == "exp")
+    assert(len(exp) == 3)
+    expo = exp[1]
+    work_stack.append((False, count, (*exp[1], ("*", ("exp", expo), exp[-1]))))
+
+
+  def _log(work_stack, count, exp):
+    assert(exp[0] == "log")
+    assert(len(exp) == 3)
+    base = exp[1]
+    work_stack.append((False, count, (*exp[1], ("/", exp[-1], base))))
+
+
+  def _sqrt(work_stack, count, exp):
+    assert(exp[0] == "sqrt")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("/", exp[-1], ("*", ("Integer", "2"), ("sqrt", x))))))
+
+
+  def _cos(work_stack, count, exp):
+    assert(exp[0] == "cos")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("*", ("neg", ("sin", x)), exp[-1]))))
+
+
+  def _acos(work_stack, count, exp):
+    assert(exp[0] == "acos")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("neg", ("/", exp[-1], ("sqrt", ("-", ("Integer", "1"), ("pow", x, ("Integer", "2")))))))))
+
+
+  def _sin(work_stack, count, exp):
+    assert(exp[0] == "sin")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("*", ("cos", x), exp[-1]))))
+
+
+  def _asin(work_stack, count, exp):
+    assert(exp[0] == "asin")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("/", exp[-1], ("sqrt", ("-", ("Integer", "1"), ("pow", x, ("Integer", "2"))))))))
+
+
+  def _tan(work_stack, count, exp):
+    assert(exp[0] == "tan")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("*", ("+", ("Integer", "1"), ("pow", ("tan", x), ("Integer", "2"))), exp[-1]))))
+
+
+  def _atan(work_stack, count, exp):
+    assert(exp[0] == "atan")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("/", exp[-1], ("+", ("Integer", "1"), ("pow", x, ("Integer", "2")))))))
+
+
+  def _cosh(work_stack, count, exp):
+    assert(exp[0] == "cosh")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("*", ("sinh", x), exp[-1]))))
+
+
+  def _sinh(work_stack, count, exp):
+    assert(exp[0] == "sinh")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("*", ("cosh", x), exp[-1]))))
+
+
+  def _asinh(work_stack, count, exp):
+    assert(exp[0] == "asinh")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("/", exp[-1], ("sqrt", ("+", ("pow", x, ("Integer", "2")), ("Integer", "1")))))))
+
+
+  def _tanh(work_stack, count, exp):
+    assert(exp[0] == "tanh")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("*", ("-", ("Integer", "1"), ("pow", ("tanh", x), ("Integer", "2"))), exp[-1]))))
+
+
+  def _abs(work_stack, count, exp):
+    assert(exp[0] == "abs")
+    assert(len(exp) == 3)
+    x = exp[1]
+    work_stack.append((False, count, (*exp[1], ("*", ("dabs", x), exp[-1]))))
+
+
+  # Recur
+  def _variable(work_stack, count, exp):
+    assert(exp[0] == "Variable")
+    assert(len(exp) == 3)
+    work_stack.append((False, count, (*assigns[exp[1]], exp[-1])))
+
+
+  def _undiff(work_stack, count, exp):
+    nonlocal seen_undiff
+    assert(tag == "floor_power2" or tag == "sym_interval")
+    seen_undiff = True
+    work_stack.append((True, 0, "Return"))
+    work_stack.append((True, 1, "Now"))
+
+  my_expand_dict = {"Input": _input,
+                    "+": _add,
+                    "-": _sub,
+                    "*": _mul,
+                    "/": _div,
+                    "pow": _pow,
+                    "powi": _pow,
+                    "neg": _neg,
+                    "exp": _exp,
+                    "log": _log,
+                    "sqrt": _sqrt,
+                    "cos": _cos,
+                    "acos": _acos,
+                    "sin": _sin,
+                    "asin": _asin,
+                    "tan": _tan,
+                    "atan": _atan,
+                    "cosh": _cosh,
+                    "sinh": _sinh,
+                    "asinh": _asinh,
+                    "tanh": _tanh,
+                    "abs": _abs,
+                    "Variable": _variable,
+                    "floor_power2": _undiff,
+                    "sym_interval": _undiff}
+
+  no_mut_walk(my_expand_dict, (*exp[1], ("Integer", "1")), assigns)
+
   if seen_undiff:
     result = ("Box",)
   else:

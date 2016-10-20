@@ -10,8 +10,9 @@ from function_to_lexed import BINOPS, UNOPS
 
 BINOPS.update({'+', '-', '*', '/', 'powi'})
 UNOPS.update({'neg', "dabs", "datanh"})
+ATOMS = {"Integer", "Float", "ConstantInterval", "InputInterval", "PointInterval"}
 INFIX = {'+', '-', '*', '/'}
-
+ASSOC = {'+', '*'}
 
 try:
   from gelpia import bin_dir
@@ -58,6 +59,10 @@ def expand(exp, assigns=None, consts=None, cache=dict()):
     return cache[exp]
 
   tag = exp[0]
+
+  if tag in ASSOC:
+    assert(len(exp) >= 3)
+    return (tag, *(expand(e, assigns, consts) for e in exp[1:]))
 
   if tag in BINOPS:
     l = expand(exp[1], assigns, consts)

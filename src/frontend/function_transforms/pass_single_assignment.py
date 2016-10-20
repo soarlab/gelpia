@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from pass_utils import *
+from expression_walker import walk
 
 import collections
 import re
@@ -29,42 +30,30 @@ def single_assignment(exp, inputs, assigns, consts=None):
     return ("Variable", key)
 
 
-  def _single_assignment(exp):
-    tag = exp[0]
+  def _two_items(work_stack, count, args):
+    assert(len(args) == 3)
+    left  = cache(args[1])
+    right = cache(args[2])
+    work_stack.append((True, count, tuple(args)))
 
-    if tag in PASSTHROUGH:
-      return exp
+  def _one_item(work_stack, count, args):
+    assert(len(args) == 2)
+    arg = cache(args[1])
+    work_stack.append((True, count, tuple(args)))
 
-    if tag in TWO_ITEMS:
-      left  = _single_assignment(exp[1])
-      left  = cache(left)
-      right = _single_assignment(exp[2])
-      right = cache(right)
-      return (exp[0], left, right)
+  def _many_items(work_stack, count, args):
+    args = [args[0]] + [cache(sub) for sub in args[1:]]
+    work_stack.append((True, count, tuple(args)))
 
-    if tag in ONE_ITEM:
-      arg = _single_assignment(exp[1])
-      arg = cache(arg)
-      return (exp[0], arg)
+  my_contract_dict = dict()
+  my_contract_dict.update(zip(BINOPS, [_two_items for _ in BINOPS]))
+  my_contract_dict.update(zip(UNOPS, [_one_item for _ in UNOPS]))
+  my_contract_dict["Tuple"] = _two_items
+  my_contract_dict["Box"] = _many_items
 
-    if tag == "Variable":
-      _single_assignment(assigns[exp[1]])
-      return exp
+  exp = walk(dict(), my_contract_dict, exp, assigns)
 
-    if tag == "Box":
-      rest = list()
-      for i in range(1, len(exp)):
-        part = _single_assignment(exp[i])
-        part = cache(part)
-        rest.append(part)
-      return ("Box",) + tuple(rest)
-
-    print("single_assignment error unknown: '{}'".format(exp))
-    sys.exit(-1)
-
-  result = _single_assignment(exp)
-
-  return result
+  return exp
 
 
 

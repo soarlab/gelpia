@@ -5,6 +5,8 @@ import sys         # exit
 
 from pass_utils import UNOPS, BINOPS, expand
 
+sys.setrecursionlimit(10000)
+
 
 def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
   """ Extracts constant values from an expression """
@@ -59,7 +61,7 @@ def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
         e = expand(exp[2], assigns, consts) # BAD
         if e[0] == "Integer":
           return l, ("pow", left, e)
-        
+
        # Don't lift pow exponents
       if tag == "pow":
         return l, ("pow", left, right)

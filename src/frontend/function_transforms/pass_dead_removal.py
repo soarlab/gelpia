@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from pass_utils import *
+from expression_walker import no_mut_walk
 
 import collections
 import sys
@@ -11,53 +12,33 @@ def dead_removal(exp, inputs, assigns, consts=None):
   used_assigns = set()
   used_consts = set()
 
-  work_stack = list()
 
-  TWO_ITEMS = BINOPS.union({"Tuple"})
-  ONE_ITEM  = UNOPS.union({"Return"})
-  UNUSED = {"ConstantInterval", "PointInterval", "Float", "Integer"}
+  def _variable(work_stack, count, exp):
+    assert(exp[0] == "Variable")
+    assert(len(exp) == 2)
+    assert(exp[1] in assigns)
+    if exp[1] not in used_assigns:
+      used_assigns.add(exp[1])
+      work_stack.append((False, 2,     assigns[exp[1]]))
 
-  def _dead_removal(exp):
-    tag = exp[0]
+  def _input(work_stack, count, exp):
+    assert(exp[0] == "Input")
+    assert(len(exp) == 2)
+    assert(exp[1] in inputs)
+    used_inputs.add(exp[1])
 
-    if tag == "Variable":
-      if exp[1] not in used_assigns:
-        used_assigns.add(exp[1])
-        work_stack.append(assigns[exp[1]])
-      return
+  def _const(work_stack, count, exp):
+    assert(exp[0] == "Const")
+    assert(len(exp) == 2)
+    assert(exp[1] in consts)
+    used_consts.add(exp[1])
 
-    if tag in TWO_ITEMS:
-      _dead_removal(exp[1])
-      _dead_removal(exp[2])
-      return
 
-    if tag == "Const":
-      used_consts.add(exp[1])
-      return
+  my_expand_dict = {"Variable": _variable,
+                    "Input": _input,
+                    "Const": _const}
 
-    if tag == "Input":
-      used_inputs.add(exp[1])
-      return
-
-    if tag in ONE_ITEM:
-      return  _dead_removal(exp[1])
-
-    if tag in UNUSED:
-      return
-
-    if tag == "Box":
-      for e in exp[1:]:
-        _dead_removal(e)
-      return
-
-    print("Error unknown in dead_removal: '{}'".format(exp))
-    sys.exit(-1)
-
-  _dead_removal(exp)
-  while len(work_stack) > 0:
-    next_exp = work_stack.pop()
-    _dead_removal(next_exp)
-
+  no_mut_walk(my_expand_dict, exp, assigns)
 
   new_inputs = collections.OrderedDict()
   for k in inputs:
