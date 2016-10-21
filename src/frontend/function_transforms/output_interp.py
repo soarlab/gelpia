@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from pass_utils import *
-
+from expression_walker import walk
 import sys
 
 
@@ -9,41 +9,75 @@ def to_interp(exp, inputs, assigns, consts):
   input_names = [name for name in inputs]
   const_names = [name for name in consts]
 
-  def _to_interp(exp):
-    tag = exp[0]
 
-    if tag in {"pow"}:
-      e = expand(exp[2], assigns, consts)
-      assert(e[0] == "Integer")
-      return _to_interp(exp[1]) + ["p"+e[1]]
+  def _const(work_stack, count, exp):
+    assert(exp[0] == "Const")
+    assert(len(exp) == 2)
+    work_stack.append((True, count,  ['c'+str(const_names.index(exp[1]))]))
 
-    if tag in {"powi"}:
-      return _to_interp(exp[1]) + _to_interp(exp[2]) + ['op']
+  def _input(work_stack, count, exp):
+    assert(exp[0] == "Input")
+    assert(len(exp) == 2)
+    work_stack.append((True, count,  ['i'+str(input_names.index(exp[1]))]))
 
-    if tag in INFIX:
-      return _to_interp(exp[1]) + _to_interp(exp[2]) + ['o'+exp[0]]
+  def _variable(work_stack, count, exp):
+    assert(exp[0] == "Variable")
+    assert(len(exp) == 2)
+    work_stack.append((False, count, assigns[exp[1]]))
 
-    if tag in UNOPS:
-      return _to_interp(exp[1]) + ['f'+exp[0].lower()]
+  my_expand_dict = {"Const":    _const,
+                    "Input":    _input,
+                    "Variable": _variable}
 
-    if tag in {"Const"}:
-      return ['c'+str(const_names.index(exp[1]))]
 
-    if tag in {"Input"}:
-      return ['i'+str(input_names.index(exp[1]))]
 
-    if tag in {"Variable"}:
-      return _to_interp(assigns[exp[1]])
 
-    if tag in {"Return"}:
-      return _to_interp(exp[1])
+  def _pow(work_stack, count, args):
+    assert(args[0] == "pow")
+    assert(len(args) == 3)
+    assert(args[2][0] == "Integer")
+    assert(type(args[1]) is list)
+    work_stack.append((True, count, args[1] + ["p"+args[2][1]]))
 
-    print("to_interp error unknown: '{}'".format(exp))
+  def _powi(work_stack, count, args):
+    assert(args[0] == "powi")
+    assert(len(args) == 3)
+    assert(type(args[1]) is list)
+    assert(type(args[2]) is list)
+    work_stack.append((True, count, args[1] + args[2] + ["op"]))
+
+  def _infix(work_stack, count, args):
+    assert(args[0] in INFIX)
+    assert(len(args) == 3)
+    assert(type(args[1]) is list)
+    assert(type(args[2]) is list)
+    work_stack.append((True, count, args[1] + args[2] + ["o"+args[0]]))
+
+  def _unops(work_stack, count, args):
+    assert(args[0] in UNOPS)
+    assert(len(args) == 2)
+    assert(type(args[1]) is list)
+    work_stack.append((True, count, args[1] + ["f"+args[0].lower()]))
+
+  def _return(work_stack, count, args):
+    assert(args[0] == "Return")
+    assert(len(args) == 2)
+    return args[1]
+
+  my_contract_dict = dict()
+  my_contract_dict.update(zip(INFIX, [_infix for _ in INFIX]))
+  my_contract_dict.update(zip(UNOPS, [_unops for _ in UNOPS]))
+  my_contract_dict["pow"]  = _pow
+  my_contract_dict["powi"] = _powi
+  my_contract_dict["Return"] = _return
+
+  exp = walk(my_expand_dict, my_contract_dict, exp, assigns)
+
+  try:
+    return ','.join(exp)
+  except:
+    print(exp)
     sys.exit(-1)
-
-
-  return ','.join(_to_interp(exp))
-
 
 
 

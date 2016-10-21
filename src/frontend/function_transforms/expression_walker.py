@@ -29,6 +29,9 @@ def expand_many(work_stack, count, exp):
 
 def expand_error(work_stack, count, exp):
   print("EXPAND ERROR: {}".format(exp), file=sys.stderr)
+  print("STACK(base is at top):", file=sys.stderr)
+  for tup in work_stack:
+    print("\t",tup, file=sys.stderr)
   sys.exit(-1)
 
 default_walk_expand_func_dict = dict()
@@ -56,12 +59,14 @@ def contract_return(work_stack, count, args):
 
 def contract_error(work_stack, count, exp):
   print("CONTRACT ERROR: {}".format(exp), file=sys.stderr)
+  print("STACK(base is at top):", file=sys.stderr)
+  for tup in work_stack:
+    print("\t",tup, file=sys.stderr)
   sys.exit(-1)
 
 default_walk_contract_func_dict = dict()
 default_walk_contract_func_dict.update(zip(BINOPS, [contract_many for _ in BINOPS]))
 default_walk_contract_func_dict.update(zip(UNOPS,  [contract_many for _ in UNOPS]))
-default_walk_contract_func_dict.update(zip(ATOMS,  [contract_many for _ in ATOMS]))
 default_walk_contract_func_dict["Tuple"]  = contract_many
 default_walk_contract_func_dict["Box"]    = contract_many
 default_walk_contract_func_dict["Input"]  = contract_many
@@ -79,6 +84,8 @@ def constant_expand_two(work_stack, count, exp):
   work_stack.append((False, 2,     exp[1]))
 
 def constant_expand_one(work_stack, count, exp):
+  if len(exp) != 2:
+    print(exp)
   assert(len(exp) == 2)
   work_stack.append((False, 1,     exp[1]))
 

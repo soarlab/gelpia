@@ -34,12 +34,12 @@ def single_assignment(exp, inputs, assigns, consts=None):
     assert(len(args) == 3)
     left  = cache(args[1])
     right = cache(args[2])
-    work_stack.append((True, count, tuple(args)))
+    work_stack.append((True, count, (args[0], left, right)))
 
   def _one_item(work_stack, count, args):
     assert(len(args) == 2)
     arg = cache(args[1])
-    work_stack.append((True, count, tuple(args)))
+    work_stack.append((True, count, (args[0], arg)))
 
   def _many_items(work_stack, count, args):
     args = [args[0]] + [cache(sub) for sub in args[1:]]
@@ -47,7 +47,7 @@ def single_assignment(exp, inputs, assigns, consts=None):
 
   my_contract_dict = dict()
   my_contract_dict.update(zip(BINOPS, [_two_items for _ in BINOPS]))
-  my_contract_dict.update(zip(UNOPS, [_one_item for _ in UNOPS]))
+  my_contract_dict.update(zip(UNOPS,  [_one_item for _ in UNOPS]))
   my_contract_dict["Tuple"] = _two_items
   my_contract_dict["Box"] = _many_items
 

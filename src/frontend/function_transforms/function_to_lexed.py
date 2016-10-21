@@ -1,11 +1,13 @@
-#!/usr/bin/env python3
+#! /usr/bin/env python3
 
 import sys
 
 try:
   import ply.lex as lex
 except:
-  print("PLY must be installed for python3")
+  print("PLY must be installed for python3", file=sys.stderr)
+  sys.exit(-1)
+
 
 
 
@@ -32,7 +34,6 @@ tokens = [
   "FLOAT",
   "INTERVAL",
   "SYMBOLIC_CONST",
-
 
   # Deliminators
   "LPAREN",
@@ -110,20 +111,31 @@ t_FLOAT   = ('('                 # match all floats
 t_INTEGER  = '\d+'
 t_INTERVAL = 'interval'
 
+
 # These are the tightest possible enclosures for these transcendental constants.
 # GAOL round-trips on the full decimal expansion in its string constructor,
 # therefore these intervals are appropriate to substitute for the symbolic
 # constant. All intervals when represented by a GAOL interval have a width of
 # one ULP.
-SYMBOLIC_CONSTS = \
-{"pi"      : (("Float", "3.141592653589793115997963468544185161590576171875"),
-              ("Float", "3.141592653589793560087173318606801331043243408203125")),
- "exp1"    : (("Float", "2.718281828459045090795598298427648842334747314453125"),
-              ("Float", "2.71828182845904553488480814849026501178741455078125")),
- "half_pi" : (("Float", "1.5707963267948965579989817342720925807952880859375"),
-              ("Float", "1.5707963267948967800435866593034006655216217041015625")),
- "two_pi"  : (("Float", "6.28318530717958623199592693708837032318115234375"),
-              ("Float", "6.28318530717958712017434663721360266208648681640625")),}
+SYMBOLIC_CONSTS = {
+  "pi"      : (("Float",
+                "3.141592653589793115997963468544185161590576171875"),
+               ("Float",
+                "3.141592653589793560087173318606801331043243408203125")),
+  "exp1"    : (("Float",
+                "2.718281828459045090795598298427648842334747314453125"),
+               ("Float",
+                "2.71828182845904553488480814849026501178741455078125")),
+  "half_pi" : (("Float",
+                "1.5707963267948965579989817342720925807952880859375"),
+               ("Float",
+                "1.5707963267948967800435866593034006655216217041015625")),
+  "two_pi"  : (("Float",
+                "6.28318530717958623199592693708837032318115234375"),
+               ("Float",
+                "6.28318530717958712017434663721360266208648681640625")),
+}
+
 
 # Deliminators
 t_LPAREN    = '\('
@@ -140,9 +152,10 @@ def t_comment(t):
   '\#[^\n]*'
   pass
 
+
 # Error
 def t_error(t):
-  print("Illegal character '{}'".format(t))
+  print("Illegal character '{}'".format(t), file=sys.stderr)
   sys.exit(-1)
 
 
