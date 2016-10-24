@@ -250,11 +250,19 @@ def add_dop_args(arg_parser):
         print("Malformed query file, no cost section: {}".format(args.query_file))
         sys.exit(-1)
     function = list()
+    part = ""
     for line in lines[start+1:]:
         if ':' in line:
             break
-        function.append("({})".format(line.replace(';','')))
+        if ';' in line:
+            function.append("(" + part + line.replace(';','') + ")")
+            part = ""
+        else:
+            part += line.strip()
+    if part != "":
+        function.append("({})".format(part))
     function = '+'.join(function)
+
     if args.dreal:
         function = "-({})".format(function)
 
