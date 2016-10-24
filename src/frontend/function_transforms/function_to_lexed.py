@@ -20,10 +20,9 @@ tokens = [
   "INFIX_POW",
 
   # Prefix operators
-
-  # Prefix operators
   "BINOP",
   "UNOP",
+
   # Variables
   "NAME",
 
@@ -136,6 +135,8 @@ SYMBOLIC_CONSTS = {
                ("Float",
                 "6.28318530717958712017434663721360266208648681640625")),
 }
+
+
 # Deliminators
 t_LPAREN    = '\('
 t_RPAREN    = '\)'
@@ -175,13 +176,8 @@ except:
 def lex_function(text):
   return _function_lexer.lex(text)
 
-
-def lex_function(text):
-  return _function_lexer.lex(text)
-
 if __name__ == "__main__":
   try:
     lex.runmain(_function_lexer)
   except KeyboardInterrupt:
     print("\nGoodbye")
-    
