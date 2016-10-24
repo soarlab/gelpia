@@ -10,11 +10,7 @@ extern crate gr;
 
 use ga::{ea, Individual};
 
-<<<<<<< HEAD
 use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol, check_diff};
-=======
-use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol};
->>>>>>> origin/FPTaylorCompat
 
 use gr::{GI, width_box, split_box, midpoint_box};
 
@@ -73,7 +69,6 @@ fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
 /// # Arguments
 /// * `f` - The function to evaluate with
 /// * `input` - The input domain
-<<<<<<< HEAD
 fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI, Option <Vec<GI>>) {
     let mid = midpoint_box(input);
     let (est_m, _) = f.call(&mid);
@@ -86,38 +81,16 @@ fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI, Option <Vec<GI>>) {
                        .collect::<Vec<_>>());
     let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
     (est_max, fsx, dfsx)
-=======
-fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI) {
-    let mid = midpoint_box(input);
-    let est_m = f.call(&mid);
-    let fsx = f.call(&input);
-    let fsx_u = f.call(&input.iter()
-                       .map(|&si| GI::new_p(si.upper()))
-                       .collect::<Vec<_>>());
-    let fsx_l = f.call(&input.iter()
-                       .map(|&si| GI::new_p(si.lower()))
-                       .collect::<Vec<_>>());
-    let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
-    (est_max, fsx)
->>>>>>> origin/FPTaylorCompat
 }
 
 // Returns the upper bound, the domain where this bound occurs and a status
 // flag indicating whether the answer is complete for the problem.
 fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
-<<<<<<< HEAD
         f_bestag: Arc<RwLock<Flt>>,
         f_best_shared: Arc<RwLock<Flt>>,
         x_bestbb: Arc<RwLock<Vec<GI>>>,
         b1: Arc<Barrier>, b2: Arc<Barrier>,
         q: Arc<RwLock<Vec<Quple>>>,
-=======
-        f_bestag: Arc<RwLock<Flt>>, 
-        f_best_shared: Arc<RwLock<Flt>>,
-        x_bestbb: Arc<RwLock<Vec<GI>>>,
-        b1: Arc<Barrier>, b2: Arc<Barrier>, 
-        q: Arc<RwLock<Vec<Quple>>>, 
->>>>>>> origin/FPTaylorCompat
         sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
         f: FuncObj,
         logging: bool, max_iters: u32)
@@ -125,17 +98,10 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
     let mut best_x = x_0.clone();
 
     let iters = Arc::new(AtomicUsize::new(0));
-<<<<<<< HEAD
     let (est_max, first_val, _) = est_func(&f, &x_0);
     {
         q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
                                       fdata: first_val, dfdata: None});
-=======
-    let (est_max, first_val) = est_func(&f, &x_0);
-    {
-        q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
-                                      fdata: first_val});
->>>>>>> origin/FPTaylorCompat
     }
     let mut f_best_low = est_max;
     let mut f_best_high = est_max;
@@ -143,11 +109,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
     let n_workers = 11;
     let n_jobs = n_workers;
     let pool = ThreadPool::new(n_workers);
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> origin/FPTaylorCompat
     while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
         if max_iters != 0 && iters.load(Ordering::Acquire) as u32 >= max_iters {
             break;
@@ -173,11 +135,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     break;
                 }
             }
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> origin/FPTaylorCompat
             if logging && fbl_orig != f_best_low {
                 log_max(&q, f_best_low, f_best_high);
             }
@@ -188,27 +146,16 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             q.sort();
             q.len()/n_workers + 1
         };
-<<<<<<< HEAD
 
-=======
-        
-        
->>>>>>> origin/FPTaylorCompat
         let outer_barr = Arc::new(Barrier::new(n_workers + 1));
 
         let (qtx, qrx) = channel();
         let (htx, hrx) = channel();
         let (ltx, lrx) = channel();
-<<<<<<< HEAD
 
         for i in 0..n_workers {
             let inner_barr = outer_barr.clone();
 //            let elems = p_q[i].clone();
-=======
-        
-        for i in 0..n_workers {
-            let inner_barr = outer_barr.clone();
->>>>>>> origin/FPTaylorCompat
             let _f = f.clone();
             let qtx = qtx.clone();
             let htx = htx.clone();
@@ -216,18 +163,11 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             let f_bestag = f_bestag.clone();
             let iters = iters.clone();
             let lqi = q.clone();
-<<<<<<< HEAD
             let x_0 = x_0.clone();
             pool.execute(move || {
                 let mut l_f_best_high = f_best_high;
                 let mut l_best_x = vec![];
 
-=======
-            pool.execute(move || {
-                let mut l_f_best_high = f_best_high;
-                let mut l_best_x = vec![];
-                
->>>>>>> origin/FPTaylorCompat
                 let mut l_f_best_low = f_best_low;
                 let mut l_best_low_x = vec![];
 
@@ -243,15 +183,12 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     let ref iter_est = elem.p;
                     let ref fx = elem.fdata;
                     let ref gen = elem.pf;
-<<<<<<< HEAD
                     let ref dfx = elem.dfdata;
 
                     if check_diff(dfx.clone(), x, &x_0) {
                         continue;
                     }
 
-=======
->>>>>>> origin/FPTaylorCompat
                     
                     if fx.upper() < l_f_best_low ||
                         width_box(&x, e_x) ||
@@ -264,18 +201,11 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     else {
                         let (x_s, is_split) = split_box(&x);
                         for sx in x_s {
-<<<<<<< HEAD
                             let (est_max, fsx, dfsx) = est_func(&_f, &sx);
                             if l_f_best_low < est_max {
                                 l_f_best_low = est_max;
                                 l_best_low_x = sx.clone();
                                 // ltx.send((est_max, sx.clone())).unwrap();
-=======
-                            let (est_max, fsx) = est_func(&_f, &sx);
-                            if l_f_best_low < est_max {
-                                l_f_best_low = est_max;
-                                l_best_low_x = sx.clone();
->>>>>>> origin/FPTaylorCompat
                             }
                             iters.fetch_add(1, Ordering::Release);
                             if is_split && fsx.upper() > f_best_low &&
@@ -283,36 +213,20 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                                     lqo.push(Quple{p: est_max,
                                                    pf: gen+1,
                                                    data: sx,
-<<<<<<< HEAD
                                                    fdata: fsx,
                                                    dfdata: dfsx});
-=======
-                                                   fdata: fsx});
->>>>>>> origin/FPTaylorCompat
                                 }
                         }
                     }
                 }
                 ltx.send((l_f_best_low, l_best_low_x, used)).unwrap();
                 htx.send((l_f_best_high, l_best_x, used)).unwrap();
-<<<<<<< HEAD
                 lqo.sort();
                 qtx.send(lqo).unwrap();
-=======
-                
-                lqo.sort();
-                qtx.send(lqo).unwrap();
-
->>>>>>> origin/FPTaylorCompat
                 inner_barr.wait();
             });
         }
         outer_barr.wait();
-<<<<<<< HEAD
-=======
-
-        // Hangup the transmission ends of the channels
->>>>>>> origin/FPTaylorCompat
         drop(qtx);
         drop(htx);
         drop(ltx);
@@ -359,11 +273,7 @@ fn update(stop: Arc<AtomicBool>, _sync: Arc<AtomicBool>,
         // Timer code...
         thread::sleep(one_sec);
         if timeout > 0 &&
-<<<<<<< HEAD
             (time::get_time() - start).num_seconds() >= timeout as i64 {
-=======
-            (time::get_time() - start).num_seconds() >= timeout as i64 { 
->>>>>>> origin/FPTaylorCompat
                 let _ = writeln!(&mut std::io::stderr(), "Stopping early...");
                 stop.store(true, Ordering::Release);
                 break 'out;
@@ -374,18 +284,13 @@ fn update(stop: Arc<AtomicBool>, _sync: Arc<AtomicBool>,
 
 fn main() {
     let args = process_args();
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> origin/FPTaylorCompat
     let ref x_0 = args.domain;
     let ref fo = args.function;
     let x_err = args.x_error;
     let y_err = args.y_error;
     let y_rel = args.y_error_rel;
     let seed = args.seed;
-<<<<<<< HEAD
 
     // Early out if there are no input variables...
     if x_0.len() == 0 {
@@ -415,37 +320,6 @@ fn main() {
     let x_bestbb = Arc::new(RwLock::new(x_0.clone()));
 
     let ibba_thread =
-=======
-    
-    // Early out if there are no input variables...
-    if x_0.len() == 0 {
-        let result = fo.call(&x_0);
-        println!("[[{},{}], {{}}]", result.lower(), result.upper());
-        return
-    }
-    
-    let q_inner: Vec<Quple> = Vec::new();
-    let q = Arc::new(RwLock::new(q_inner));
-    
-    let population_inner: Vec<Individual> = Vec::new();
-    let population = Arc::new(RwLock::new(population_inner));
-    
-    let b1 = Arc::new(Barrier::new(3));
-    let b2 = Arc::new(Barrier::new(3));
-    
-    let sync = Arc::new(AtomicBool::new(false));
-    let stop = Arc::new(AtomicBool::new(false));
-    
-    let f_bestag: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
-    let f_best_shared: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
-    
-    let x_e = x_0.clone();
-    let x_i = x_0.clone();
-    
-    let x_bestbb = Arc::new(RwLock::new(x_0.clone()));
-    
-    let ibba_thread = 
->>>>>>> origin/FPTaylorCompat
     {
         let q = q.clone();
         let b1 = b1.clone();
@@ -464,13 +338,8 @@ fn main() {
                  x_bestbb,
                  b1, b2, q, sync, stop, fo_c, logging, iters)
         })};
-<<<<<<< HEAD
 
     let ea_thread =
-=======
-    
-    let ea_thread = 
->>>>>>> origin/FPTaylorCompat
     {
         let population = population.clone();
         let f_bestag = f_bestag.clone();
@@ -489,24 +358,15 @@ fn main() {
                                crossover: 0.0_f64, // 0.5_f64
                                seed:  seed,
             },
-<<<<<<< HEAD
                population,
                f_bestag,
-=======
-               population, 
-               f_bestag, 
->>>>>>> origin/FPTaylorCompat
                x_bestbb,
                b1, b2,
                stop, sync, fo_c)
         })};
 
     // pending finding out how to kill threads
-<<<<<<< HEAD
     //let update_thread =
-=======
-    //let update_thread = 
->>>>>>> origin/FPTaylorCompat
     {
         let sync = sync.clone();
         let stop = stop.clone();
@@ -517,11 +377,7 @@ fn main() {
         let _ = thread::Builder::new().name("Update".to_string()).spawn(move || {
             update(stop, sync, b1, b2, fo_c, to)
         });};
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> origin/FPTaylorCompat
     let result = ibba_thread.unwrap().join();
     let ea_result = ea_thread.unwrap().join();
 
@@ -531,7 +387,6 @@ fn main() {
         let (min, mut max, mut interval) = result.unwrap();
         // Go through all remaining intervals from IBBA to find the true
         // max
-<<<<<<< HEAD
         let n_workers = 11;
         let n_jobs = n_workers;
         let pool = ThreadPool::new(n_workers);
@@ -577,31 +432,19 @@ fn main() {
         
         
 /*        let mut lq = q.write().unwrap();
-=======
-        let mut lq = q.write().unwrap();
->>>>>>> origin/FPTaylorCompat
         while lq.len() != 0 {
             let ref top = lq.pop().unwrap();
             let (ub, dom) = (top.fdata.upper(), &top.data);
             if ub > max {
             max = ub;
             interval = dom.clone();
-<<<<<<< HEAD
     }*/
-=======
-        }
-    }
->>>>>>> origin/FPTaylorCompat
     println!("[[{},{}], {{", min, max);
     for i in 0..args.names.len() {
         println!("'{}' : {},", args.names[i], interval[i].to_string());
     }
     println!("}}]");
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> origin/FPTaylorCompat
 }
 else {println!("error")}
 }
