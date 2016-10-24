@@ -152,8 +152,7 @@ def add_gelpia_args(arg_parser):
 
     inputs = ' '.join(args.input)
     start = parse_input_box(process(inputs))
-    rust_func, new_inputs, new_consts = to_rust(exp, consts, inputs, assign)
-    
+
     reformatted_query = start+'\n'+function
 
     ie = oe = 0.001
@@ -281,6 +280,7 @@ def add_dop_args(arg_parser):
 
     return (args, reformatted_query, [ie, oe, oer])
 
+
 def finish_parsing_args(args, function, epsilons):
     if args.debug or args.verbose:
         iu.set_log_level(max(1, args.verbose))
@@ -292,7 +292,6 @@ def finish_parsing_args(args, function, epsilons):
     rev_diff = reverse_diff(exp, inputs, assigns)
     rev_diff = single_assignment(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns)
-
 
     r, rev_diff, consts = lift_consts(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns, consts)
