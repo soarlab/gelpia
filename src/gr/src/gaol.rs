@@ -1,4 +1,4 @@
-#![feature(static_mutex)]
+//#![feature(static_mutex)]
 #![feature(float_extras)]
 #![allow(improper_ctypes)]
 
@@ -8,12 +8,8 @@ use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
 use std::mem;
-
 extern crate simd;
 
-use std::sync::{StaticMutex, MUTEX_INIT};
-
-static RWLOCK: StaticMutex = MUTEX_INIT;
 
 pub type CInterval = simd::x86::sse2::f64x2;
 
@@ -257,7 +253,6 @@ impl GI {
         let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
         let mut success = 1 as i8;
         unsafe {
-            let _g = RWLOCK.lock().unwrap();
             make_interval_s(CString::new(x).unwrap().as_ptr(), &mut result.data, &mut success)
         };
         if success == 1{
@@ -278,7 +273,6 @@ impl GI {
         let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
         let mut success = 1 as i8;
         unsafe {
-            let _g = RWLOCK.lock().unwrap();
             make_interval_ss(CString::new(inf).unwrap().as_ptr(),
                              CString::new(sup).unwrap().as_ptr(),
                              &mut result.data, &mut success)
@@ -488,7 +482,6 @@ impl ToString for GI {
     fn to_string(&self) -> String {
         let x: *const c_char = unsafe {to_str(&self.data)};
         let z = unsafe { 
-            let _g = RWLOCK.lock().unwrap();
             let y = CStr::from_ptr(x).to_bytes();
             String::from_utf8(y.to_vec()).unwrap()
         };
@@ -626,7 +619,9 @@ pub fn log(x: GI) -> GI {
 }
 
 pub fn eps_tol(widest: GI, tol: f64) -> bool {
+    #[allow(deprecated)]
     let (_,exp_x,_) = widest.lower().integer_decode();
+    #[allow(deprecated)]
     let (_,exp_y,_) = widest.upper().integer_decode();
     let exp = {if exp_x < exp_y {exp_y} else {exp_x}} as i64;
     let wideste = ((exp+1023) << 52) & 0x7FF0000000000000;

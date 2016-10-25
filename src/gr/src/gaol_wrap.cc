@@ -6,6 +6,10 @@
 #include <cstring>
 #include <cassert>
 #include <cfenv>
+#include <mutex>
+
+static std::mutex RWLOCK;
+
 #define TO_INTERVAL(x) (*(reinterpret_cast<interval*>(x)))
 #define TO_INTERVAL_C(x) (*(reinterpret_cast<const interval*>(x)))
 #define TO_STACK(x) (*(reinterpret_cast<gaol_int*>(x)))
@@ -27,10 +31,11 @@ void make_interval_d(double p, gaol_int* out) {
   TO_INTERVAL(out) = interval(p);
 }
 
-// These Gaol functions my throw. Exceptions must be caught here since Rust
+// These Gaol functions may throw. Exceptions must be caught here since Rust
 // has no mechanism for handling these.
 
 void make_interval_ss(const char* inf, const char* sup, gaol_int* out, char* success) {
+  std::lock_guard<std::mutex> guard(RWLOCK);
   try {
     TO_INTERVAL(out) = interval(inf, sup);
     *success = 1;
@@ -41,6 +46,7 @@ void make_interval_ss(const char* inf, const char* sup, gaol_int* out, char* suc
 }
 
 void make_interval_s(const char* in, gaol_int* out, char* success) {
+  std::lock_guard<std::mutex> guard(RWLOCK);
   try {
     TO_INTERVAL(out) = interval(in);
     *success = 1;
@@ -369,6 +375,7 @@ void print(gaol_int* x) {
 
 const char* to_str(const gaol_int* x) {
   //  interval::precision(100);
+  std::lock_guard<std::mutex> guard(RWLOCK);
   std::string t(TO_INTERVAL_C(x));
   char* result = reinterpret_cast<char*>(malloc((t.size() + 1) * sizeof(char)));
   strcpy(result, t.c_str());
