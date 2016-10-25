@@ -1,7 +1,6 @@
 /*
 Basic interval implementation and other common functions/data structures
  */
-#![feature(float_extras)]
 
 // External libraries
 use std::cmp::{PartialOrd, Ordering, PartialEq, Ord};
