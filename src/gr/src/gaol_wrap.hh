@@ -5,7 +5,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  
+
   typedef struct gaol_int {__m128 data;} gaol_int;
 
   void make_interval_dd(double, double, gaol_int*);
@@ -36,7 +36,7 @@ extern "C" {
   void iabs_g(gaol_int*);
   void dabs_g(const gaol_int*, gaol_int*);
   void idabs_g(gaol_int*);
-  
+
   // Transcendental
   void sin_g(const gaol_int*, gaol_int*);
   void asin_g(const gaol_int*, gaol_int*);
@@ -71,23 +71,24 @@ extern "C" {
 
   void fp2_g(const gaol_int* a, gaol_int* out);
   void ifp2_g(gaol_int* a);
-  
+
   void symint_g(const gaol_int* a, gaol_int* out);
   void isymint_g(gaol_int* a);
-  
 
-  
-  
+  void sub2_g(const gaol_int* a, const gaol_int*b, gaol_int* out);
+  void isub2_g(const gaol_int* a, gaol_int* out);
+
+
   void exp_g(const gaol_int*, gaol_int*);
   void iexp_g(gaol_int*);
-  
+
   void log_g(const gaol_int*, gaol_int*);
   void ilog_g(gaol_int*);
 
 
   void pow_vg(const gaol_int*, const gaol_int*, gaol_int*);
   void ipow_vg(gaol_int*, const gaol_int*);
-  
+
   void print(gaol_int*);
   const char* to_str(const gaol_int*);
 
@@ -102,7 +103,7 @@ extern "C" {
   char is_empty_g(const gaol_int*);
   char straddles_zero_g(const gaol_int*);
   char is_canonoical_g(const gaol_int*);
-  
+
 #ifdef __cplusplus
 }
 #endif

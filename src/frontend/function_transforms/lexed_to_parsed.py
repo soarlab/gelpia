@@ -162,9 +162,10 @@ def p_func(t):
            | UNOP  LPAREN expression RPAREN '''
   if len(t) == 7:
     if t[1] == "pow":
-      t[0] = ("powi", t[3], t[5])
-    else:
-      t[0] = (t[1], t[3], t[5])
+      t[1] = "powi"
+    if t[1] == "sub2_I":
+      t[1] = "sub2"
+    t[0] = (t[1], t[3], t[5])
   elif len(t) == 5:
     t[0] = (strip_arc(t[1]), t[3])
   else:

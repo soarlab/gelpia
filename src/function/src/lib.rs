@@ -137,6 +137,7 @@ impl FuncObj {
                         "*" => left.mul(right),
                         "/" => left.div(right),
                         "p" => left.powi(right),
+                        "sub2" => left.sub2(right),
                         _   => unreachable!()
                     };
                 },

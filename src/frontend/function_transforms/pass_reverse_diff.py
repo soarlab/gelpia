@@ -187,7 +187,7 @@ def reverse_diff(exp, inputs, assigns, consts=None):
 
   def _undiff(work_stack, count, exp):
     nonlocal seen_undiff
-    assert(exp[0] == "floor_power2" or exp[0] == "sym_interval")
+    assert(exp[0] == "floor_power2" or exp[0] == "sym_interval" or exp[0] == "sub2" or exp[0] == "sub2_I")
     seen_undiff = True
     work_stack.append((True, 0, "Return"))
     work_stack.append((True, 1, "Now"))

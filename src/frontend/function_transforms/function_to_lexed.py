@@ -56,7 +56,7 @@ t_INFIX_POW = '\^'
 
 
 # Prefix operators
-BINOPS  = {"pow"}
+BINOPS  = {"pow", "sub2", "sub2_I"}
 t_BINOP = "({})".format(")|(".join(BINOPS))
 
 UNOPS = {"abs", "acos", "acosh", "arccos", "arccosh", "arcosh", "arcsin",

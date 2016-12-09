@@ -39,6 +39,13 @@ def to_interp(exp, inputs, assigns, consts):
     assert(type(args[1]) is list)
     work_stack.append((True, count, args[1] + ["p"+args[2][1]]))
 
+  def _sub2(work_stack, count, args):
+    assert(args[0] == "sub2")
+    assert(len(args) == 3)
+    assert(type(args[1]) is list)
+    assert(type(args[2]) is list)
+    work_stack.append((True, count, args[1] + args[2] + ["osub2"]))
+
   def _powi(work_stack, count, args):
     assert(args[0] == "powi")
     assert(len(args) == 3)
@@ -69,6 +76,7 @@ def to_interp(exp, inputs, assigns, consts):
   my_contract_dict.update(zip(UNOPS, [_unops for _ in UNOPS]))
   my_contract_dict["pow"]  = _pow
   my_contract_dict["powi"] = _powi
+  my_contract_dict["sub2"] = _sub2
   my_contract_dict["Return"] = _return
 
   exp = walk(my_expand_dict, my_contract_dict, exp, assigns)
