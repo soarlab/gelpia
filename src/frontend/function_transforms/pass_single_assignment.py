@@ -2,6 +2,7 @@
 
 from pass_utils import *
 from expression_walker import walk
+import ian_utils as iu
 
 import collections
 import re
@@ -23,6 +24,7 @@ def single_assignment(exp, inputs, assigns, consts=None):
       return exp
     try:
       key = hashed[exp]
+      iu.log(5, lambda :iu.cyan("Eliminated redundant subexpression") + ": {}".format(exp))
     except KeyError:
       key = "_expr_"+str(len(hashed))
       hashed[exp] = key
