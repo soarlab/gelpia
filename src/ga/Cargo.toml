@@ -1,7 +1,7 @@
 [package]
 name  = "ga"
 version = "0.0.1"
-authors = ["Andy Schwartzmeyer (modified by Mark S. Baranowski)"]
+authors = ["Ian Briggs and Marek Baranowski"]
 
 [lib]
 name = "ga"
