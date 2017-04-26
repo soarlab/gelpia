@@ -1,10 +1,10 @@
-#Global Extrema Locator Parallelization for Interval Arithmetic
+# Global Extrema Locator Parallelization for Interval Arithmetic
 
-##Gelpia algorithm
+## Gelpia algorithm
 Gelpia is a cooperative, [interval-arithmetic](https://en.wikipedia.org/wiki/Interval_arithmetic) branch-and-bound based algorithm (IBBA). It rigorously finds an upper bound on the global maximum of a multivariate function on a given interval. This means that its answer is guaranteed to be above the global maximum on the interval when evaluated using real arithmetic.  
 Gelpia is a ***cooperative*** solver in the sense that we concurrently run fast, approximate algorithms which find local maxima to inform the IBBA of new lower bounds. This causes the IBBA to refocus its attention on more promising regions of the search space. Meanwhile, the IBBA informs the cooperative algorithms of the search space currently being explored to keep them focused on trying to find the global maximum. We have found that this bi-directional communication significantly reduces runtime, allowing us to handle functions with many variables.
 
-##Building and usage
+## Building and usage
 Known to build on Ubuntu 14.04 through 16.04  
 Currently only Linux is explicitly supported.
 
@@ -36,7 +36,7 @@ must be preceded by the **@** symbol. The _benchmarks/fptaylor\_generated_ direc
 Additional arguments, or overwiting arguments, may be specified after the
 file.
 
-####Example uses:
+#### Example uses:
 
 > \>./bin/gelpia @benchmarks/fptaylor_generated/gelpia_jet.txt  
 > [119895.48836548299, {  
@@ -54,10 +54,10 @@ file.
 > Solver time: 0.34747815132141113
 
 
-###Dreal dOp format support
+### Dreal dOp format support
 We currently support a subset of [Dreal's](https://github.com/dreal/dreal3) `dOp` optimizer input format. An example can be found at _benchmarks/dop\_benchmarks/pows.dop_. Full examples can be found in _benchmarks/dreal\_dop\_benchmarks_
 
-####An example run:  
+#### An example run:  
 > \>./bin/dop_gelpia benchmarks/dop_benchmarks/pows.dop   
 > [390625, {  
 > 'x' : [4.9990234375, 5],  
@@ -68,7 +68,7 @@ We currently support a subset of [Dreal's](https://github.com/dreal/dreal3) `dOp
 
 Gelpia's dOp mode cannot currently handle constraints as constraint propogation is not currently implemented.
 
-##Issues
+## Issues
 Gelpia may outlive the supplied time limit. This is because it goes through the remaining branches in the priority queue – this can sometimes be a lengthy process. This is why we have a **grace** option which is an additional grace period after the supplied timeout before gelpia is killed hard.  
 
 When used for minimization, Gelpia will report a guaranteed lower bound on the global minimum.
