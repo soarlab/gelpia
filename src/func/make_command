@@ -7,7 +7,7 @@ SCRIPTPATH=`dirname $SCRIPT`
 
 rm -f comp_comm.sh
 
-cargo build --release
+cargo build -q --release
 touch src/lib_fillin.rs
 
 
