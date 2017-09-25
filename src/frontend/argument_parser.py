@@ -78,7 +78,7 @@ def create_common_option_parser(use_ampersand):
                         type=str, nargs='?', const=True, default=None)
     arg_parser.add_argument("-T", "--fptaylor",
                         help="FPTaylor compatibility",
-                            type=str, nargs='?', const=True, default=False)
+                            type=str, default=False)
     arg_parser.add_argument("-z", "--skip-div-zero",
                             action="store_true", help="Skip division by zero check")
     arg_parser.add_argument("-ie", "--input-epsilon",

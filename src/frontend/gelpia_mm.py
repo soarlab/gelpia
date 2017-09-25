@@ -16,13 +16,18 @@ bin_dir = path.join(base_dir, "bin")
 gelpia_exe = bin_dir+"/gelpia"
 
 MAX = None
+MAX_l = None
 MIN = None
+MIN_u = None
 
 def get_max(tup):
   out, err = tup
   global MAX
+  global MAX_l
   try:
-    MAX = out.split('\n')[0]
+    s = out.split('\n')
+    MAX_l = s[0]
+    MAX = s[1]
   except:
     pass
     print("MAX FAILED:", out, '\n', err, file=sys.stderr)
@@ -30,8 +35,11 @@ def get_max(tup):
 def get_min(tup):
   out, err = tup
   global MIN
+  global MIN_u
   try:
-    MIN = out.split('\n')[1]
+    s = out.split('\n')
+    MIN = s[0]
+    MIN_u = s[1]
   except:
     pass
     print("MIN FAILED:", out, '\n', err, file=sys.stderr)
@@ -47,8 +55,8 @@ def run_command(cmd):
 
 def main():
   p = multiprocessing.pool.ThreadPool(processes=2)
-  cmd1 = [gelpia_exe, "-T"] + sys.argv[1:]
-  cmd2 = [gelpia_exe, "--dreal", "-T"] + sys.argv[1:]
+  cmd1 = [gelpia_exe] + sys.argv[1:]
+  cmd2 = [gelpia_exe, "--dreal"] + sys.argv[1:]
   r1 = p.apply_async(run_command,
                      args=(cmd1[:],),
                      callback=get_max)
@@ -63,13 +71,13 @@ def main():
   p.join()
 
   if MAX is not None:
-    print(MAX)
+    print("Maximum: {}\nMaximum_l: {}".format(MAX, MAX_l))
   else:
-    print("Maximum: inf")
+    print("Maximum: inf\nMaximum_l: inf")
   if MIN is not None:
-    print(MIN)
+    print("Minimum: {}\nMinimum_u: {}".format(MIN, MIN_u))
   else:
-    print("Minimum: -inf")
+    print("Minimum: -inf\nMinimum_u: -inf")
 
 if __name__ == '__main__':
     main()
