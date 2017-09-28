@@ -1,4 +1,4 @@
-#![feature(static_mutex)]
+//#![feature(static_mutex)]
 #![feature(float_extras)]
 #![allow(improper_ctypes)]
 
@@ -8,12 +8,8 @@ use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
 use std::mem;
-
 extern crate simd;
 
-use std::sync::{StaticMutex, MUTEX_INIT};
-
-static RWLOCK: StaticMutex = MUTEX_INIT;
 
 pub type CInterval = simd::x86::sse2::f64x2;
 
@@ -38,12 +34,12 @@ extern {
 
     // Constructs an interval from a point
     fn make_interval_d(x: c_double, out: *mut gaol_int);
-    
+
     // Constructs an interval from two strings
     fn make_interval_ss(inf: *const c_char,
                         sup: *const c_char,
                         out: *mut gaol_int, success: *mut c_char);
-    // Constructs an interval from one string, using the single string 
+    // Constructs an interval from one string, using the single string
     // constructor. See the GAOL documentation.
 
     fn make_interval_s(x: *const c_char, out: *mut gaol_int,
@@ -51,57 +47,57 @@ extern {
     // Creates a clone of a GAOL interval
 
     //fn make_interval_i(x: *const gaol_int, out: *mut gaol_int);
-    
+
     // Returns the empty GAOL interval
 
     fn make_interval_e() -> gaol_int;
-    
+
     // Prints a GAOL interval using C++.
 //    fn print(a: *const gaol_int);
 
     // Deletes a GAOL interval.
 //    fn del_int(a: gaol_int);
-    
+
     // Returns the sum of a and b as a new interval.
 
     fn add(a: *const gaol_int, b: *const gaol_int, out: *mut gaol_int);
-    
+
     // Returns a = a + b
 
     fn iadd(a: *mut gaol_int, b: *const gaol_int);
-    
+
     // Returns a - b as a new interval.
 
     fn sub(a: *const gaol_int, b: *const gaol_int, out: *mut gaol_int);
-    
+
     // Returns a = a - b.
 
     fn isub(a: *mut gaol_int, b: *const gaol_int);
-    
+
     // Returns a * b as a new interval.
 
     fn mul(a: *const gaol_int, b: *const gaol_int, out: *mut gaol_int);
-    
+
     // Returns a = a * b.
 
     fn imul(a: *mut gaol_int, b: *const gaol_int);
-    
+
     // Returns a / b as a new interval.
 
     fn div_g(a: *const gaol_int, b: *const gaol_int, out: *mut gaol_int);
-    
+
     // Returns a = a / b.
 
     fn idiv_g(a: *mut gaol_int, b: *const gaol_int);
-    
+
     // Returns -a as a new interval.
 
     fn neg_g(a: *const gaol_int, out: *mut gaol_int);
-    
+
     // Returns a = -a.
 
     fn ineg_g(a: *mut gaol_int);
-    
+
     // Returns sin(a) as a new interval.
 
     fn sin_g(a: *const gaol_int, out: *mut gaol_int);
@@ -137,14 +133,14 @@ extern {
 
     fn itan_g(a: *mut gaol_int);
     fn iatan_g(a: *mut gaol_int);
-    
+
     // Returns e^a as a new interval.
 
     fn exp_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = e^a.
 
     fn iexp_g(a: *mut gaol_int);
-    
+
     // Returns ln(a) as a new interval.
 
     fn log_g(a: *const gaol_int, out: *mut gaol_int);
@@ -157,19 +153,19 @@ extern {
 
 
     fn iabs_g(x: *mut gaol_int);
-    
+
     fn dabs_g(x: *const gaol_int, out: *mut gaol_int);
 
 
     fn idabs_g(x: *mut gaol_int);
-    
+
     // Returns a^b as a new interval.
 
     fn pow_ig(a: *const gaol_int, b: c_int, out: *mut gaol_int);
     // Returns a = a^b.
 
     fn ipow_ig(a: *mut gaol_int, b: c_int);
-    
+
     // Returns a^b with b an interval as a new interval.
 
     fn pow_vg(a: *const gaol_int, b: *const gaol_int, out: *mut gaol_int);
@@ -187,7 +183,7 @@ extern {
     fn isinh_g(a: *mut gaol_int);
     fn iasinh_g(a: *mut gaol_int);
 
-    
+
     fn cosh_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = cosh(a).
     fn acosh_g(a: *const gaol_int, out: *mut gaol_int);
@@ -195,7 +191,7 @@ extern {
 
     fn icosh_g(a: *mut gaol_int);
     fn iacosh_g(a: *mut gaol_int);
-    
+
 
     fn tanh_g(a: *const gaol_int, out: *mut gaol_int);
     // Returns a = tanh(a).
@@ -207,11 +203,13 @@ extern {
 
     fn fp2_g(a: *const gaol_int, out: *mut gaol_int);
     fn ifp2_g(a: *mut gaol_int);
-    
+
     fn symint_g(a: *const gaol_int, out: *mut gaol_int);
     fn isymint_g(a: *mut gaol_int);
-    
-    
+
+    fn sub2_g(a: *const gaol_int, b: *const gaol_int, out: *mut gaol_int);
+    fn isub2_g(a: *const gaol_int, b: *const gaol_int);
+
     // Returns the supremum of a.
 
     fn upper_g(a: *const gaol_int) -> c_double;
@@ -226,7 +224,7 @@ extern {
     fn midpoint_g(a: *const gaol_int) -> gaol_int;
     // Sets out_1 and out_2 to two intervals of input split.
 
-    fn split_g(input: *const gaol_int, out_1: *mut gaol_int, 
+    fn split_g(input: *const gaol_int, out_1: *mut gaol_int,
                out_2: *mut gaol_int);
 
     // Determine if interval is empty.
@@ -235,7 +233,7 @@ extern {
     // Interval predicates
     fn straddles_zero_g(x: *const gaol_int) -> c_char;
     fn is_canonoical_g(x: *const gaol_int) -> c_char;
-    
+
     // Returns a string representation of the interval.
     fn to_str(a: *const gaol_int) -> *const c_char;
 }
@@ -257,7 +255,6 @@ impl GI {
         let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
         let mut success = 1 as i8;
         unsafe {
-            let _g = RWLOCK.lock().unwrap();
             make_interval_s(CString::new(x).unwrap().as_ptr(), &mut result.data, &mut success)
         };
         if success == 1{
@@ -273,12 +270,11 @@ impl GI {
         unsafe{make_interval_d(x as c_double, &mut result.data)};
         result
     }
-    
+
     pub fn new_ss(inf: &str, sup: &str) -> Result<GI, String> {
         let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
         let mut success = 1 as i8;
         unsafe {
-            let _g = RWLOCK.lock().unwrap();
             make_interval_ss(CString::new(inf).unwrap().as_ptr(),
                              CString::new(sup).unwrap().as_ptr(),
                              &mut result.data, &mut success)
@@ -294,11 +290,11 @@ impl GI {
     pub fn new_e() -> GI {
         GI{data: unsafe{make_interval_e()}}
     }
-    
+
     pub fn assign(&mut self, inf: f64, sup: f64) {
         unsafe{make_interval_dd(inf as c_double, sup as c_double, &mut self.data)};
     }
-    
+
     pub fn neg(&mut self) {
         unsafe{ineg_g(&mut self.data)};
     }
@@ -313,7 +309,7 @@ impl GI {
 
     pub fn mul(&mut self, other: GI) {
         unsafe{imul(&mut self.data, &other.data)};
-    }     
+    }
 
     pub fn div(&mut self, other: GI) {
         unsafe{idiv_g(&mut self.data, &other.data)};
@@ -338,11 +334,11 @@ impl GI {
     pub fn exp(&mut self) {
         unsafe{iexp_g(&mut self.data)};
     }
-    
+
     pub fn log(&mut self) {
         unsafe{ilog_g(&mut self.data)};
     }
-    
+
     pub fn sin(&mut self) {
         unsafe{isin_g(&mut self.data)};
     }
@@ -354,28 +350,28 @@ impl GI {
     pub fn sqrt(&mut self) {
         unsafe{isqrt_g(&mut self.data)};
     }
-    
+
     pub fn cos(&mut self) {
         unsafe{icos_g(&mut self.data)};
     }
-    
+
     pub fn tan(&mut self) {
         unsafe{itan_g(&mut self.data)};
     }
-    
+
     pub fn acos(&mut self) {
         unsafe{iacos_g(&mut self.data)};
     }
-    
+
     pub fn atan(&mut self) {
         unsafe{iatan_g(&mut self.data)};
     }
-    
+
     // Hyperbolic functions
     pub fn sinh(&mut self) {
         unsafe{isinh_g(&mut self.data)};
     }
-    
+
     pub fn asinh(&mut self) {
         unsafe{iasinh_g(&mut self.data)};
     }
@@ -404,6 +400,10 @@ impl GI {
         unsafe{isymint_g(&mut self.data)};
     }
 
+    pub fn sub2(&mut self, other: GI) {
+        unsafe{isub2_g(&mut self.data, &other.data)};
+    }
+
     // Auxiliary functions
     fn split(&self, out1: &mut GI, out2: &mut GI) {
         unsafe{split_g(&self.data, &mut out1.data, &mut out2.data)};
@@ -412,7 +412,7 @@ impl GI {
     pub fn upper(&self) -> f64 {
         unsafe{upper_g(&self.data) as f64}
     }
-    
+
     pub fn lower(&self) -> f64 {
         unsafe{lower_g(&self.data) as f64}
     }
@@ -420,7 +420,7 @@ impl GI {
     fn midpoint(&self) -> GI {
         GI{data: unsafe{midpoint_g(&self.data)}}
     }
-    
+
     pub fn width(&self) -> f64 {
         unsafe{width_g(&self.data) as f64}
     }
@@ -487,8 +487,7 @@ impl Neg for GI {
 impl ToString for GI {
     fn to_string(&self) -> String {
         let x: *const c_char = unsafe {to_str(&self.data)};
-        let z = unsafe { 
-            let _g = RWLOCK.lock().unwrap();
+        let z = unsafe {
             let y = CStr::from_ptr(x).to_bytes();
             String::from_utf8(y.to_vec()).unwrap()
         };
@@ -613,6 +612,12 @@ pub fn sym_interval(x: GI) -> GI {
     result
 }
 
+pub fn sub2(x: GI, y: GI) -> GI {
+    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    unsafe{sub2_g(&x.data, &y.data, &mut result.data)};
+    result
+}
+
 pub fn exp(x: GI) -> GI {
     let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
     unsafe{exp_g(&x.data, &mut result.data)};
@@ -626,7 +631,9 @@ pub fn log(x: GI) -> GI {
 }
 
 pub fn eps_tol(widest: GI, tol: f64) -> bool {
+    #[allow(deprecated)]
     let (_,exp_x,_) = widest.lower().integer_decode();
+    #[allow(deprecated)]
     let (_,exp_y,_) = widest.upper().integer_decode();
     let exp = {if exp_x < exp_y {exp_y} else {exp_x}} as i64;
     let wideste = ((exp+1023) << 52) & 0x7FF0000000000000;
@@ -644,7 +651,7 @@ pub fn widest_index(_x: &Vec<GI>) -> usize {
             w = wid;
             w_index = i;
         }
-    }  
+    }
     w_index
 }
 
@@ -670,7 +677,7 @@ pub fn midpoint_box(_x: &Vec<GI>) -> Vec<GI> {
     result
 }
 
-fn get_next_binade(current: f64) 
+fn get_next_binade(current: f64)
                    -> f64 {
     let float_bits: u64 = unsafe{mem::transmute(current)};
     let osign = float_bits >> 63;
@@ -692,7 +699,7 @@ pub fn split_box(_x: &Vec<GI>) -> (Vec<Vec<GI>>, bool) {
             w_ind = i;
         }
     }
-    
+
     let mut a = _x.clone();
     let mut b = _x.clone();
     let nb = get_next_binade(_x[w_ind].midpoint().lower());

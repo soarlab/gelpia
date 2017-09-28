@@ -6,12 +6,16 @@
 #include <cstring>
 #include <cassert>
 #include <cfenv>
+#include <mutex>
+
+static std::mutex RWLOCK;
+
 #define TO_INTERVAL(x) (*(reinterpret_cast<interval*>(x)))
 #define TO_INTERVAL_C(x) (*(reinterpret_cast<const interval*>(x)))
 #define TO_STACK(x) (*(reinterpret_cast<gaol_int*>(x)))
 
 // The following assertions ensure that the punned type gaol_int is correct.
-static_assert(sizeof(interval) == sizeof(gaol_int), 
+static_assert(sizeof(interval) == sizeof(gaol_int),
 	      "Size of punned type gaol_int does not match size of interval.");
 static_assert(alignof(interval) == alignof(gaol_int),
 	      "Alignment of punned type gaol_int does not match alignment of interval.");
@@ -27,10 +31,11 @@ void make_interval_d(double p, gaol_int* out) {
   TO_INTERVAL(out) = interval(p);
 }
 
-// These Gaol functions my throw. Exceptions must be caught here since Rust
+// These Gaol functions may throw. Exceptions must be caught here since Rust
 // has no mechanism for handling these.
 
 void make_interval_ss(const char* inf, const char* sup, gaol_int* out, char* success) {
+  std::lock_guard<std::mutex> guard(RWLOCK);
   try {
     TO_INTERVAL(out) = interval(inf, sup);
     *success = 1;
@@ -41,6 +46,7 @@ void make_interval_ss(const char* inf, const char* sup, gaol_int* out, char* suc
 }
 
 void make_interval_s(const char* in, gaol_int* out, char* success) {
+  std::lock_guard<std::mutex> guard(RWLOCK);
   try {
     TO_INTERVAL(out) = interval(in);
     *success = 1;
@@ -58,8 +64,8 @@ gaol_int make_interval_e() {
   interval result;
   return TO_STACK(&result);
 }
-//  void del_int(gaol_int); 
-  
+//  void del_int(gaol_int);
+
 void add(const gaol_int* a, const gaol_int* b, gaol_int* out) {
   TO_INTERVAL(out) = TO_INTERVAL_C(a) + TO_INTERVAL_C(b);
 }
@@ -88,7 +94,7 @@ void div_g(const gaol_int* a, const gaol_int* b, gaol_int* out) {
   auto result = TO_INTERVAL_C(a) / TO_INTERVAL_C(b);
   if (result.is_empty())
     result = interval(-INFINITY, INFINITY);
-  TO_INTERVAL(out) = result;  
+  TO_INTERVAL(out) = result;
 }
 
 void idiv_g(gaol_int* a, const gaol_int* b) {
@@ -261,6 +267,30 @@ void isymint_g(gaol_int* a) {
   x = interval(-m, m);
 }
 
+static double
+sub2(double x, double y) {
+  if ((0.5d * x <= y) && (y <= 2.0d * x)) {
+    return 0.0d;
+  } else {
+    return x - y;
+  }
+}
+
+void sub2_g(const gaol_int* a, const gaol_int*b, gaol_int* out) {
+  const interval& x = TO_INTERVAL_C(a);
+  const interval& y = TO_INTERVAL_C(b);
+  TO_INTERVAL(out) = interval(sub2(x.left(), y.right()), sub2(x.right(), y.left()));
+}
+
+void isub2_g(const gaol_int* a, gaol_int* out) {
+  const interval& x = TO_INTERVAL_C(a);
+  interval& y = TO_INTERVAL(out);
+  const double low = sub2(x.left(), y.right());
+  const double high = sub2(x.right(), y.left());
+  TO_INTERVAL(out) = interval(low, high);
+}
+
+
 //
 void exp_g(const gaol_int* in, gaol_int* out) {
   TO_INTERVAL(out) = exp(TO_INTERVAL_C(in));
@@ -353,7 +383,7 @@ void pow_ig(const gaol_int* a, int b, gaol_int* out) {
 void ipow_ig(gaol_int* a, int b) {
   TO_INTERVAL(a) = pow(TO_INTERVAL(a), b);
 }
-  
+
 void pow_vg(const gaol_int* a, const gaol_int* b, gaol_int* out) {
   TO_INTERVAL(out) = pow(TO_INTERVAL_C(a), TO_INTERVAL_C(b));
 }
@@ -369,6 +399,7 @@ void print(gaol_int* x) {
 
 const char* to_str(const gaol_int* x) {
   //  interval::precision(100);
+  std::lock_guard<std::mutex> guard(RWLOCK);
   std::string t(TO_INTERVAL_C(x));
   char* result = reinterpret_cast<char*>(malloc((t.size() + 1) * sizeof(char)));
   strcpy(result, t.c_str());

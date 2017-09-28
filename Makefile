@@ -52,6 +52,7 @@ clean: cl
 	$(RM) src/func/comp_comm.sh
 	$(RM) Cargo.lock
 	$(RM) src/func/Cargo.lock
+	$(RM) src/gr/Cargo.lock
 	$(RM) bin/gaol_repl
 
 
