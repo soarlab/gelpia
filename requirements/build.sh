@@ -30,8 +30,8 @@ cd rust_nightly
 # CRLibM
 echo Installing CRLibM
 cd $SOURCE_LOCATION
-rm -f crlibm.tar.gz
-wget http://lipforge.ens-lyon.fr/frs/download.php/162/crlibm-1.0beta4.tar.gz -O crlibm.tar.gz &>> $SCRIPT_LOCATION/log.txt
+# rm -f crlibm.tar.gz
+# wget http://lipforge.ens-lyon.fr/frs/download.php/162/crlibm-1.0beta4.tar.gz -O crlibm.tar.gz &>> $SCRIPT_LOCATION/log.txt
 mkdir -p crlibm && tar -xf crlibm.tar.gz -C crlibm --strip-components 1
 cd crlibm
 export CFLAGS=-fPIC $CFLAGS
