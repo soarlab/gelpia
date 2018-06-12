@@ -6,8 +6,8 @@ export CPLUS_INCLUDE_PATH := $(CURDIR)/requirements/include:${CPLUS_INCLUDE_PATH
 export LIBRARY_PATH := $(CURDIR)/requirements/lib:${LIBRARY_PATH}
 
 all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh bin/gaol_repl
-	@cargo build -q --release
-	@cargo build -q
+	@cargo -q build --release
+	@cargo -q build
 
 bin/build_func.sh: src/scripts/build_func.sh
 	@cp src/scripts/build_func.sh bin/
@@ -69,4 +69,3 @@ clean-requirements:
 	$(RM) -r requirements/include
 	$(RM) -r requirements/lib
 	$(RM) -r requirements/share
-	$(RM) -r requirements/Sources
