@@ -10,4 +10,4 @@ path = "src/lib.rs"
 [dependencies]
 gr = { path = "../gr" }
 function = { path = "../function" }
-getopts = "0.2.*"
+getopts = "0.2.17"

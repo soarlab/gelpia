@@ -1,13 +1,16 @@
-//#![feature(static_mutex)]
-#![feature(float_extras)]
 #![allow(improper_ctypes)]
 
 extern crate libc;
 use libc::{c_double, c_char, c_int};
+
 use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
 use std::mem;
+
+extern crate num_traits;
+use num_traits::Float;
+
 extern crate simd;
 
 
