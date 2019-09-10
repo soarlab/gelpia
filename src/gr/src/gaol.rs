@@ -1,5 +1,3 @@
-//#![feature(static_mutex)]
-#![feature(float_extras)]
 #![allow(improper_ctypes)]
 
 extern crate libc;
@@ -8,10 +6,10 @@ use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
 use std::mem;
-extern crate simd;
+extern crate packed_simd;
 
 
-pub type CInterval = simd::x86::sse2::f64x2;
+pub type CInterval = packed_simd::f64x2;
 
 // Structure holding a GAOL interval.
 #[repr(C)]
@@ -631,15 +629,19 @@ pub fn log(x: GI) -> GI {
 }
 
 pub fn eps_tol(widest: GI, tol: f64) -> bool {
-    #[allow(deprecated)]
-    let (_,exp_x,_) = widest.lower().integer_decode();
-    #[allow(deprecated)]
-    let (_,exp_y,_) = widest.upper().integer_decode();
-    let exp = {if exp_x < exp_y {exp_y} else {exp_x}} as i64;
-    let wideste = ((exp+1023) << 52) & 0x7FF0000000000000;
-    let d: f64 = unsafe{mem::transmute(wideste)};
+    if widest.width() <= tol {
+        return true;
+    }
+    let exp_x = unsafe {
+        mem::transmute::<f64, u64>(widest.lower()) & 0x7FF0000000000000
+    };
+    let exp_y = unsafe {
+        mem::transmute::<f64, u64>(widest.upper()) & 0x7FF0000000000000
+    };
+    let exp = {if exp_x < exp_y {exp_y} else {exp_x}};
+    let d: f64 = unsafe { mem::transmute::<u64, f64>(exp) };
     let ww = widest.width();
-    ww <= tol || ww <= d
+    ww <= d
 }
 
 pub fn widest_index(_x: &Vec<GI>) -> usize {

@@ -72,7 +72,7 @@ impl FuncObj {
             let real_func = unsafe{
                 std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>),
                                       fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>)>(
-                    (self.function.load(Ordering::Acquire)))};
+                    self.function.load(Ordering::Acquire))};
             real_func(_x, &self.constants)
         }
         else {

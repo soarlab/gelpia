@@ -1,9 +1,9 @@
 // build.rs
 
-extern crate gcc;
+extern crate cc;
 
 fn main() {
-    gcc::Config::new()
+    cc::Build::new()
         .cpp(true)
         .cpp_link_stdlib(Some("stdc++"))
         .flag("-msse3")

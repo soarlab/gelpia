@@ -22,7 +22,7 @@ mkdir -p $SOURCE_LOCATION
 echo Installing Rust
 cd $SOURCE_LOCATION
 rm -f rust_nightly.tar.gz
-wget https://static.rust-lang.org/dist/2016-10-21/rust-nightly-x86_64-unknown-linux-gnu.tar.gz -O rust_nightly.tar.gz &>> $SCRIPT_LOCATION/log.txt
+wget https://static.rust-lang.org/dist/2019-09-10/rust-nightly-x86_64-unknown-linux-gnu.tar.gz -O rust_nightly.tar.gz &>> $SCRIPT_LOCATION/log.txt
 mkdir -p rust_nightly && tar -xf rust_nightly.tar.gz -C rust_nightly --strip-components 1
 cd rust_nightly
 ./install.sh --prefix=$SCRIPT_LOCATION &>> $SCRIPT_LOCATION/log.txt
@@ -30,8 +30,6 @@ cd rust_nightly
 # CRLibM
 echo Installing CRLibM
 cd $SOURCE_LOCATION
-# rm -f crlibm.tar.gz
-# wget http://lipforge.ens-lyon.fr/frs/download.php/162/crlibm-1.0beta4.tar.gz -O crlibm.tar.gz &>> $SCRIPT_LOCATION/log.txt
 mkdir -p crlibm && tar -xf crlibm.tar.gz -C crlibm --strip-components 1
 cd crlibm
 export CFLAGS=-fPIC $CFLAGS
