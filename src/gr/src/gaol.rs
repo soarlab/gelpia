@@ -6,10 +6,22 @@ use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
 use std::mem;
-extern crate packed_simd;
+#[cfg(target_arch = "x86")]
+use std::arch::x86::{__m128d,_mm_setzero_pd};
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::{__m128d,_mm_setzero_pd};
 
+pub type CInterval = __m128d;
 
-pub type CInterval = packed_simd::f64x2;
+trait Interval {
+    fn new() -> Self;
+}
+
+impl Interval for CInterval {
+    fn new() -> Self {
+        unsafe { _mm_setzero_pd() }
+    }
+}
 
 // Structure holding a GAOL interval.
 #[repr(C)]
@@ -244,13 +256,13 @@ pub struct GI {
 
 impl GI {
     pub fn new_d(inf: f64, sup: f64) -> GI {
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         unsafe{make_interval_dd(inf as c_double, sup as c_double, &mut result.data)};
         result
     }
 
     pub fn new_c(x: &str) -> Result<GI, String> {
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         let mut success = 1 as i8;
         unsafe {
             make_interval_s(CString::new(x).unwrap().as_ptr(), &mut result.data, &mut success)
@@ -264,13 +276,13 @@ impl GI {
     }
 
     pub fn new_p(x: f64) -> GI {
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         unsafe{make_interval_d(x as c_double, &mut result.data)};
         result
     }
 
     pub fn new_ss(inf: &str, sup: &str) -> Result<GI, String> {
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         let mut success = 1 as i8;
         unsafe {
             make_interval_ss(CString::new(inf).unwrap().as_ptr(),
@@ -439,7 +451,7 @@ impl GI {
 impl Add for GI {
     type Output = GI;
     fn add(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         unsafe{add(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -448,7 +460,7 @@ impl Add for GI {
 impl Sub for GI {
     type Output = GI;
     fn sub(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         unsafe{sub(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -457,7 +469,7 @@ impl Sub for GI {
 impl Mul for GI {
     type Output = GI;
     fn mul(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         unsafe{mul(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -466,7 +478,7 @@ impl Mul for GI {
 impl Div for GI {
     type Output = GI;
     fn div(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         unsafe{div_g(&self.data, &other.data, &mut result.data)};
         result
     }
@@ -475,7 +487,7 @@ impl Div for GI {
 impl Neg for GI {
     type Output = GI;
     fn neg(self) -> Self {
-        let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+        let mut result = GI{data: gaol_int{data: CInterval::new()}};
         unsafe{neg_g(&self.data, &mut result.data)};
         result
     }
@@ -496,134 +508,134 @@ impl ToString for GI {
 
 
 pub fn abs(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{abs_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn dabs(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{dabs_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn pow(base: GI, exp: i32) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{pow_ig(&base.data, exp, &mut result.data)};
     result
 }
 
 pub fn powi(base: GI, exp: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{pow_vg(&base.data, &exp.data, &mut result.data)};
     result
 }
 
 pub fn sin(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{sin_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn asin(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{asin_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn sqrt(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{sqrt_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn cos(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{cos_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn acos(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{acos_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn tan(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{tan_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn atan(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{atan_g(&x.data, &mut result.data)};
     result
 }
 
 // Hyperbolic functions
 pub fn sinh(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{sinh_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn asinh(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{asinh_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn cosh(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{cosh_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn acosh(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{acosh_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn tanh(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{tanh_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn atanh(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{atanh_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn floor_power2(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{fp2_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn sym_interval(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{symint_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn sub2(x: GI, y: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{sub2_g(&x.data, &y.data, &mut result.data)};
     result
 }
 
 pub fn exp(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{exp_g(&x.data, &mut result.data)};
     result
 }
 
 pub fn log(x: GI) -> GI {
-    let mut result = GI{data: gaol_int{data: CInterval::new(0.0, 0.0)}};
+    let mut result = GI{data: gaol_int{data: CInterval::new()}};
     unsafe{log_g(&x.data, &mut result.data)};
     result
 }

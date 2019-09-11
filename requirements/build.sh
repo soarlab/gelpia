@@ -1,5 +1,5 @@
 #!/bin/bash
-
+1;4205;0c
 set -e
 
 function finish {
@@ -22,7 +22,7 @@ mkdir -p $SOURCE_LOCATION
 echo Installing Rust
 cd $SOURCE_LOCATION
 rm -f rust_nightly.tar.gz
-wget https://static.rust-lang.org/dist/2019-09-10/rust-nightly-x86_64-unknown-linux-gnu.tar.gz -O rust_nightly.tar.gz &>> $SCRIPT_LOCATION/log.txt
+wget https://static.rust-lang.org/dist/rust-1.37.0-x86_64-unknown-linux-gnu.tar.gz -O rust_nightly.tar.gz &>> $SCRIPT_LOCATION/log.txt
 mkdir -p rust_nightly && tar -xf rust_nightly.tar.gz -C rust_nightly --strip-components 1
 cd rust_nightly
 ./install.sh --prefix=$SCRIPT_LOCATION &>> $SCRIPT_LOCATION/log.txt
