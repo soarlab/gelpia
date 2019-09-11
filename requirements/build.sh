@@ -1,5 +1,5 @@
 #!/bin/bash
-1;4205;0c
+
 set -e
 
 function finish {
@@ -16,6 +16,8 @@ SUCCESS=1
 SCRIPT_LOCATION="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 SOURCE_LOCATION=$SCRIPT_LOCATION/Sources
+CRLIBM=$SCRIPT_LOCATION/crlibm/crlibm.tar.gz
+
 mkdir -p $SOURCE_LOCATION
 
 # Rust
@@ -29,6 +31,7 @@ cd rust_nightly
 
 # CRLibM
 echo Installing CRLibM
+cp $CRLIBM $SOURCE_LOCATION
 cd $SOURCE_LOCATION
 mkdir -p crlibm && tar -xf crlibm.tar.gz -C crlibm --strip-components 1
 cd crlibm

@@ -7,9 +7,9 @@ use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
 use std::mem;
 #[cfg(target_arch = "x86")]
-use std::arch::x86::{__m128d,_mm_setzero_pd};
+use std::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::{__m128d,_mm_setzero_pd};
+use std::arch::x86_64::*;
 
 pub type CInterval = __m128d;
 
@@ -300,6 +300,18 @@ impl GI {
     pub fn new_e() -> GI {
         GI{data: unsafe{make_interval_e()}}
     }
+    
+    pub fn from_simd(a: __m128d) -> GI {
+        GI{data: gaol_int{data: a}}
+    }
+
+    pub fn raw_simd(&self) -> __m128d {
+        self.data.data
+    }
+
+    pub fn raw_simd_mut(&mut self) -> &mut __m128d {
+        &mut self.data.data
+    }
 
     pub fn assign(&mut self, inf: f64, sup: f64) {
         unsafe{make_interval_dd(inf as c_double, sup as c_double, &mut self.data)};
@@ -310,7 +322,7 @@ impl GI {
     }
 
     pub fn add(&mut self, other: GI) {
-        unsafe{iadd(&mut self.data, &other.data)};
+        *self.raw_simd_mut() = unsafe { _mm_add_pd(self.raw_simd(), other.raw_simd()) };
     }
 
     pub fn sub(&mut self, other: GI) {
@@ -451,9 +463,8 @@ impl GI {
 impl Add for GI {
     type Output = GI;
     fn add(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: CInterval::new()}};
-        unsafe{add(&self.data, &other.data, &mut result.data)};
-        result
+        let sum = unsafe { _mm_add_pd(self.data.data, other.data.data) };
+        GI::from_simd(sum)
     }
 }
 
