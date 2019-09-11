@@ -326,7 +326,12 @@ impl GI {
     }
 
     pub fn sub(&mut self, other: GI) {
-        unsafe{isub(&mut self.data, &other.data)};
+        *self.raw_simd_mut() = unsafe {
+            _mm_add_pd(self.raw_simd(),
+                       _mm_shuffle_pd(other.raw_simd(),
+                                      other.raw_simd(),
+                                      // 1 is the shuffle pattern for _MM_SHUFFLE2(0,1)
+                                      1)) };
     }
 
     pub fn mul(&mut self, other: GI) {
@@ -463,7 +468,7 @@ impl GI {
 impl Add for GI {
     type Output = GI;
     fn add(self, other: GI) -> Self{
-        let sum = unsafe { _mm_add_pd(self.data.data, other.data.data) };
+        let sum = unsafe { _mm_add_pd(self.raw_simd(), other.raw_simd()) };
         GI::from_simd(sum)
     }
 }
@@ -471,9 +476,13 @@ impl Add for GI {
 impl Sub for GI {
     type Output = GI;
     fn sub(self, other: GI) -> Self{
-        let mut result = GI{data: gaol_int{data: CInterval::new()}};
-        unsafe{sub(&self.data, &other.data, &mut result.data)};
-        result
+        let result = unsafe {
+            _mm_add_pd(self.raw_simd(),
+                       _mm_shuffle_pd(other.raw_simd(),
+                                      other.raw_simd(),
+                                      // 1 is the shuffle pattern for _MM_SHUFFLE2(0,1)
+                                      1)) };
+        GI::from_simd(result)
     }
 }
 
