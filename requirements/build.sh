@@ -1,5 +1,5 @@
 #!/bin/bash
-1;4205;0c
+
 set -e
 
 function finish {
