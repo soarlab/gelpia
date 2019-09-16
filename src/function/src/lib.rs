@@ -1,5 +1,3 @@
-#![feature(asm)]
-
 // External libraries
 extern crate dylib;
 use dylib::DynamicLibrary;

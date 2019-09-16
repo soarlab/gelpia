@@ -12,7 +12,6 @@ crate-type = ["dylib"]
 
 [dependencies]
 libc = "0.2.62"
-packed_simd = "0.3.3"
 
 [build-dependencies]
 cc = "1.0.45"
