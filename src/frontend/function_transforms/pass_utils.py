@@ -6,7 +6,7 @@ import subprocess
 import os.path as path
 
 
-from function_to_lexed import BINOPS, UNOPS
+from function_to_lexed import BINOPS, UNOPS, SYMBOLIC_CONSTS
 
 BINOPS.update({'+', '-', '*', '/', 'powi'})
 UNOPS.update({'neg', "dabs", "datanh"})
@@ -152,6 +152,9 @@ def get_runmain_input():
     if match:
       val = match.group(1)
       name = match.group(2)
+      if name in SYMBOLIC_CONSTS:
+        print("Dropping assign to symbolic constant: '{}'".format(name))
+        continue
       if name in names:
         print("Duplicate variable definition {}".format(name))
         sys.exit(-1)
