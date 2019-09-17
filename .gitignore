@@ -3,16 +3,22 @@
 *.so
 __pycache__
 
-/src/func/comp_comm.sh
+/bin
+/gelpia_tests
+/requirements/Sources
 /requirements/bin
+/requirements/debug_eniroment.sh
 /requirements/etc
 /requirements/include
 /requirements/lib
+/requirements/log.txt
 /requirements/share
-/requirements/Sources
-/requirements/debug_eniroment.sh
-
-/bin/*
-/target/*
+/src/func/comp_comm.sh
+/src/function/target
+/src/ga/target
+/src/gelpia_utils/target
+/src/gr/src/tmp
+/src/gr/target
+/target
 
 *~
