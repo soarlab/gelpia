@@ -146,7 +146,7 @@ t_COMMA     = ","
 t_SEMICOLON = ";"
 
 
-# Non-emmitting
+# Non-emitting
 t_ignore = (" \t\n\r")
 def t_comment(t):
     "\#[^\n]*"
