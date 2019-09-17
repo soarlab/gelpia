@@ -1,1 +1,0 @@
-Classical optimization test problems from [http://www.sfu.ca/~ssurjano/optimization.html](http://www.sfu.ca/~ssurjano/optimization.html)
