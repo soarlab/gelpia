@@ -10,7 +10,8 @@ from function_to_lexed import BINOPS, UNOPS, SYMBOLIC_CONSTS
 
 BINOPS.update({"+", "-", "*", "/", "powi"})
 UNOPS.update({"dabs", "datanh", "neg"})
-ATOMS = {"ConstantInterval", "Float", "InputInterval", "Integer", "PointInterval"}
+ATOMS = {"ConstantInterval", "Float", "InputInterval", "Integer",
+         "PointInterval", "SymbolicConst"}
 INFIX = {"+", "-", "*", "/"}
 ASSOC = {"+", "*"}
 

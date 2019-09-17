@@ -180,12 +180,7 @@ def p_func(t):
 
 def p_symbolic_const(t):
     ''' symbolic_const : SYMBOLIC_CONST '''
-    if t[1] in SYMBOLIC_CONSTS:
-        val = SYMBOLIC_CONSTS[t[1]]
-        t[0] = ("ConstantInterval", val[0], val[1])
-    else:
-        print("Internal parse error in p_symbolic_const")
-        sys.exit(-1)
+    t[0] = ("SymbolicConst", t[1])
 
 
 def p_error(t):
@@ -218,9 +213,12 @@ def parse_function(text):
 
 if __name__ == "__main__":
   try:
-    from pass_utils import *
+    from pass_utils import get_runmain_input, print_exp
+
     data = get_runmain_input()
     exp = parse_function(data)
+
     print_exp(exp)
+
   except KeyboardInterrupt:
     print("\nGoodbye")

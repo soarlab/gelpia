@@ -165,6 +165,8 @@ def t_error(t):
 
 
 
+
+
 try:
     from gelpia import bin_dir
     _function_lexer = lex.lex(debug=False, optimize=True, outputdir=bin_dir,
@@ -176,6 +178,7 @@ except:
 if __name__ == "__main__":
     try:
         from pass_utils import *
+
         data = get_runmain_input()
         _function_lexer.input(data)
         while True:
@@ -183,5 +186,6 @@ if __name__ == "__main__":
             if not tok:
                 break
             print(tok)
+
     except KeyboardInterrupt:
         print("\nGoodbye")
