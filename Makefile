@@ -10,11 +10,11 @@ all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh bin/gaol_repl
 	@cargo build --release
 	@cargo build
 
-bin/build_func.sh: src/scripts/build_func.sh
+bin/build_func.sh: src/scripts/build_func.sh | bin
 	@cp src/scripts/build_func.sh bin/
 	@chmod +x bin/build_func.sh
 
-bin/gelpia: src/frontend/gelpia.py src/frontend/*.py src/frontend/function_transforms/*.py bin
+bin/gelpia: src/frontend/gelpia.py src/frontend/*.py src/frontend/function_transforms/*.py | bin
 	@cp src/frontend/function_transforms/*.py bin
 	@cp src/frontend/*.py bin
 	@cp src/frontend/gelpia.py bin/gelpia
@@ -28,9 +28,11 @@ src/func/comp_comm.sh: src/func/src/lib_fillin.rs
 	@cd src/func/ && ./make_command
 	@mkdir -p .compiled
 
-bin/gaol_repl: src/gaol_repl.cc
+bin/gaol_repl: src/gaol_repl.cc | bin
 	@${CXX} ${CXXFLAGS} -msse3 -O2 src/gaol_repl.cc -o bin/gaol_repl -lgaol -lcrlibm -lgdtoa
 
+bin:
+	mkdir bin
 
 .PHONY: cl
 cl: #clean libs
