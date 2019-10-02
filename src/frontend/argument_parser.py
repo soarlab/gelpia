@@ -199,7 +199,7 @@ def add_dop_args(arg_parser):
         oe = float(oematch.group(1))
     if oermatch:
         oer = float(oermatch.group(1))
-    #overide those with command line values
+    # overide those with command line values
     if args.prec != None:
         ie = oe = args.prec
     if args.input_epsilon != None:

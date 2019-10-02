@@ -8,9 +8,7 @@ except:
     print("PLY must be installed for python3", file=sys.stderr)
     sys.exit(-1)
 
-from function_to_lexed import *
-# underscore names are not imported by default
-from function_to_lexed import _function_lexer
+from function_to_lexed import tokens, _function_lexer
 
 
 
@@ -44,14 +42,31 @@ precedence = (
 
 def p_function(t):
     ''' function : variable EQUALS expression SEMICOLON function
-                 | expression
-                 | expression SEMICOLON '''
+                 | interval variable SEMICOLON function
+                 | interval symbolic_const SEMICOLON function
+                 | expression_star
+    '''
     if len(t) == 6:
         t[0] = (("Assign", t[1], t[3]), t[5])
-    elif len(t) == 2 or len(t) == 3:
+    elif len(t) == 5:
+        t[0] = (("Assign", t[2], t[1]), t[4])
+    elif len(t) == 2:
         t[0] = ("Return", t[1])
     else:
         print("Internal parse error in p_function", file=sys.stderr)
+        sys.exit(-1)
+
+
+def p_expression_star(t):
+    ''' expression_star : expression SEMICOLON expression_star
+                        | expression SEMICOLON
+                        | expression '''
+    if len(t) == 4:
+        t[0] = ("+", t[1], t[3])
+    elif len(t) == 3 or len(t) == 2:
+        t[0] = t[1]
+    else:
+        print("Internal parse error in p_expression_star", file=sys.stderr)
         sys.exit(-1)
 
 
@@ -93,10 +108,10 @@ def p_variable(t):
 
 
 def p_interval(t):
-    ''' interval : INTERVAL LPAREN   negconst COMMA    negconst RPAREN
-                 | LBRACE   negconst COMMA    negconst RBRACE
-                 | INTERVAL LPAREN   negconst RPAREN
-                 | LBRACE   negconst RBRACE '''
+    ''' interval : INTERVAL LPAREN negconst COMMA negconst RPAREN
+                 | LBRACE negconst COMMA negconst RBRACE
+                 | INTERVAL LPAREN negconst RPAREN
+                 | LBRACE negconst RBRACE '''
     if len(t) == 7:
         left  = t[3]
         right = t[5]
@@ -198,12 +213,19 @@ def p_error(t):
 
 
 
+
+
+
 try:
     from gelpia import bin_dir
-    _function_parser = yacc.yacc(debug=False, write_tables=True, optimize=True,
-                                 outputdir=bin_dir, tabmodule="main_parsetab.py")
+    _function_parser = yacc.yacc(debug=False,
+                                 write_tables=True,
+                                 optimize=True,
+                                 outputdir=bin_dir,
+                                 tabmodule="main_parsetab.py")
 except:
-    _function_parser = yacc.yacc(debug=False, write_tables=False,
+    _function_parser = yacc.yacc(debug=False,
+                                 write_tables=False,
                                  outputdir="./__pycache__")
 
 
@@ -211,14 +233,19 @@ def parse_function(text):
     return _function_parser.parse(text, lexer=_function_lexer)
 
 
+def main(argv):
+    try:
+        from pass_utils import get_runmain_input, print_exp
+
+        data = get_runmain_input(argv)
+        exp = parse_function(data)
+        print_exp(exp)
+        return 0
+
+    except KeyboardInterrupt:
+        print("\nGoodbye")
+        return 0
+
+
 if __name__ == "__main__":
-  try:
-    from pass_utils import get_runmain_input, print_exp
-
-    data = get_runmain_input()
-    exp = parse_function(data)
-
-    print_exp(exp)
-
-  except KeyboardInterrupt:
-    print("\nGoodbye")
+    sys.exit(main(sys.argv))

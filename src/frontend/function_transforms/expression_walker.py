@@ -28,7 +28,7 @@ def expand_many(work_stack, count, exp):
     if sub_count == 0:
         work_stack.append((True, count, (exp[0],)))
         return
-    work_stack.append((True,  count, exp[0]))
+    work_stack.append((True, count, exp[0]))
     for sub in reversed(exp[1:]):
         work_stack.append((False, sub_count, sub))
 
@@ -185,7 +185,7 @@ def no_mut_walk(expand_dict, exp, assigns=None):
         assert(exp[1] in assigns)
         if exp[1] not in seen_assigns:
             seen_assigns.add(exp[1])
-            work_stack.append((False, 2,     assigns[exp[1]]))
+            work_stack.append((False, 2, assigns[exp[1]]))
 
     if "Variable" not in expand_dict:
         expand_dict["Variable"] = _e_variable

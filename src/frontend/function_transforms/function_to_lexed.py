@@ -20,6 +20,7 @@ tokens = [
     "INFIX_POW",
 
     # Prefix operators
+    "INTERVAL",
     "BINOP",
     "UNOP",
 
@@ -32,7 +33,6 @@ tokens = [
     # Literals
     "INTEGER",
     "FLOAT",
-    "INTERVAL",
     "SYMBOLIC_CONST",
 
     # Deliminators
@@ -45,8 +45,6 @@ tokens = [
 ]
 
 
-
-
 # Infix Operators
 t_PLUS      = "\+"
 t_MINUS     = "-"
@@ -56,6 +54,7 @@ t_INFIX_POW = "\^"
 
 
 # Prefix operators
+t_INTERVAL = "interval"
 BINOPS  = {"pow", "sub2", "sub2_I"}
 t_BINOP = "({})".format(")|(".join(BINOPS))
 
@@ -69,15 +68,17 @@ t_UNOP = "({})".format(")|(".join(UNOPS))
 
 # Variables
 def t_NAME(t):
-    "([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*"
+    "([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*:?"
     if t.value in BINOPS:
         t.type = "BINOP"
     elif t.value in UNOPS:
         t.type = "UNOP"
-    elif t.value in {"interval"}:
-        t.type = "INTERVAL"
     elif t.value in SYMBOLIC_CONSTS:
         t.type = "SYMBOLIC_CONST"
+    elif t.value == t_INTERVAL:
+        t.type = "INTERVAL"
+    elif t.value in {"var:","cost:"}:
+        return None
     else:
         t.type = "NAME"
 
@@ -89,6 +90,7 @@ t_EQUALS = "="
 
 
 # Literals
+t_INTEGER  = "\d+"
 t_FLOAT   = ("("                 # match all floats
              "("                 #  match float with '.'
              "("                 #   match a number base
@@ -108,8 +110,6 @@ t_FLOAT   = ("("                 # match all floats
              "((e|E)(\+|-)?\d+)" #   <exponent>
              ")"                 #
              ")")
-t_INTEGER  = "\d+"
-t_INTERVAL = "interval"
 
 
 # These are the tightest possible enclosures for these transcendental constants.
@@ -147,7 +147,7 @@ t_SEMICOLON = ";"
 
 
 # Non-emitting
-t_ignore = (" \t\n\r")
+t_ignore = " \t\n\r"
 def t_comment(t):
     "\#[^\n]*"
     pass
@@ -169,23 +169,31 @@ def t_error(t):
 
 try:
     from gelpia import bin_dir
-    _function_lexer = lex.lex(debug=False, optimize=True, outputdir=bin_dir,
+    _function_lexer = lex.lex(debug=False,
+                              optimize=True,
+                              outputdir=bin_dir,
                               lextab="main_lextab.py")
 except:
     _function_lexer = lex.lex(outputdir="__pycache__")
 
 
-if __name__ == "__main__":
+def main(argv):
     try:
-        from pass_utils import *
+        from pass_utils import get_runmain_input
 
-        data = get_runmain_input()
+        data = get_runmain_input(argv)
         _function_lexer.input(data)
         while True:
             tok = _function_lexer.token()
             if not tok:
                 break
             print(tok)
+        return 0
 
     except KeyboardInterrupt:
         print("\nGoodbye")
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
