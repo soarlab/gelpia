@@ -27,16 +27,16 @@ from output_flatten import flatten
 from input_parser import process
 from gelpia import base_dir
 
-def parse_args():
-    exe = path.basename(sys.argv[0])
+def parse_args(argv):
+    exe = path.basename(argv[0])
     arg_parser = create_common_option_parser(exe == "gelpia")
 
     if exe == "dop_gelpia":
-        (args, function, epsilons) = add_dop_args(arg_parser)
+        (args, function, epsilons) = add_dop_args(arg_parser, argv)
     else:
         if exe != "gelpia":
             print("Defaulting to gelpia argument parsing")
-        (args, function, epsilons) = add_gelpia_args(arg_parser)
+        (args, function, epsilons) = add_gelpia_args(arg_parser, argv)
 
     return finish_parsing_args(args, function, epsilons)
 
@@ -110,7 +110,7 @@ def parse_input_box(box):
       reformatted.append("{} = [{},{}];".format(name, *i[1]))
     return '\n'.join(reformatted)
 
-def add_gelpia_args(arg_parser):
+def add_gelpia_args(arg_parser, argv):
     """ Command line argument parser. Returns a dict from arg name to value"""
 
     arg_parser.add_argument("-i", "--input",
@@ -126,7 +126,7 @@ def add_gelpia_args(arg_parser):
 
 
     # actually parse
-    args = arg_parser.parse_args()
+    args = arg_parser.parse_args(args=argv[1:])
 
     # dump query for later examination/benchmarking
     if args.log_query:
@@ -173,12 +173,12 @@ def add_gelpia_args(arg_parser):
 
 
 
-def add_dop_args(arg_parser):
+def add_dop_args(arg_parser, argv):
     arg_parser.add_argument("query_file",type=str)
     arg_parser.add_argument("-p", "--prec",
                         help="dOp delta precision",
                             type=float, default=None)
-    args = arg_parser.parse_args()
+    args = arg_parser.parse_args(args=argv[1:])
     with open(args.query_file, 'r') as f:
         query = f.read()
 
@@ -293,6 +293,8 @@ def finish_parsing_args(args, function, epsilons):
     if args.debug or args.verbose:
         iu.set_log_level(max(1, args.verbose))
 
+    hashed = dict()
+
     exp = parse_function(function)
     exp, inputs, assigns = lift_inputs_and_assigns(exp)
     exp = simplify(exp, inputs, assigns)
@@ -301,13 +303,13 @@ def finish_parsing_args(args, function, epsilons):
     rev_diff = single_assignment(rev_diff, inputs, assigns)
     rev_diff = simplify(rev_diff, inputs, assigns)
 
-    r, rev_diff, consts = lift_consts(rev_diff, inputs, assigns)
+    r, rev_diff, consts = lift_consts(rev_diff, inputs, assigns, hashed=hashed)
     rev_diff = simplify(rev_diff, inputs, assigns, consts)
     _, new_assigns, _ = dead_removal(rev_diff, inputs, assigns, consts)
 
-    i, interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
+    i, interp_exp, consts = lift_consts(exp, inputs, assigns, consts, hashed=hashed)
     interp_exp = simplify(interp_exp, inputs, assigns, consts)
-    i, interp_exp, consts = lift_consts(exp, inputs, assigns, consts)
+    i, interp_exp, consts = lift_consts(exp, inputs, assigns, consts, hashed=hashed)
 
     rust_func, new_inputs, new_consts = to_rust(rev_diff,
                                                 inputs, new_assigns, consts)

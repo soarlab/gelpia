@@ -7,7 +7,7 @@ import os
 import os.path as path
 
 # Directory names used in this script
-full_dir = path.abspath(path.dirname(sys.argv[0])) # Directory for this file
+full_dir = path.abspath(path.dirname(__file__)) # Directory for this file
 base_dir = path.split(full_dir)[0] # One directory up
 src_dir = path.join(base_dir, "src")
 bin_dir = path.join(base_dir, "bin")
@@ -68,12 +68,12 @@ def var_ordered_output(inputs, lst):
             domain_string.append("'{}' : {}".format(i, domain[i]))
     return "[{}, {}]".format(lst[0], "{" + ", ".join(domain_string) + "}")
 
-def main():
+def main(argv):
     log_level = 0
     setup_requirements(base_dir)
 
     parsing_start = time.time()
-    arg_dict = ap.parse_args()
+    arg_dict = ap.parse_args(argv)
 
     if "answer" in arg_dict:
         parsing_end = time.time()
@@ -237,4 +237,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

@@ -10,7 +10,7 @@ import os
 import os.path as path
 import shlex
 
-full_dir = path.abspath(path.dirname(sys.argv[0])) # Directory for this file
+full_dir = path.abspath(path.dirname(__file__)) # Directory for this file
 base_dir = path.split(full_dir)[0] # One directory up
 bin_dir = path.join(base_dir, "bin")
 gelpia_exe = bin_dir+"/gelpia"
@@ -53,10 +53,10 @@ def run_command(cmd):
   err = err.decode('utf-8')
   return out, err
 
-def main():
+def main(argv):
   p = multiprocessing.pool.ThreadPool(processes=2)
-  cmd1 = [gelpia_exe] + sys.argv[1:]
-  cmd2 = [gelpia_exe, "--dreal"] + sys.argv[1:]
+  cmd1 = [gelpia_exe] + argv[1:]
+  cmd2 = [gelpia_exe, "--dreal"] + argv[1:]
   r1 = p.apply_async(run_command,
                      args=(cmd1[:],),
                      callback=get_max)
@@ -80,4 +80,4 @@ def main():
     print("Minimum: -inf\nMinimum_u: -inf")
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
