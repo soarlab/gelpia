@@ -227,10 +227,10 @@ def main(argv):
         else:
             # We're crashing in compilation for some reason. Will need to
             # investigate
-            mb_l, mb_u = (("","") if
-                          arg_dict["fptaylor"] == "min-max" else
-                          ("Maximum_l: ", "Maximum: "))
-            print("{}{}\n{}{}".format(mb_l, lst[0][0], mb_u, lst[0][1]))
+            if arg_dict["dreal"]:
+                print("Minimum_u: {}\nMinimum: {}".format(lst[0][1], lst[0][0]))
+            else:
+                print("Maximum_l: {}\nMaximum: {}".format(lst[0][0], lst[0][1]))
 
     iu.log(log_level, lambda: iu.green("Parsing time: ")+str(parsing_end-parsing_start))
     iu.log(log_level, lambda: iu.green("Solver time: ")+str(end-start))

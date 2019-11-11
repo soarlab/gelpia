@@ -77,8 +77,8 @@ def create_common_option_parser(use_ampersand):
                         help="Enable solver logging to stderr",
                         type=str, nargs='?', const=True, default=None)
     arg_parser.add_argument("-T", "--fptaylor",
-                        help="FPTaylor compatibility",
-                            type=str, default=False)
+                            help="FPTaylor compatibility",
+                            action='store_const', const=True, default=False)
     arg_parser.add_argument("-z", "--skip-div-zero",
                             action="store_true", help="Skip division by zero check")
     arg_parser.add_argument("-ie", "--input-epsilon",

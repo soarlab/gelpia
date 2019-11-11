@@ -25,24 +25,22 @@ def get_max(tup):
   global MAX
   global MAX_l
   try:
-    s = out.split('\n')
-    MAX_l = s[0]
-    MAX = s[1]
+    MAX = re.search("Maximum: ([^\n])", out).group(1)
+    MAX_l = re.search("Maximum_l: ([^\n])", out).group(1)
   except:
     pass
-    print("MAX FAILED:", out, '\n', err, file=sys.stderr)
+  print("MAX FAILED:\nout:\n{}\n\nerr:\n{}\n".format(out, err))
 
 def get_min(tup):
   out, err = tup
   global MIN
   global MIN_u
   try:
-    s = out.split('\n')
-    MIN = s[0]
-    MIN_u = s[1]
+    MIN = re.search("Minimum: ([^\n])", out).group(1)
+    MIN_l = re.search("Minimum_l: ([^\n])", out).group(1)
   except:
     pass
-    print("MIN FAILED:", out, '\n', err, file=sys.stderr)
+    print("MIN FAILED:\nout:\n{}\n\nerr:\n{}\n".format(out, err))
 
 def run_command(cmd):
   cmd = shlex.split(' '.join(cmd))
