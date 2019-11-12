@@ -4,6 +4,7 @@
 
 import multiprocessing
 import multiprocessing.pool as pool
+import re
 import subprocess
 import sys
 import os
@@ -24,22 +25,21 @@ def get_max(tup):
   out, err = tup
   global MAX
   global MAX_l
+
   try:
-    MAX = re.search("Maximum: ([^\n])", out).group(1)
-    MAX_l = re.search("Maximum_l: ([^\n])", out).group(1)
+    MAX = re.search("Maximum: ([^\n]*)", out).group(1)
+    MAX_l = re.search("Maximum_l: ([^\n]*)", out).group(1)
   except:
-    pass
-  print("MAX FAILED:\nout:\n{}\n\nerr:\n{}\n".format(out, err))
+    print("MAX FAILED:\nout:\n{}\n\nerr:\n{}\n".format(out, err))
 
 def get_min(tup):
   out, err = tup
   global MIN
   global MIN_u
   try:
-    MIN = re.search("Minimum: ([^\n])", out).group(1)
-    MIN_l = re.search("Minimum_l: ([^\n])", out).group(1)
+    MIN = re.search("Minimum: ([^\n]*)", out).group(1)
+    MIN_u = re.search("Minimum_u: ([^\n]*)", out).group(1)
   except:
-    pass
     print("MIN FAILED:\nout:\n{}\n\nerr:\n{}\n".format(out, err))
 
 def run_command(cmd):
