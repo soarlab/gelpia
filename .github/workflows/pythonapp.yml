@@ -32,4 +32,4 @@ jobs:
     - name: Run tests
       run: |
         cd gelpia_tests
-        TEST_FLAGS="-v" make test
+        TESTER_ARGS="-v" make test
