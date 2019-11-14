@@ -31,4 +31,5 @@ jobs:
         make
     - name: Run tests
       run: |
+        cd gelpia_tests
         TEST_FLAGS="-v" make test
