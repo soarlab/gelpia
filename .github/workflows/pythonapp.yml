@@ -1,0 +1,35 @@
+name: Python application
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ply
+        sudo apt install flex bison wget
+    - name: Build requirements
+      run: |
+        make requirements
+    - name: Build gelpia
+      run: |
+        make
+    - name: Get gelpia_tests
+      run: |
+        git clone https://github.com/soarlab/gelpia_tests.git
+        cd gelpia_tests
+        make
+    - name: Run tests
+      run: |
+        cd gelpia_tests
+        TESTER_ARGS="-v" make test
