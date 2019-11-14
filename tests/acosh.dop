@@ -1,5 +1,0 @@
-var:
-  [1.99,2.01] x;
-
-cost:
-  acosh(cosh(x))/2.0 + arccosh(cosh(x))/2.0;
