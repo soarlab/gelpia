@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import color_printing as color
-import logging
+import gelpia_logging as logging
 
 import argparse
 import shlex

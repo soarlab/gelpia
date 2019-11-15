@@ -1,97 +1,77 @@
-#! /usr/bin/env python3
+
 
 import sys
 
 try:
-    import ply.lex as lex
-except:
-    print("PLY must be installed for python3", file=sys.stderr)
+    import gelpia_logging as logging
+    import color_printing as color
+except ModuleNotFoundError:
+    sys.path.append("../")
+    import gelpia_logging as logging
+    import color_printing as color
+
+try:
+    from sly import Lexer
+except ModuleNotFoundError:
+    logging.error("SLY must be installed for python3", file=sys.stderr)
     sys.exit(-1)
 
 
 
 
-tokens = [
-    # Infix Operators
-    "PLUS",
-    "MINUS",
-    "TIMES",
-    "DIVIDE",
-    "INFIX_POW",
+class GelpiaLexer(Lexer):
+    tokens = [
+        # Variables
+        "NAME",
+
+        # Prefix operators
+        "BINOP",
+        "UNOP",
+
+        # Literals
+        "SYMBOLIC_CONST",
+        "FLOAT",
+        "INTEGER",
+
+        # Infix Operators
+        "PLUS",
+        "MINUS",
+        "TIMES",
+        "DIVIDE",
+        "INFIX_POW",
+
+        # Assignment
+        "EQUALS",
+
+        # Deliminators
+        "LPAREN",
+        "RPAREN",
+        "LBRACE",
+        "RBRACE",
+        "COMMA",
+        "SEMICOLON",
+    ]
+
+    BINOPS = {r"pow", r"sub2"}
+    UNOPS = {r"abs", r"acos", r"acosh", r"asin", r"asinh", r"atan", r"atanh",
+             r"cos", r"cosh", r"exp", r"log", r"sin", r"sinh", r"sqrt", r"tan",
+             r"tanh", r"floor_power2", r"sym_interval"}
+    SYMBOLIC_CONSTS = {r"pi", r"exp1", r"half_pi", r"two_pi"}
+
+    @_(r"\n+")
+    def ignore_newline(self, t):
+        self.lineno += t.value.count('\n')
+    ignore_space = r"\s"
+    ignore_comment = r"\#.*"
+    ignore_labels = r"({})".format(r")|(".join([r"cost:", r"var:"]))
 
     # Prefix operators
-    "INTERVAL",
-    "BINOP",
-    "UNOP",
-
-    # Variables
-    "NAME",
-
-    # Assignment
-    "EQUALS",
+    BINOP = r"({})".format(r")|(".join(BINOPS))
+    UNOP = r"({})".format(r")|(".join(UNOPS))
 
     # Literals
-    "INTEGER",
-    "FLOAT",
-    "SYMBOLIC_CONST",
-
-    # Deliminators
-    "LPAREN",
-    "RPAREN",
-    "LBRACE",
-    "RBRACE",
-    "COMMA",
-    "SEMICOLON",
-]
-
-
-# Infix Operators
-t_PLUS      = "\+"
-t_MINUS     = "-"
-t_TIMES     = "\*"
-t_DIVIDE    = "/"
-t_INFIX_POW = "\^"
-
-
-# Prefix operators
-t_INTERVAL = "interval"
-BINOPS  = {"pow", "sub2", "sub2_I"}
-t_BINOP = "({})".format(")|(".join(BINOPS))
-
-UNOPS = {"abs", "acos", "acosh", "arccos", "arccosh", "arcosh", "arcsin",
-         "arcsinh", "arctan", "arctanh", "argcosh", "argsinh", "argtanh",
-         "arsinh", "artanh", "asin", "asinh", "atan", "atanh", "cos", "cosh",
-         "exp", "log", "sin", "sinh", "sqrt", "tan", "tanh", "floor_power2",
-         "sym_interval"}
-t_UNOP = "({})".format(")|(".join(UNOPS))
-
-
-# Variables
-def t_NAME(t):
-    "([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*:?"
-    if t.value in BINOPS:
-        t.type = "BINOP"
-    elif t.value in UNOPS:
-        t.type = "UNOP"
-    elif t.value in SYMBOLIC_CONSTS:
-        t.type = "SYMBOLIC_CONST"
-    elif t.value == t_INTERVAL:
-        t.type = "INTERVAL"
-    elif t.value in {"var:","cost:"}:
-        return None
-    else:
-        t.type = "NAME"
-
-    return t
-
-
-# Assignment
-t_EQUALS = "="
-
-
-# Literals
-t_INTEGER  = "\d+"
-t_FLOAT   = ("("                 # match all floats
+    SYMBOLIC_CONST = r"({})".format(r")|(".join(SYMBOLIC_CONSTS))
+    FLOAT = ("("                 # match all floats
              "("                 #  match float with '.'
              "("                 #   match a number base
              "(\d+\.\d+)"        #    <num.num>
@@ -110,88 +90,67 @@ t_FLOAT   = ("("                 # match all floats
              "((e|E)(\+|-)?\d+)" #   <exponent>
              ")"                 #
              ")")
+    INTEGER = r"\d+"
 
+    # Variables
+    NAME = r"([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*"
+    def NAME(self, t):
+        if t.value in self.BINOPS:
+            t.type = BINOP
+            return t
+        if t.value in self.UNOPS:
+            t.type = UNOP
+            return t
+        # Literals
+        if t.value in self.SYMBOLIC_CONSTS:
+            t.type = SYMBOLIC_CONST
+            return t
+        return t
 
-# These are the tightest possible enclosures for these transcendental constants.
-# GAOL round-trips on the full decimal expansion in its string constructor,
-# therefore these intervals are appropriate to substitute for the symbolic
-# constant. All intervals when represented by a GAOL interval have a width of
-# one ULP.
-SYMBOLIC_CONSTS = {
-    "pi"      : (("Float",
-                  "3.141592653589793115997963468544185161590576171875"),
-                 ("Float",
-                  "3.141592653589793560087173318606801331043243408203125")),
-    "exp1"    : (("Float",
-                  "2.718281828459045090795598298427648842334747314453125"),
-                 ("Float",
-                  "2.71828182845904553488480814849026501178741455078125")),
-    "half_pi" : (("Float",
-                  "1.5707963267948965579989817342720925807952880859375"),
-                 ("Float",
-                  "1.5707963267948967800435866593034006655216217041015625")),
-    "two_pi"  : (("Float",
-                  "6.28318530717958623199592693708837032318115234375"),
-                 ("Float",
-                  "6.28318530717958712017434663721360266208648681640625")),
-}
+    # Infix Operators
+    PLUS      = r"\+"
+    MINUS     = r"-"
+    TIMES     = r"\*"
+    DIVIDE    = r"/"
+    INFIX_POW = r"\^"
 
+    # Assignment
+    EQUALS = r"="
 
-# Deliminators
-t_LPAREN    = "\("
-t_RPAREN    = "\)"
-t_LBRACE    = "\["
-t_RBRACE    = "\]"
-t_COMMA     = ","
-t_SEMICOLON = ";"
+    # Deliminators
+    LPAREN = r"\("
+    RPAREN = r"\)"
+    LBRACE = r"\["
+    RBRACE = r"\]"
+    COMMA = r","
+    SEMICOLON = r";"
 
-
-# Non-emitting
-t_ignore = " \t\n\r"
-def t_comment(t):
-    "\#[^\n]*"
-    pass
-
-
-# Error
-def t_error(t):
-    print("Illegal character '{}'".format(t), file=sys.stderr)
-    sys.exit(-1)
+    def error(self, t):
+        logging.error("Line {}: Bad character '{}'", self.lineno, t.value[0])
+        sys.exit(-1)
 
 
 
 
+def function_to_lexed(function):
+    lexer = GelpiaLexer()
+    return lexer.tokenize(function)
 
 
 
-
-
-
-try:
-    from gelpia import bin_dir
-    _function_lexer = lex.lex(debug=False,
-                              optimize=True,
-                              outputdir=bin_dir,
-                              lextab="main_lextab.py")
-except:
-    _function_lexer = lex.lex(outputdir="__pycache__")
-
-
+@profile
 def main(argv):
+    logging.set_log_filename(None)
+    logging.set_log_level(logging.HIGH)
     try:
         from pass_utils import get_runmain_input
-
         data = get_runmain_input(argv)
-        _function_lexer.input(data)
-        while True:
-            tok = _function_lexer.token()
-            if not tok:
-                break
-            print(tok)
+        tokens = function_to_lexed(data)
+        for tok in tokens:
+            logging.log(logging.NONE, color.cyan("function_to_lexed"), "{}", tok)
         return 0
-
     except KeyboardInterrupt:
-        print("\nGoodbye")
+        logging.log(logging.NONE, "function_to_lexed", "\nGoodbye")
         return 0
 
 

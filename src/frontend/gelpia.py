@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import color_printing
-import logging
-
 import argument_parser
-import color_printer as color
-import logging
+import color_printing as color
+import gelpia_logging as logging
+
+import os
+import os.path as path
+import sys
 
 
 
@@ -36,11 +37,11 @@ def append_to_environ(pathname, addition):
             return
         os.environ[pathname] = "{}:{}".format(addition, current)
         gelpia_logger(logging.HIGH, "  {} = {}",
-                      pathname, os.environ[pathname]))
+                      pathname, os.environ[pathname])
     except KeyError:
         os.environ[pathname] = addition
         gelpia_logger(logging.HIGH, "  new {} = {}",
-                      pathname, os.environ[pathname]))
+                      pathname, os.environ[pathname])
 
 
 def run_once(f):
@@ -89,7 +90,7 @@ def setup_rust_env(git_dir, debug):
                       path.join(git_dir, "src/func/target/{}".format(name)))
     append_to_environ("LD_LIBRARY_PATH",
                       path.join(git_dir, "target/{}/deps".format(name)))
-    executable = path.join(base_dir, "target/{}/cooperative".format(name))
+    executable = path.join(git_dir, "target/{}/cooperative".format(name))
 
     return executable
 

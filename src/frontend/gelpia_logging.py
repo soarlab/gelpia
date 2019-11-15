@@ -54,7 +54,7 @@ def log(level, module, message, *args):
         print(formatted_message, file=LOG_FILE)
 
 def make_module_logger(module, level=None):
-    if level = None:
+    if level is None:
         return lambda level, message, *args : log(level, module, message, *args)
     else:
         return lambda message, *args : log(level, module, message, *args)
@@ -62,7 +62,7 @@ def make_module_logger(module, level=None):
 def error(message, *args):
     formatted_message = "{}: {}".format(color.red("ERROR"),
                                         message.format(*args))
-    print(formatted_message file=sys.stderr)
+    print(formatted_message, file=sys.stderr)
     if LOG_FILE != sys.stdout:
         print(color.strip(formatted_message), file=LOGFILE)
 
