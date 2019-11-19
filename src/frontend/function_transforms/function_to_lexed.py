@@ -17,6 +17,10 @@ except ModuleNotFoundError:
     sys.exit(-1)
 
 
+logger = logging.make_module_logger(color.cyan("function_to_lexed"),
+                                    logging.HIGH)
+
+
 
 
 class GelpiaLexer(Lexer):
@@ -134,23 +138,25 @@ class GelpiaLexer(Lexer):
 
 def function_to_lexed(function):
     lexer = GelpiaLexer()
-    return lexer.tokenize(function)
+    tokens = lexer.tokenize(function)
+    for token in tokens:
+        logger("{}", token)
+        yield token
 
 
 
-@profile
+
 def main(argv):
     logging.set_log_filename(None)
     logging.set_log_level(logging.HIGH)
     try:
         from pass_utils import get_runmain_input
         data = get_runmain_input(argv)
-        tokens = function_to_lexed(data)
-        for tok in tokens:
-            logging.log(logging.NONE, color.cyan("function_to_lexed"), "{}", tok)
+        logger("raw: \n{}\n", data)
+        tokens = list(function_to_lexed(data))
         return 0
     except KeyboardInterrupt:
-        logging.log(logging.NONE, "function_to_lexed", "\nGoodbye")
+        logger(color.green("Goodbye"))
         return 0
 
 

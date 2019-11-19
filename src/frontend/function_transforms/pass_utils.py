@@ -4,8 +4,18 @@ import re
 import subprocess
 import sys
 
-#from function_to_lexed import BINOPS, UNOPS, SYMBOLIC_CONSTS
+import function_to_lexed
 
+BINOPS = function_to_lexed.GelpiaLexer.BINOPS
+UNOPS = function_to_lexed.GelpiaLexer.UNOPS
+SYMBOLIC_CONSTS = function_to_lexed.GelpiaLexer.SYMBOLIC_CONSTS
+
+BINOPS.update({"+", "-", "*", "/", "pow"})
+UNOPS.update({"dabs", "datanh", "neg"})
+ATOMS = {"ConstantInterval", "Float", "InputInterval", "Integer",
+         "SymbolicConst"}
+INFIX = {"+", "-", "*", "/"}
+ASSOC = {"+", "*"}
 
 
 

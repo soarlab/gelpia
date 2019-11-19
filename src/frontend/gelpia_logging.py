@@ -47,7 +47,7 @@ def get_log_file():
 
 
 def log(level, module, message, *args):
-    if level < LOG_LEVEL:
+    if level <= LOG_LEVEL:
         formatted_message = "{}: {}".format(module, message.format(*args))
         if LOG_FILE != sys.stdout:
             formatted_message = color.strip(formatted_message)
@@ -67,9 +67,9 @@ def error(message, *args):
         print(color.strip(formatted_message), file=LOGFILE)
 
 
-def warning(*objs):
+def warning(message, *args):
     formatted_message = "{}: {}".format(color.yellow("WARNING"),
-                                        message.format(*args)),
+                                        message.format(*args))
     print(formatted_message, file=sys.stderr)
     if LOG_FILE != sys.stdout:
         print(color.strip(formatted_message), file=LOGFILE)
