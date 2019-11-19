@@ -97,10 +97,13 @@ def main(argv):
         from function_to_lexed import function_to_lexed
         from lexed_to_parsed import lexed_to_parsed
         from pass_utils import get_runmain_input
+
         data = get_runmain_input(argv)
         logging.set_log_level(logging.NONE)
+
         tokens = function_to_lexed(data)
         tree = lexed_to_parsed(tokens)
+
         logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)
         exp, inputs = lift_inputs_and_inline_assigns(tree)
@@ -109,7 +112,9 @@ def main(argv):
             logger("  {} = {}", name, interval)
         logger("expression:")
         logger("  {}", exp)
+
         return 0
+
     except KeyboardInterrupt:
         logger(color.green("Goodbye"))
         return 0

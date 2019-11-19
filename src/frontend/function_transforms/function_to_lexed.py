@@ -151,10 +151,14 @@ def main(argv):
     logging.set_log_level(logging.HIGH)
     try:
         from pass_utils import get_runmain_input
+
         data = get_runmain_input(argv)
+
         logger("raw: \n{}\n", data)
         tokens = list(function_to_lexed(data))
+
         return 0
+
     except KeyboardInterrupt:
         logger(color.green("Goodbye"))
         return 0

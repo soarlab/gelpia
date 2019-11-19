@@ -547,11 +547,14 @@ def main(argv):
         from lexed_to_parsed import lexed_to_parsed
         from pass_lift_inputs_and_inline_assigns import lift_inputs_and_inline_assigns
         from pass_utils import get_runmain_input
+
         data = get_runmain_input(argv)
         logging.set_log_level(logging.NONE)
+
         tokens = function_to_lexed(data)
         tree = lexed_to_parsed(tokens)
         exp, inputs = lift_inputs_and_inline_assigns(tree)
+
         logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)
         exp = simplify(exp, inputs)
@@ -560,7 +563,9 @@ def main(argv):
             logger("  {} = {}", name, interval)
         logger("expression:")
         logger("  {}", exp)
+
         return 0
+
     except KeyboardInterrupt:
         logger(color.green("Goodbye"))
         return 0

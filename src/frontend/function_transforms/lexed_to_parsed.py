@@ -247,13 +247,20 @@ def main(argv):
     try:
         from pass_utils import get_runmain_input
         from function_to_lexed import function_to_lexed
+
         data = get_runmain_input(argv)
+        logging.set_log_level(logging.NONE)
+
         tokens = function_to_lexed(data)
+
+        logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)
         tree = lexed_to_parsed(tokens)
         logger("expression:")
         logger("  {}", tree)
+
         return 0
+
     except KeyboardInterrupt:
         logger(color.green("Goodbye"))
         return 0

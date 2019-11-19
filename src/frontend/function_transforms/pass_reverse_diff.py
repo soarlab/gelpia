@@ -2,22 +2,33 @@
 
 import sys
 
-import ian_utils as iu
+import sys
+
+try:
+    import gelpia_logging as logging
+    import color_printing as color
+except ModuleNotFoundError:
+    sys.path.append("../")
+    import gelpia_logging as logging
+    import color_printing as color
 
 from expression_walker import no_mut_walk
 
+logger = logging.make_module_logger(color.cyan("function_to_lexed"),
+                                    logging.HIGH)
 
 
 
-def reverse_diff(exp, inputs, assigns, consts=None):
+
+
+def reverse_diff(exp, inputs):
     """
     Performs reverse accumulated automatic differentiation of the given exp
     for all variables
     """
 
     # Constants
-    UNUSED = {"Const", "ConstantInterval", "PointInterval", "Integer", "Float"}
-    POWS   = {"pow", "powi"}
+    UNUSED = {"Const", "ConstantInterval", "Integer", "Float"}
 
     # Function local variables
     gradient = dict([(k,("Integer","0")) for k in inputs])
@@ -61,12 +72,12 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         work_stack.append((False, count, (*exp[2], ("/", ("*", ("neg", exp[-1]), upper), ("pow", lower, ("Integer", "2"))))))
 
     def _pow(work_stack,count, exp):
-        assert(exp[0] in {"pow", "powi"})
+        assert(exp[0] == "pow")
         assert(len(exp) == 4)
         base = exp[1]
         expo = exp[2]
-        work_stack.append((False, count, (*exp[1], ("*", exp[-1], ("*", expo, ("powi", base, ("-", expo, ("Integer", "1"))))))))
-        work_stack.append((False, count, (*exp[2], ("*", exp[-1], ("*", ("log", base), ("powi", base, expo))))))
+        work_stack.append((False, count, (*exp[1], ("*", exp[-1], ("*", expo, ("pow", base, ("-", expo, ("Integer", "1"))))))))
+        work_stack.append((False, count, (*exp[2], ("*", exp[-1], ("*", ("log", base), ("pow", base, expo))))))
 
     def _neg(work_stack, count, exp):
         assert(exp[0] == "neg")
@@ -157,11 +168,6 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         x = exp[1]
         work_stack.append((False, count, (*exp[1], ("*", ("dabs", x), exp[-1]))))
 
-    def _variable(work_stack, count, exp):
-        assert(exp[0] == "Variable")
-        assert(len(exp) == 3)
-        work_stack.append((False, count, (*assigns[exp[1]], exp[-1])))
-
     def _undiff(work_stack, count, exp):
         nonlocal seen_undiff
         assert(exp[0] == "floor_power2" or exp[0] == "sym_interval" or exp[0] == "sub2" or exp[0] == "sub2_I")
@@ -175,7 +181,6 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         "-": _sub,
         "/": _div,
         "Input": _input,
-        "Variable": _variable,
         "abs": _abs,
         "acos": _acos,
         "asin": _asin,
@@ -188,7 +193,6 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         "log": _log,
         "neg": _neg,
         "pow": _pow,
-        "powi": _pow,
         "sin": _sin,
         "sinh": _sinh,
         "sqrt": _sqrt,
@@ -197,7 +201,7 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         "tanh": _tanh,
     }
 
-    no_mut_walk(my_expand_dict, (*exp[1], ("Integer", "1")), assigns)
+    no_mut_walk(my_expand_dict, (*exp[1], ("Integer", "1")))
 
     if seen_undiff:
         result = ("Box",)
@@ -211,64 +215,47 @@ def reverse_diff(exp, inputs, assigns, consts=None):
 
 
 
-
-
-
-
-
-
 def main(argv):
+    logging.set_log_filename(None)
+    logging.set_log_level(logging.HIGH)
     try:
-        from lexed_to_parsed import parse_function
-        from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
+        from function_to_lexed import function_to_lexed
+        from lexed_to_parsed import lexed_to_parsed
+        from pass_lift_inputs_and_inline_assigns import lift_inputs_and_inline_assigns
+        from pass_utils import get_runmain_input
         from pass_simplify import simplify
-        from pass_lift_consts import lift_consts
-        from pass_utils import get_runmain_input, print_exp
-        from pass_utils import print_assigns, print_inputs, print_consts
 
         data = get_runmain_input(argv)
-        exp = parse_function(data)
-        exp, inputs, assigns = lift_inputs_and_assigns(exp)
-        exp = simplify(exp, inputs, assigns)
-        e, exp, consts = lift_consts(exp, inputs, assigns)
+        logging.set_log_level(logging.NONE)
 
-        iu.set_log_level(100)
-        exp = reverse_diff(exp, inputs, assigns, consts)
-        iu.set_log_level(0)
+        tokens = function_to_lexed(data)
+        tree = lexed_to_parsed(tokens)
+        exp, inputs = lift_inputs_and_inline_assigns(tree)
+        exp = simplify(exp, inputs)
 
-        if len(argv) == 3 and argv[2] == "test":
-            assert(exp[0] == "Return")
-            tup = exp[1]
-            assert(tup[0] == "Tuple")
-            box = tup[2]
-            if box[0] == "Const":
-                const = box
-                assert(const[0] == "Const")
-                box = expand(const, assigns, consts)
+        logging.set_log_level(logging.HIGH)
+        logger("raw: \n{}\n", data)
+        diff_exp = reverse_diff(exp, inputs)
 
-            assert(box[0] == "Box")
-            if len(box) == 1:
-                print("No input variables")
-                assert(len(inputs) == 0)
-                return
 
-            for name, diff in zip(inputs.keys(), box[1:]):
-                print("d{} = {}".format(name, expand(diff, assigns, consts)))
+        logging.set_log_level(logging.NONE)
+        diff_exp = simplify(diff_exp, inputs)
 
-        else:
+        logging.set_log_level(logging.HIGH)
+        logger("inputs:")
+        for name, interval in inputs.items():
+            logger("  {} = {}", name, interval)
+        logger("expression:")
+        logger("  {}", exp)
+        logger("diffs:")
+        for name, diff in zip(inputs, diff_exp[1][2][1:]):
+            logger("  d/d{} = {}", name, diff)
 
-            print()
-            print()
-            print_inputs(inputs)
-            print()
-            print_consts(consts)
-            print()
-            print_assigns(assigns)
-            print()
-            print_exp(exp)
+        return 0
 
     except KeyboardInterrupt:
-        print("\nGoodbye")
+        logger(color.green("Goodbye"))
+        return 0
 
 
 if __name__ == "__main__":

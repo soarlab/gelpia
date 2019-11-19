@@ -1,35 +1,37 @@
-#!/usr/bin/env python3
+
 
 import sys
 
-import ian_utils as iu
+try:
+    import gelpia_logging as logging
+    import color_printing as color
+except ModuleNotFoundError:
+    sys.path.append("../")
+    import gelpia_logging as logging
+    import color_printing as color
 
-from pass_utils import UNOPS, BINOPS, expand, exp_to_str
 from expression_walker import walk
+from pass_utils import BINOPS, UNOPS
+
+logger = logging.make_module_logger(color.cyan("lift_consts"),
+                                    logging.HIGH)
 
 
 
 
-def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
+def lift_consts(exp, inputs):
     """ Extracts constant values from an expression """
     # Note about hashed: This argument should never be used, it is there to
     #   work as a static variable, and it must be declared in the outermost
     #   function scope to achieve this. It is not a global to avoid name clashes.
 
     # Constants
-    CONST = {"Const", "ConstantInterval", "PointInterval", "Integer", "Float",
-             "SymbolicConst"}
+    CONST = {"Const", "ConstantInterval", "Integer", "Float", "SymbolicConst"}
     NON_CONST_UNOPS = {"sinh", "cosh", "tanh", "dabs", "datanh", "floor_power2",
                        "sym_interval"}
 
-    # Const dict can be updated or created
-    if consts == None:
-        consts = dict()
-
-    assign_status = dict() # const status of assignments
-
-    def log(func):
-        iu.log(3, lambda : iu.blue("lift_consts: ") + exp_to_str(func()))
+    consts = dict()
+    hashed = dict()
 
     def make_constant(exp):
         if exp[0] == "Const":
@@ -38,14 +40,15 @@ def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
 
         try:
             key = hashed[exp]
-            log(lambda : "Found use of existing const {}".format(exp_to_str(exp), key))
+            logger("Found use of existing const {}", key)
+
         except KeyError:
             key = "$_const_{}".format(len(hashed))
             assert(exp not in hashed)
             hashed[exp] = key
             assert(key not in consts)
             consts[key] = exp
-            log(lambda : "Lifting const {} as {}".format(exp_to_str(exp), key))
+            logger("Lifting const {} as {}", exp, key)
 
         return ('Const', key)
 
@@ -78,18 +81,13 @@ def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
 
 
     def _pow(work_stack, count, args):
-        assert(args[0] in {"pow", "powi"})
+        assert(args[0] == "pow")
         assert(len(args) == 3)
         l, left  = args[1][-1], args[1][:-1]
         r, right = args[2][-1], args[2][:-1]
         op = args[0]
 
-        # Elivate 'powi' to 'pow' if the exponent is an integer
-        if op == "powi" and r and right[0] == "Integer":
-            op = "pow"
-
-        # Don't lift pow exponents
-        if op == "pow":
+        if right[0] != "Integer":
             r = False
 
         # If both are constant don't consolidate yet
@@ -197,62 +195,60 @@ def lift_consts(exp, inputs, assigns, consts=None, hashed=dict()):
     my_contract_dict["Box"]       = _box
     my_contract_dict["Tuple"]     = _tuple
     my_contract_dict["pow"]       = _pow
-    my_contract_dict["powi"]      = _pow
     my_contract_dict["Variable"]  = _variable
     my_contract_dict["Return"]    = _return
 
 
-    n, new_exp = walk(my_expand_dict, my_contract_dict, exp, assigns)
+    n, new_exp = walk(my_expand_dict, my_contract_dict, exp)
     assert(n in {True, False})
     assert(type(new_exp) is tuple)
     assert(new_exp[0] not in {True, False})
-
-    # Remove assigns which are to consts
-    for name, status in assign_status.items():
-        if status:
-            # TODO
-            assigns[name] = make_constant(assigns[name])
 
     return n, new_exp, consts
 
 
 
 
-
-
-
-
-
-
 def main(argv):
+    logging.set_log_filename(None)
+    logging.set_log_level(logging.HIGH)
     try:
-        from lexed_to_parsed import parse_function
-        from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
+        from function_to_lexed import function_to_lexed
+        from lexed_to_parsed import lexed_to_parsed
+        from pass_lift_inputs_and_inline_assigns import lift_inputs_and_inline_assigns
+        from pass_utils import get_runmain_input
         from pass_simplify import simplify
-        from pass_utils import get_runmain_input, print_exp
-        from pass_utils import print_assigns, print_inputs, print_consts
+        from pass_reverse_diff import reverse_diff
 
         data = get_runmain_input(argv)
-        exp = parse_function(data)
-        exp, inputs, assigns = lift_inputs_and_assigns(exp)
-        exp = simplify(exp, inputs, assigns)
-        iu.set_log_level(100)
-        e, exp, consts = lift_consts(exp, inputs, assigns)
+        logging.set_log_level(logging.NONE)
 
-        print()
-        print()
-        print_inputs(inputs)
-        print()
-        print_assigns(assigns)
-        print()
-        print_consts(consts)
-        print()
-        print_exp(exp)
-        print()
-        print("Is whole expression const: {}".format(e))
+        tokens = function_to_lexed(data)
+        tree = lexed_to_parsed(tokens)
+        exp, inputs = lift_inputs_and_inline_assigns(tree)
+        exp = simplify(exp, inputs)
+        diff_exp = reverse_diff(exp, inputs)
+        diff_exp = simplify(diff_exp, inputs)
+
+        logging.set_log_level(logging.HIGH)
+        logger("raw: \n{}\n", data)
+        const, exp, consts = lift_consts(diff_exp, inputs)
+
+        logger("inputs:")
+        for name, interval in inputs.items():
+            logger("  {} = {}", name, interval)
+        logger("consts:")
+        for name, val in consts.items():
+            logger("  {} = {}", name, val)
+        logger("expression:")
+        logger("  {}", exp)
+        logger("is_const: {}", const)
+
+        return 0
 
     except KeyboardInterrupt:
-        print("\nGoodbye")
+        logger(color.green("Goodbye"))
+        return 0
 
 
 if __name__ == "__main__":
