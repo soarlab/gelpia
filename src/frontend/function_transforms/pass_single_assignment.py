@@ -38,7 +38,7 @@ def single_assignment(exp, inputs):
             return exp
         try:
             key = hashed[exp]
-            logger("Eliminated redundant subexpression : {}", exp)
+            #logger("Eliminated redundant subexpression : {}", exp)
         except KeyError:
             key = "_expr_"+str(len(hashed))
             hashed[exp] = key
@@ -97,7 +97,7 @@ def main(argv):
         tree = lexed_to_parsed(tokens)
         exp, inputs = lift_inputs_and_inline_assigns(tree)
         exp = simplify(exp, inputs)
-        diff_exp = reverse_diff(exp, inputs)
+        d, diff_exp = reverse_diff(exp, inputs)
         diff_exp = simplify(diff_exp, inputs)
         c, diff_exp, consts = lift_consts(diff_exp, inputs)
 

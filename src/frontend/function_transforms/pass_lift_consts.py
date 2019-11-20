@@ -40,7 +40,7 @@ def lift_consts(exp, inputs):
 
         try:
             key = hashed[exp]
-            logger("Found use of existing const {}", key)
+            #logger("Found use of existing const {}", key)
 
         except KeyError:
             key = "$_const_{}".format(len(hashed))
@@ -48,7 +48,7 @@ def lift_consts(exp, inputs):
             hashed[exp] = key
             assert(key not in consts)
             consts[key] = exp
-            logger("Lifting const {} as {}", exp, key)
+            #logger("Lifting const {} as {}", exp, key)
 
         return ('Const', key)
 
@@ -88,7 +88,7 @@ def lift_consts(exp, inputs):
         op = args[0]
 
         if right[0] != "Integer":
-            r = False
+            op = "powi"
 
         # If both are constant don't consolidate yet
         status = False
@@ -98,7 +98,8 @@ def lift_consts(exp, inputs):
         elif l:
             left = make_constant(left)
         elif r:
-            right = make_constant(right)
+            if op == "powi":
+                right = make_constant(right)
 
         work_stack.append((True, count, (op, left, right, status)))
 
@@ -227,7 +228,7 @@ def main(argv):
         tree = lexed_to_parsed(tokens)
         exp, inputs = lift_inputs_and_inline_assigns(tree)
         exp = simplify(exp, inputs)
-        diff_exp = reverse_diff(exp, inputs)
+        d, diff_exp = reverse_diff(exp, inputs)
         diff_exp = simplify(diff_exp, inputs)
 
         logging.set_log_level(logging.HIGH)

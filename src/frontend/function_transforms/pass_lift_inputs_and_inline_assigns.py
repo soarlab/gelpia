@@ -51,7 +51,7 @@ def lift_inputs_and_inline_assigns(exp):
             used_assigns.add(exp[1])
             assert(exp[1] not in inputs)
             work_stack.append((True,  count, assigns[exp[1]]))
-            logger("inlined {}", exp[1])
+            # logger("inlined {}", exp[1])
             return
 
         logging.error("Use of undeclared name: {}", exp[1])
@@ -69,12 +69,12 @@ def lift_inputs_and_inline_assigns(exp):
         if val[0] == "InputInterval":
             assert(name[1] not in inputs)
             inputs[name[1]] = val
-            logger("Found input {} = {}", name[1], val)
+            # logger("Found input {} = {}", name[1], val)
         # Assignment to an expression
         else:
             assert(name[1] not in assigns)
             assigns[name[1]] = val
-            logger("Found assign {} = {}", name[1],val)
+            # logger("Found assign {} = {}", name[1],val)
 
         # Work on the rest of the expression
         exp = exp[1]

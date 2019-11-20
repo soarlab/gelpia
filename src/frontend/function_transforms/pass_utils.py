@@ -10,7 +10,7 @@ BINOPS = function_to_lexed.GelpiaLexer.BINOPS
 UNOPS = function_to_lexed.GelpiaLexer.UNOPS
 SYMBOLIC_CONSTS = function_to_lexed.GelpiaLexer.SYMBOLIC_CONSTS
 
-BINOPS.update({"+", "-", "*", "/", "pow"})
+BINOPS.update({"+", "-", "*", "/", "powi"})
 UNOPS.update({"dabs", "datanh", "neg"})
 ATOMS = {"ConstantInterval", "Float", "InputInterval", "Integer",
          "SymbolicConst"}
@@ -164,7 +164,3 @@ def get_runmain_input(argv):
 
 #     print("Internal error in expand: {}".format(exp))
 #     sys.exit(-1)
-
-
-
-

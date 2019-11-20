@@ -203,14 +203,15 @@ def reverse_diff(exp, inputs):
 
     no_mut_walk(my_expand_dict, (*exp[1], ("Integer", "1")))
 
-    if seen_undiff:
-        result = ("Box",)
+    if seen_undiff or len(inputs) == 0:
+        r = False
+        retval = ("Return", exp[1])
     else:
+        r = True
         result = ("Box",) + tuple(d for d in gradient.values())
+        retval = ("Return", ("Tuple", exp[1], result))
 
-    retval = ("Return", ("Tuple", exp[1], result))
-
-    return retval
+    return r, retval
 
 
 
@@ -235,7 +236,7 @@ def main(argv):
 
         logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)
-        diff_exp = reverse_diff(exp, inputs)
+        d, diff_exp = reverse_diff(exp, inputs)
 
 
         logging.set_log_level(logging.NONE)
@@ -246,10 +247,11 @@ def main(argv):
         for name, interval in inputs.items():
             logger("  {} = {}", name, interval)
         logger("expression:")
-        logger("  {}", exp)
+        logger("  {}", diff_exp)
         logger("diffs:")
-        for name, diff in zip(inputs, diff_exp[1][2][1:]):
-            logger("  d/d{} = {}", name, diff)
+        if d:
+            for name, diff in zip(inputs, diff_exp[1][2][1:]):
+                logger("  d/d{} = {}", name, diff)
 
         return 0
 

@@ -1,33 +1,41 @@
-#!/usr/bin/env python3
 
-from pass_utils import *
-from expression_walker import walk
+
 import sys
 
+try:
+    import gelpia_logging as logging
+    import color_printing as color
+except ModuleNotFoundError:
+    sys.path.append("../")
+    import gelpia_logging as logging
+    import color_printing as color
 
-def to_interp(exp, inputs, assigns, consts):
-    input_names = [name for name in inputs]
-    const_names = [name for name in consts]
+from expression_walker import walk
+from pass_utils import INFIX, BINOPS, UNOPS
+
+logger = logging.make_module_logger(color.cyan("output_interp"),
+                                    logging.HIGH)
+
+
+
+
+def output_interp(exp, inputs, consts):
+    input_mapping = {name:str(i) for name,i in zip(inputs, range(len(inputs)))}
+    const_mapping = {name:str(i) for name,i in zip(consts, range(len(consts)))}
 
 
     def _const(work_stack, count, exp):
         assert(exp[0] == "Const")
         assert(len(exp) == 2)
-        work_stack.append((True, count,  ['c'+str(const_names.index(exp[1]))]))
+        work_stack.append((True, count,  ['c'+str(const_mapping[exp[1]])]))
 
     def _input(work_stack, count, exp):
         assert(exp[0] == "Input")
         assert(len(exp) == 2)
-        work_stack.append((True, count,  ['i'+str(input_names.index(exp[1]))]))
-
-    def _variable(work_stack, count, exp):
-        assert(exp[0] == "Variable")
-        assert(len(exp) == 2)
-        work_stack.append((False, count, assigns[exp[1]]))
+        work_stack.append((True, count,  ['i'+str(input_mapping[exp[1]])]))
 
     my_expand_dict = {"Const":    _const,
-                      "Input":    _input,
-                      "Variable": _variable}
+                      "Input":    _input}
 
 
 
@@ -79,41 +87,61 @@ def to_interp(exp, inputs, assigns, consts):
     my_contract_dict["sub2"] = _sub2
     my_contract_dict["Return"] = _return
 
-    exp = walk(my_expand_dict, my_contract_dict, exp, assigns)
+    exp = walk(my_expand_dict, my_contract_dict, exp)
 
     return ','.join(exp)
 
 
 
 
-
-
-
 def main(argv):
+    logging.set_log_filename(None)
+    logging.set_log_level(logging.HIGH)
     try:
-        from lexed_to_parsed import parse_function
-        from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
-        from pass_lift_consts import lift_consts
+        from function_to_lexed import function_to_lexed
+        from lexed_to_parsed import lexed_to_parsed
+        from pass_lift_inputs_and_inline_assigns import lift_inputs_and_inline_assigns
+        from pass_utils import get_runmain_input
         from pass_simplify import simplify
+        from pass_reverse_diff import reverse_diff
+        from pass_lift_consts import lift_consts
 
         data = get_runmain_input(argv)
-        exp = parse_function(data)
-        inputs, assigns = lift_inputs_and_assigns(exp)
-        consts = lift_consts(exp, inputs, assigns)
-        simplify(exp, inputs, assigns, consts)
-        consts = lift_consts(exp, inputs, assigns, consts)
+        logging.set_log_level(logging.NONE)
 
-        function = to_interp(exp, inputs, assigns, consts)
+        tokens = function_to_lexed(data)
+        tree = lexed_to_parsed(tokens)
+        exp, inputs = lift_inputs_and_inline_assigns(tree)
+        exp = simplify(exp, inputs)
+        d, diff_exp = reverse_diff(exp, inputs)
+        diff_exp = simplify(diff_exp, inputs)
+        c, diff_exp, consts = lift_consts(diff_exp, inputs)
 
-        print("function:")
-        print(function)
-        print()
-        print_inputs(inputs)
-        print()
-        print_consts(consts)
+        if d:
+            exp = ("Return", diff_exp[1][1])
+        else:
+            exp = diff_exp
+
+        logging.set_log_level(logging.HIGH)
+        logger("raw: \n{}\n", data)
+        logger("inputs:")
+        for name, interval in inputs.items():
+            logger("  {} = {}", name, interval)
+        logger("consts:")
+        for name, val in consts.items():
+            logger("  {} = {}", name, val)
+        logger("expression:")
+        logger("  {}", diff_exp)
+
+        interp_function = output_interp(exp, inputs, consts)
+
+        logger("interp_function: \n{}", interp_function)
+
+        return 0
 
     except KeyboardInterrupt:
-        print("\nGoodbye")
+        logger(color.green("Goodbye"))
+        return 0
 
 
 if __name__ == '__main__':

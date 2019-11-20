@@ -1,152 +1,215 @@
-#!/usr/bin/env python3
 
-import collections
+
 import sys
 
+try:
+    import gelpia_logging as logging
+    import color_printing as color
+except ModuleNotFoundError:
+    sys.path.append("../")
+    import gelpia_logging as logging
+    import color_printing as color
 
-from function_to_lexed import SYMBOLIC_CONSTS
-from pass_utils import *
+from expression_walker import walk
+from pass_utils import INFIX, BINOPS, UNOPS
+
+logger = logging.make_module_logger(color.cyan("output_rust"),
+                                    logging.HIGH)
 
 
 
-def to_rust(exp, inputs, assigns, consts):
-    let = "    let {} = {};\n"
-    lp = ['(']
-    rp = [')']
-    lb = ['[']
-    rb = [']']
-    cm = [',']
-    sp = [' ']
-    diff_decl = ["extern crate gr;\n"
+
+def output_rust(exp, inputs, consts, assigns):
+    DIFF_DECL = ["extern crate gr;\n"
                  "use gr::*;\n"
                  "\n"
                  "#[allow(unused_parens)]\n"
                  "#[no_mangle]\n"
                  "pub extern \"C\"\n"
                  "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {\n"]
-    decl = ["extern crate gr;\n"
+    DECL = ["extern crate gr;\n"
             "use gr::*;\n"
             "\n"
             "#[no_mangle]\n"
             "pub extern \"C\"\n"
             "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI) {\n"]
-    powi = ["powi"]
-    doing_consts = False
-    input_names = [name for name in inputs]
-    const_names = [name for name in consts]
-
-    def _to_rust(exp):
-        nonlocal decl
-        typ = exp[0]
-        if doing_consts and typ in {"Integer", "Float"}:
-            return lb + [exp[1]] + rb
-
-        if typ == "pow":
-            e = expand(exp[2], assigns, consts)
-            assert(e[0] == "Integer")
-            return ["pow"] + lp + _to_rust(exp[1]) + cm + [e[1]] + rp
-
-        if typ == "powi":
-            e = expand(exp[2], assigns, consts)
-            assert(e[0] != "Integer")
-            return powi + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
-
-        if typ in INFIX:
-            l = _to_rust(exp[1])
-            r = _to_rust(exp[2])
-            return lp + l + [exp[0]] + r + rp
-
-        if typ in BINOPS:
-            return [exp[0]] + lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
-
-        if typ == "neg":
-            return ["-"] + lp + _to_rust(exp[1]) + rp
-
-        if typ in UNOPS:
-            return [exp[0]] + lp + _to_rust(exp[1]) + rp
-
-        if typ in {"InputInterval", "ConstantInterval"}:
-            inside = [expand(exp[1], assigns, consts)[1]] + cm + [expand(exp[2], assigns, consts)[1]]
-            return lb + inside + rb
-
-        if typ == "SymbolicConst":
-            s_const = SYMBOLIC_CONSTS[exp[1]]
-            inside = [s_const[0][1]] + cm + [s_const[1][1]]
-            return lb + inside + rb
-
-        if typ in {"Const"}:
-            return ["_c[{}]".format(const_names.index(exp[1]))]
-
-        if typ in {"Input"}:
-            return ["_x[{}]".format(input_names.index(exp[1]))]
-
-        if typ in {"Variable"}:
-            return [exp[1]]
-
-        if typ in {"Tuple"}:
-            decl = diff_decl
-            return lp + _to_rust(exp[1]) + cm + _to_rust(exp[2]) + rp
-
-        if typ in {"Box"}:
-            if len(exp) == 1 and len(inputs) != 0:
-                return ["None"]
-            val = ["Some(vec!"] + lb
-            for part in exp[1:]:
-                val += _to_rust(part) + cm + sp
-            if val[-2:] == [',', ' ']:
-                del val[-2:]
-            val += rb + rp
-            return val
-
-        if typ in {"Return", "PointInterval"}:
-            return _to_rust(exp[1])
-
-        print("to_rust error unknown: '{}'".format(exp))
-        sys.exit(-1)
+    START = DECL
+    input_mapping = {name:str(i) for name,i in zip(inputs, range(len(inputs)))}
+    const_mapping = {name:str(i) for name,i in zip(consts, range(len(consts)))}
+    seen_assigns = set()
+    body = list()
 
 
-    function = [let.format(n, ''.join(_to_rust(v))) for n,v in assigns.items()]
-    function += ["    "] + _to_rust(exp) + ["\n}\n"]
+    def _e_variable(work_stack, count, exp):
+        #logger("expand_variable: {}", exp)
+        assert(exp[0] == "Variable")
+        assert(len(exp) == 2)
+        assert(exp[1] in assigns)
+        if exp[1] in seen_assigns:
+            work_stack.append((True, count, [exp[1]]))
+            return
+        seen_assigns.add(exp[1])
+        work_stack.append((True,  count, exp[0]))
+        work_stack.append((True,  2,     exp[1]))
+        work_stack.append((False, 2,     assigns[exp[1]]))
 
-    new_inputs = [(n, ''.join(_to_rust(v))) for n,v in inputs.items()]
-    new_inputs = collections.OrderedDict(new_inputs)
+    def _input(work_stack, count, exp):
+        #logger("expand_input: {}", exp)
+        assert(exp[0] == "Input")
+        assert(len(exp) == 2)
+        index = input_mapping[exp[1]]
+        work_stack.append((True, count, ["_x[", index, "]"]))
 
-    powi = ["pow"]
-    doing_consts = True
-    new_consts = [(n, ''.join(_to_rust(v))) for n,v in consts.items()]
-    new_consts = collections.OrderedDict(new_consts)
+    def _const(work_stack, count, exp):
+        #logger("expand_const: {}", exp)
+        assert(exp[0] == "Const")
+        assert(len(exp) == 2)
+        index = const_mapping[exp[1]]
+        work_stack.append((True, count, ["_c[", index, "]"]))
 
-    return ''.join(decl+function), new_inputs, new_consts
+    my_expand_dict = {"Input"    : _input,
+                      "Const"    : _const,
+                      "Variable" : _e_variable}
 
+    def _c_variable(work_stack, count, args):
+        nonlocal body
+        #logger("variable: {}", args)
+        assert(args[0] == "Variable")
+        assert(len(args) == 3)
+        name = args[1]
+        value = args[2]
+        body += ["    let ", name, " = "] + value + [";\n"]
+        work_stack.append((True, count, [name]))
 
+    def _infix(work_stack, count, args):
+        #logger("infix: {}", args)
+        assert(args[0] in INFIX)
+        assert(len(args) == 3)
+        op = args[0]
+        l = args[1]
+        r = args[2]
+        work_stack.append((True, count, l + [" ", op, " "] + r))
+
+    def _binop(work_stack, count, args):
+        #logger("binop: {}", args)
+        assert(args[0] in BINOPS or args[0] == "powi")
+        assert(len(args) == 3)
+        op = args[0]
+        first = args[1]
+        secon = args[2]
+        work_stack.append((True, count, [op, "("] + first + [", "] + secon + [")"]))
+
+    def _pow(work_stack, count, args):
+        #logger("pow: {}", args)
+        assert(args[0] == "pow")
+        assert(len(args) == 3)
+        base = args[1]
+        expo = args[2]
+        assert(expo[0] == "Integer")
+        work_stack.append((True, count, ["pow("] + base + [", ", expo[1] + ")"]))
+
+    def _unop(work_stack, count, args):
+        #logger("unop: {}", args)
+        assert(args[0] in UNOPS)
+        assert(len(args) == 2)
+        op = args[0]
+        arg = args[1]
+        work_stack.append((True, count, [op, "("] + arg + [")"]))
+
+    def _box(work_stack, count, args):
+        #logger("box: {}", args)
+        assert(args[0] == "Box")
+        if len(args) == 1:
+            work_stack.append((True, count, ["None"]))
+            return
+        box = ["Some(vec!["]
+        for sub in args[1:]:
+            box += sub + [", "]
+        box = box[0:-1] + ["])"]
+        work_stack.append((True, count, box))
+
+    def _tuple(work_stack, count, args):
+        nonlocal START
+        #logger("tuple: {}", args)
+        assert(args[0] == "Tuple")
+        assert(len(args) == 3)
+        START = DIFF_DECL
+        work_stack.append((True, count, ["("] + args[1] + [", "] + args[2] + [")"]))
+
+    def _return(work_stack, count, args):
+        #logger("Return: {}", args)
+        assert(args[0] == "Return")
+        assert(len(args) == 2)
+        return ["    "] + args[1]
+
+    my_contract_dict = dict()
+    my_contract_dict.update(zip(BINOPS,
+                                [_binop for _ in BINOPS]))
+    my_contract_dict.update(zip(UNOPS,
+                                [_unop for _ in UNOPS]))
+    my_contract_dict.update(zip(INFIX,
+                                [_infix for _ in INFIX]))
+    my_contract_dict["pow"] = _pow
+    my_contract_dict["Variable"] = _c_variable
+    my_contract_dict["Box"] = _box
+    my_contract_dict["Tuple"] = _tuple
+    my_contract_dict["Return"] = _return
+
+    retval = walk(my_expand_dict, my_contract_dict, exp, assigns)
+
+    return "".join(START + body + retval + ["\n}"])
 
 
 
 
 def main(argv):
+    logging.set_log_filename(None)
+    logging.set_log_level(logging.HIGH)
     try:
-        from lexed_to_parsed import parse_function
-        from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
-        from pass_lift_consts import lift_consts
+        from function_to_lexed import function_to_lexed
+        from lexed_to_parsed import lexed_to_parsed
+        from pass_lift_inputs_and_inline_assigns import lift_inputs_and_inline_assigns
+        from pass_utils import get_runmain_input
         from pass_simplify import simplify
+        from pass_reverse_diff import reverse_diff
+        from pass_lift_consts import lift_consts
+        from pass_single_assignment import single_assignment
 
-        data = get_runmain_input()
-        exp = parse_function(data)
-        inputs, assigns = lift_inputs_and_assigns(exp)
-        consts = lift_consts(exp, inputs, assigns)
-        simplify(exp, inputs, assigns, consts)
+        data = get_runmain_input(argv)
+        logging.set_log_level(logging.NONE)
 
-        function, new_inputs, new_consts = to_rust(exp, inputs, assigns, consts)
+        tokens = function_to_lexed(data)
+        tree = lexed_to_parsed(tokens)
+        exp, inputs = lift_inputs_and_inline_assigns(tree)
+        exp = simplify(exp, inputs)
+        d, diff_exp = reverse_diff(exp, inputs)
+        diff_exp = simplify(diff_exp, inputs)
+        c, diff_exp, consts = lift_consts(diff_exp, inputs)
+        diff_exp, assigns = single_assignment(diff_exp, inputs)
 
-        print("function:")
-        print(function)
-        print()
-        print_inputs(new_inputs)
-        print()
-        print_consts(new_consts)
+        logging.set_log_level(logging.HIGH)
+        logger("raw: \n{}\n", data)
+        logger("inputs:")
+        for name, interval in inputs.items():
+            logger("  {} = {}", name, interval)
+        logger("consts:")
+        for name, val in consts.items():
+            logger("  {} = {}", name, val)
+        logger("assigns:")
+        for name, val in assigns.items():
+            logger("  {} = {}", name, val)
+        logger("expression:")
+        logger("  {}", diff_exp)
+
+        rust_function = output_rust(diff_exp, inputs, consts, assigns)
+
+        logger("rust_function: \n{}", rust_function)
+
+        return 0
 
     except KeyboardInterrupt:
-        print("\nGoodbye")
+        logger(color.green("Goodbye"))
+        return 0
 
 
 if __name__ == "__main__":

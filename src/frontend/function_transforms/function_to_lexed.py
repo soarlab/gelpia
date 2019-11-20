@@ -140,7 +140,7 @@ def function_to_lexed(function):
     lexer = GelpiaLexer()
     tokens = lexer.tokenize(function)
     for token in tokens:
-        logger("{}", token)
+        #logger("{}", token)
         yield token
 
 
@@ -156,6 +156,8 @@ def main(argv):
 
         logger("raw: \n{}\n", data)
         tokens = list(function_to_lexed(data))
+
+        logger("tokens: \n{}\n", "\n".join(tokens))
 
         return 0
 

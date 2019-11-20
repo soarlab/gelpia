@@ -38,18 +38,18 @@ def simplify(exp, inputs):
 
         # Collapse integer expressions
         if l[0] == "Integer" and r[0] == "Integer":
-            logger("Combined integer add")
+            #logger("Combined integer add")
             work_stack.append((True, count, ("Integer", str(int(l[1])+int(r[1])))))
             return
 
         # 0 + x -> x
         if l == ZERO:
-            logger("Eliminated Zero in add")
+            #logger("Eliminated Zero in add")
             work_stack.append((True, count, r))
             return
         # x + 0 -> x
         if r == ZERO:
-            logger("Eliminated Zero in add")
+            #logger("Eliminated Zero in add")
             work_stack.append((True, count, l))
             return
 
@@ -59,14 +59,14 @@ def simplify(exp, inputs):
         # else          -> 2*x
         if l == r:
             if l == PI:
-                logger("Replaced pi+pi with two_pi")
+                #logger("Replaced pi+pi with two_pi")
                 work_stack.append((True, count, TWO_PI))
                 return
             if l == HALF_PI:
-                logger("Replaced half_pi+half_pi with pi")
+                #logger("Replaced half_pi+half_pi with pi")
                 work_stack.append((True, count, PI))
                 return
-            logger("x + x -> 2*x\n\tx = {}", l)
+            #logger("x + x -> 2*x\n\tx = {}", l)
             work_stack.append((True, count, ("*", TWO, l)))
             return
 
@@ -75,10 +75,10 @@ def simplify(exp, inputs):
         #  else    -> y-x
         if l[0] == "neg":
             if l[1] == r:
-                logger("(-x) + x -> 0\n\tx = {}", r)
+                #logger("(-x) + x -> 0\n\tx = {}", r)
                 work_stack.append((True, count, ZERO))
                 return
-            logger("(-x) + y -> y-x\n\tx = {}\n\ty = {}", l[1], r)
+            #logger("(-x) + y -> y-x\n\tx = {}\n\ty = {}", l[1], r)
             work_stack.append((True, count, ("-", r, l[1])))
             return
         # x + (-y):
@@ -86,58 +86,58 @@ def simplify(exp, inputs):
         #  else    -> x-y
         if r[0] == "neg":
             if r[1] == l:
-                logger("x + (-x) -> 0\n\tx = {}", l)
+                #logger("x + (-x) -> 0\n\tx = {}", l)
                 work_stack.append((True, count, ZERO))
                 return
-            logger("x + (-y) -> x-y\n\tx = {}\n\ty = {}", l, r[1])
+            #logger("x + (-y) -> x-y\n\tx = {}\n\ty = {}", l, r[1])
             work_stack.append((True, count, ("-", l, r[1])))
             return
 
         # (x+y) + x -> (2*x)+y
         if l[0] == "+" and l[1] == r:
-            logger("(x+y) + x -> (2*x)+y\n\tx = {}\n\ty = {}", r, l[2])
+            #logger("(x+y) + x -> (2*x)+y\n\tx = {}\n\ty = {}", r, l[2])
             work_stack.append((True, count,  ("+", ("*", r, TWO), l[2])))
             return
         # (x+y) + y -> (2*y)+x
         if l[0] == "+" and l[2] == r:
-            logger("(x+y) + y -> (2*y)+x\n\tx = {}\n\ty = {}", l[1], r)
+            #logger("(x+y) + y -> (2*y)+x\n\tx = {}\n\ty = {}", l[1], r)
             work_stack.append((True, count,  ("+", ("*", r, TWO), l[1])))
             return
         # x + (x+y) -> (2*x)+y
         if r[0] == "+" and r[1] == l:
-            logger("x + (x+y) -> (2*x)+y\n\tx = {}\n\ty = {}", l, r[2])
+            #logger("x + (x+y) -> (2*x)+y\n\tx = {}\n\ty = {}", l, r[2])
             work_stack.append((True, count,  ("+", ("*", l, TWO), r[2])))
             return
         # x + (y+x) -> (2*x)+y
         if r[0] == "+" and r[2] == l:
-            logger("x + (y+x) -> (2*x)+y\n\tx = {}\n\ty = {}", l, r[1])
+            #logger("x + (y+x) -> (2*x)+y\n\tx = {}\n\ty = {}", l, r[1])
             work_stack.append((True, count,  ("+", ("*", l, TWO), r[1])))
             return
 
         # (x-y) + x -> (2*x)-y
         if l[0] == "-" and l[1] == r:
-            logger("(x-y) + x -> (2*x)-y\n\tx = {}\n\ty = {}", r, l[2])
+            #logger("(x-y) + x -> (2*x)-y\n\tx = {}\n\ty = {}", r, l[2])
             work_stack.append((True, count,  ("-", ("*", r, TWO), l[2])))
             return
         # (x-y) + y -> x
         if l[0] == "-" and l[2] == r:
-            logger("(x-y) + y -> x\n\tx = {}\n\ty = {}", l[1], r)
+            #logger("(x-y) + y -> x\n\tx = {}\n\ty = {}", l[1], r)
             work_stack.append((True, count,  l[1]))
             return
         # x + (x-y) -> (2*x)-y
         if r[0] == "-" and r[1] == l:
-            logger("x + (x-y) -> (2*x)-y\n\tx = {}\n\ty = {}", l, r[2])
+            #logger("x + (x-y) -> (2*x)-y\n\tx = {}\n\ty = {}", l, r[2])
             work_stack.append((True, count,  ("-", ("*", l, TWO), r[2])))
             return
         # x + (y-x) -> y
         if r[0] == "-" and r[2] == l:
-            logger("x + (y-x) -> y\n\tx = {}\n\ty = {}", l, r[1])
+            #logger("x + (y-x) -> y\n\tx = {}\n\ty = {}", l, r[1])
             work_stack.append((True, count,  r[1]))
             return
 
         # x + (n*x) -> (n+1)*x
         if r[0] == "*" and l == r[2]:
-            logger("x + (n*x) -> (n+1)*x\n\tx = {}\n\tn = {}", l, r[1])
+            #logger("x + (n*x) -> (n+1)*x\n\tx = {}\n\tn = {}", l, r[1])
             if r[1][0] == "Integer":
                 work_stack.append((True, count,  ("*", ("Integer", str(int(r[1][1])+1)), l)))
                 return
@@ -145,7 +145,7 @@ def simplify(exp, inputs):
             return
         # x + (x*n) -> (n+1)*x
         if r[0] == "*" and l == r[1]:
-            logger("x + (x*n) -> (n+1)*x\n\tx = {}\n\tn = {}", l, r[2])
+            #logger("x + (x*n) -> (n+1)*x\n\tx = {}\n\tn = {}", l, r[2])
             if r[2][0] == "Integer":
                 work_stack.append((True, count,  ("*", ("Integer", str(int(r[2][1])+1)), l)))
                 return
@@ -153,7 +153,7 @@ def simplify(exp, inputs):
             return
         # (n*x) + x -> (n+1)*x
         if l[0] == "*" and r == l[2]:
-            logger("(n*x) + x-> (n+1)*x\n\tx = {}\n\tn = {}", r, l[1])
+            #logger("(n*x) + x-> (n+1)*x\n\tx = {}\n\tn = {}", r, l[1])
             if l[1][0] == "Integer":
                 work_stack.append((True, count,  ("*", ("Integer", str(int(l[1][1])+1)), r)))
                 return
@@ -161,7 +161,7 @@ def simplify(exp, inputs):
             return
         # (x*n) + x -> (n+1)*x
         if l[0] == "*" and r == l[1]:
-            logger("(x*n) + x-> (n+1)*x\n\tx = {}\n\tn = {}", r, l[2])
+            #logger("(x*n) + x-> (n+1)*x\n\tx = {}\n\tn = {}", r, l[2])
             if l[2][0] == "Integer":
                 work_stack.append((True, count,  ("*", ("Integer", str(int(l[2][1])+1)), r)))
                 return
@@ -178,24 +178,24 @@ def simplify(exp, inputs):
 
         # Collapse integer expressions
         if l[0] == "Integer" and r[0] == "Integer":
-            logger("Combined integer sub")
+            #logger("Combined integer sub")
             work_stack.append((True, count, ("Integer", str(int(l[1])-int(r[1])))))
             return
 
         # 0 - x -> -x
         if l == ZERO:
-            logger("Eliminated Zero in subtract")
+            #logger("Eliminated Zero in subtract")
             work_stack.append((True, count, ("neg", r)))
             return
         # x - 0 -> x
         if r == ZERO:
-            logger("Eliminated Zero in subtract")
+            #logger("Eliminated Zero in subtract")
             work_stack.append((True, count, l))
             return
 
         # x - x -> 0
         if l == r:
-            logger("x - x -> 0\n\tx = {}", l)
+            #logger("x - x -> 0\n\tx = {}", l)
             work_stack.append((True, count, ZERO))
             return
 
@@ -204,10 +204,10 @@ def simplify(exp, inputs):
         #  else    -> x+y
         if r[0] == "neg":
             if l == r[1]:
-                logger("x - (-x) -> 2*x\n\tx = {}", l)
+                #logger("x - (-x) -> 2*x\n\tx = {}", l)
                 work_stack.append((True, count, ("*", TWO, l)))
                 return
-            logger("x - (-y) -> x+y\n\tx = {}\n\ty = {}", l, r[1])
+            #logger("x - (-y) -> x+y\n\tx = {}\n\ty = {}", l, r[1])
             work_stack.append((True, count, ("+", l, r[1])))
             return
         # (-x) - y
@@ -215,58 +215,58 @@ def simplify(exp, inputs):
         #  else    -> -(x+y)
         if r[0] == "neg":
             if l[1] == r:
-                logger("(-x) - x -> -(2*x)\n\tx = {}", r)
+                #logger("(-x) - x -> -(2*x)\n\tx = {}", r)
                 work_stack.append((True, count, ("neg", ("*", TWO, l))))
                 return
-            logger("(-x) - y -> -(x+y)\n\tx = {}\n\ty = {}", l[1], r)
+            #logger("(-x) - y -> -(x+y)\n\tx = {}\n\ty = {}", l[1], r)
             work_stack.append((True, count, ("neg", ("+", l[1], r))))
             return
 
         # x - (x+y) -> -y
         if r[0] == "+" and l == r[1]:
-            logger("x - (x+y) -> -y\n\tx = {}\n\ty = {}", l, r[2])
+            #logger("x - (x+y) -> -y\n\tx = {}\n\ty = {}", l, r[2])
             work_stack.append((True, count, ("neg", r[2])))
             return
         # x - (y+x) -> -y
         if r[0] == "+" and l == r[2]:
-            logger("x - (y+x) -> -y\n\tx = {}\n\ty = {}", l, r[1])
+            #logger("x - (y+x) -> -y\n\tx = {}\n\ty = {}", l, r[1])
             work_stack.append((True, count, ("neg", r[1])))
             return
         # (x+y) - x -> y
         if l[0] == "+" and l[1] == r:
-            logger("(x+y) - x -> y\n\tx = {}\n\ty = {}", r, l[2])
+            #logger("(x+y) - x -> y\n\tx = {}\n\ty = {}", r, l[2])
             work_stack.append((True, count, l[2]))
             return
         # (x+y) - y -> x
         if l[0] == "+" and l[2] == r:
-            logger("(x+y) - y -> x\n\tx = {}\n\ty = {}", l[1], r)
+            #logger("(x+y) - y -> x\n\tx = {}\n\ty = {}", l[1], r)
             work_stack.append((True, count, l[1]))
             return
 
         # x - (x-y) -> y
         if r[0] == "-" and l == r[1]:
-            logger("x - (x-y) -> y\n\tx = {}\n\ty = {}", l, r[2])
+            #logger("x - (x-y) -> y\n\tx = {}\n\ty = {}", l, r[2])
             work_stack.append((True, count, r[2]))
             return
         # x - (y-x) -> (2*x)-y
         if r[0] == "-" and l == r[2]:
-            logger("x - (y-x) -> (2*x)-y\n\tx = {}\n\ty = {}", l, r[1])
+            #logger("x - (y-x) -> (2*x)-y\n\tx = {}\n\ty = {}", l, r[1])
             work_stack.append((True, count, ("-", ("*", TWO, l), r[1])))
             return
         # (x-y) - x -> -y
         if l[0] == "-" and l[1] == r:
-            logger("(x-y) - x -> -y\n\tx = {}\n\ty = {}", r, l[2])
+            #logger("(x-y) - x -> -y\n\tx = {}\n\ty = {}", r, l[2])
             work_stack.append((True, count, ("neg", l[2])))
             return
         # (x-y) - y -> x-(2*y)
         if l[0] == "-" and l[2] == r:
-            logger("(x-y) - y -> x-(2*y)\n\tx = {}\n\ty = {}", l[1], r)
+            #logger("(x-y) - y -> x-(2*y)\n\tx = {}\n\ty = {}", l[1], r)
             work_stack.append((True, count, ("-", l[1], ("*", TWO, r))))
             return
 
         # x - (n*x) -> (n-1)*x
         if r[0] == "*" and l == r[2]:
-            logger("x - (n*x) -> (n-1)*x\n\tx = {}\n\tn = {}", l, r[1])
+            #logger("x - (n*x) -> (n-1)*x\n\tx = {}\n\tn = {}", l, r[1])
             if r[1][0] == "Integer":
                 work_stack.append((True, count, ("*", ("Integer", str(int(r[1][1])-1)), l)))
                 return
@@ -274,7 +274,7 @@ def simplify(exp, inputs):
             return
         # x - (x*n) -> (n-1)*x
         if r[0] == "*" and l == r[1]:
-            logger("x - (x*n) -> (n-1)*x\n\tx = {}\n\tn = {}", l, r[2])
+            #logger("x - (x*n) -> (n-1)*x\n\tx = {}\n\tn = {}", l, r[2])
             if r[2][0] == "Integer":
                 work_stack.append((True, count, ("*", ("Integer", str(int(r[2][1])-1)), l)))
                 return
@@ -282,7 +282,7 @@ def simplify(exp, inputs):
             return
         # (n*x) - x -> (n-1)*x
         if l[0] == "*" and r == l[2]:
-            logger("(n*x) - x -> (n-1)*x\n\tx = {}\n\tn = {}", r, l[1])
+            #logger("(n*x) - x -> (n-1)*x\n\tx = {}\n\tn = {}", r, l[1])
             if l[1][0] == "Integer":
                 work_stack.append((True, count, ("*", ("Integer", str(int(l[1][1])-1)), r)))
                 return
@@ -290,7 +290,7 @@ def simplify(exp, inputs):
             return
         # (x*n) - x -> (n-1)*x
         if l[0] == "*" and r == l[1]:
-            logger("(x*n) - x -> (n-1)*x\n\tx = {}\n\tn = {}", r, l[2])
+            #logger("(x*n) - x -> (n-1)*x\n\tx = {}\n\tn = {}", r, l[2])
             if l[2][0] == "Integer":
                 work_stack.append((True, count, ("*", ("Integer", str(int(l[2][1])-1)), r)))
                 return
@@ -307,51 +307,51 @@ def simplify(exp, inputs):
 
         # Collapse integer expressions
         if l[0] == "Integer" and r[0] == "Integer":
-            logger("Combined integer mul")
+            #logger("Combined integer mul")
             work_stack.append((True, count, ("Integer", str(int(l[1])*int(r[1])))))
             return
 
         # 1 * x -> x
         if l == ONE:
-            logger("Eliminated One in multiply")
+            #logger("Eliminated One in multiply")
             work_stack.append((True, count, r))
             return
         # x * 1 -> x
         if r == ONE:
-            logger("Eliminated One in multiply")
+            #logger("Eliminated One in multiply")
             work_stack.append((True, count, l))
             return
 
         # (-1) * x -> -x
         if l == NEG_ONE:
-            logger("Eliminated Negative One in multiply")
+            #logger("Eliminated Negative One in multiply")
             work_stack.append((True, count, ("neg", r)))
             return
         # x * (-1) -> -x
         if r == NEG_ONE:
-            logger("Eliminated Negative One in multiply")
+            #logger("Eliminated Negative One in multiply")
             work_stack.append((True, count, ("neg", l)))
             return
 
         # x * x -> x^2
         if r == l:
-            logger("x * x -> x^2\n\tx = {}\n", r)
+            #logger("x * x -> x^2\n\tx = {}\n", r)
             work_stack.append((True, count, ("pow", l, TWO)))
             return
 
         # (x^n) * x -> x^(n+1)
         if l[0] == "pow" and l[1] == r:
-            logger("(x^n) * x -> x^(n+1)\n\tx = {}\n", r)
+            #logger("(x^n) * x -> x^(n+1)\n\tx = {}\n", r)
             work_stack.append((True, count, ("pow", r, ("Integer", str(int(l[2][1])+1)))))
             return
         # x * (x^n) -> x^(n+1)
         if r[0] == "pow" and l == r[1]:
-            logger("x * (x^n) -> x^(n+1)\n\tx = {}\n", l)
+            #logger("x * (x^n) -> x^(n+1)\n\tx = {}\n", l)
             work_stack.append((True, count, ("pow", l, ("Integer", str(int(r[2][1])+1)))))
             return
         # (x^n) * (x^m) -> x^(n+m)
         if r[0] == "pow" and l[0] == "pow" and l[1] == r[1]:
-            logger("(x^n) * (x^m) -> x^(n+m)\n\tx = {}\n", l[1])
+            #logger("(x^n) * (x^m) -> x^(n+m)\n\tx = {}\n", l[1])
             work_stack.append((True, count, ("pow", l[1], ("Integer", str(int(l[2][1])+int(r[2][1]))))))
             return
 
@@ -361,11 +361,11 @@ def simplify(exp, inputs):
         # else pass
         if l == TWO:
             if r == PI:
-                logger("Replaced 2*pi with two_pi")
+                #logger("Replaced 2*pi with two_pi")
                 work_stack.append((True, count, TWO_PI))
                 return
             if r == HALF_PI:
-                logger("Replaced 2*half_pi with pi")
+                #logger("Replaced 2*half_pi with pi")
                 work_stack.append((True, count, PI))
                 return
         # x * 2:
@@ -374,11 +374,11 @@ def simplify(exp, inputs):
         # else pass
         if r == TWO:
             if l == PI:
-                logger("Replaced pi*2 with two_pi")
+                #logger("Replaced pi*2 with two_pi")
                 work_stack.append((True, count, TWO_PI))
                 return
             if l == HALF_PI:
-                logger("Replaced half_pi*2 with pi")
+                #logger("Replaced half_pi*2 with pi")
                 work_stack.append((True, count, PI))
                 return
 
@@ -392,25 +392,25 @@ def simplify(exp, inputs):
 
         # Collapse integer expressions
         if l[0] == "Integer" and r[0] == "Integer":
-            logger("Combined integer pow")
+            #logger("Combined integer pow")
             work_stack.append((True, count, ("Integer", str(int(l[1])**int(r[1])))))
             return
 
         # x ^ 1 -> x
         if r == ONE:
-            logger("Eliminated One in power")
+            #logger("Eliminated One in power")
             work_stack.append((True, count, l))
             return
 
         # abs(x) ^ (2*n) -> x^(2*n)
         if l[0] == "abs" and r[0] == "Integer" and int(r[1])%2==0:
-            logger("abs(x) ^ (2*n) -> x^(2*n)\n\tx = {}", l[1])
+            #logger("abs(x) ^ (2*n) -> x^(2*n)\n\tx = {}", l[1])
             work_stack.append((True, count, ("pow", l[1], r)))
             return
 
         # (-x) ^ (2*n) -> x^(2*n)
         if l[0] == "neg" and r[0] == "Integer" and int(r[1])%2==0:
-            logger("(-x) ^ (2*n) -> x^(2*n)\n\tx = {}", l[1])
+            #logger("(-x) ^ (2*n) -> x^(2*n)\n\tx = {}", l[1])
             work_stack.append((True, count, ("pow", l[1], r)))
             return
 
@@ -424,13 +424,13 @@ def simplify(exp, inputs):
 
         # Collapse integer expressions
         if arg[0] == "Integer":
-            logger("Combined integer neg")
+            #logger("Combined integer neg")
             work_stack.append((True, count, ("Integer", str(-int(arg[1])))))
             return
 
         # -(-x) -> x
         if arg[0] == "neg":
-            logger("Eliminated double negative in negative")
+            #logger("Eliminated double negative in negative")
             work_stack.append((True, count, arg[1]))
             return
 
@@ -444,20 +444,20 @@ def simplify(exp, inputs):
 
         # Collapse integer expressions
         if arg[0] == "Integer":
-            logger("Combined integer abs")
+            #logger("Combined integer abs")
             work_stack.append((True, count, ("Integer", str(abs(int(arg[1]))))))
             return
 
         # abs(-x)     -> abs(x)
         # abs(abs(x)) -> abs(x)
         if arg[0] == "neg" or arg[0] == "abs":
-            logger("Eliminated double abs in abs")
+            #logger("Eliminated double abs in abs")
             work_stack.append((True, count, ("abs", arg[1])))
             return
 
         # abs(x^(2*n)) -> x^2n
         if arg[0] == "pow" and int(arg[2][1])%2 == 0:
-            logger("abs(x^(2*n)) -> x^2n\n\tx = {}", arg[1])
+            #logger("abs(x^(2*n)) -> x^2n\n\tx = {}", arg[1])
             work_stack.append((True, count, arg))
             return
 
@@ -471,7 +471,7 @@ def simplify(exp, inputs):
 
         # cos(-x) -> cos(x)
         if arg[0] == "neg":
-            logger("cos(-x) -> cos(x)\n\tx = {}", arg[1])
+            #logger("cos(-x) -> cos(x)\n\tx = {}", arg[1])
             work_stack.append((True, count, ("cos", arg[1])))
             return
 
@@ -485,7 +485,7 @@ def simplify(exp, inputs):
 
         # cosh(-x) -> cosh(x)
         if arg[0] == "neg":
-            logger("cosh(-x) -> cosh(x)\n\tx = {}", arg[1])
+            #logger("cosh(-x) -> cosh(x)\n\tx = {}", arg[1])
             work_stack.append((True, count, ("cosh", arg[1])))
             return
 
@@ -499,7 +499,7 @@ def simplify(exp, inputs):
 
         # exp(1) -> exp1
         if arg == ONE:
-            logger("replaced exp(1) with exp1")
+            #logger("replaced exp(1) with exp1")
             work_stack.append((True, count, EXP1))
             return
 
