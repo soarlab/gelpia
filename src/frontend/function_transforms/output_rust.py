@@ -9,30 +9,34 @@ except ModuleNotFoundError:
     sys.path.append("../")
     import gelpia_logging as logging
     import color_printing as color
+logger = logging.make_module_logger(color.cyan("output_rust"),
+                                    logging.HIGH)
 
 from expression_walker import walk
 from pass_utils import INFIX, BINOPS, UNOPS
 
-logger = logging.make_module_logger(color.cyan("output_rust"),
-                                    logging.HIGH)
 
 
 
 
 def output_rust(exp, inputs, consts, assigns):
-    DIFF_DECL = ["extern crate gr;\n"
-                 "use gr::*;\n"
-                 "\n"
-                 "#[allow(unused_parens)]\n"
-                 "#[no_mangle]\n"
-                 "pub extern \"C\"\n"
-                 "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {\n"]
-    DECL = ["extern crate gr;\n"
-            "use gr::*;\n"
-            "\n"
-            "#[no_mangle]\n"
-            "pub extern \"C\"\n"
-            "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI) {\n"]
+    DIFF_DECL = [
+        "extern crate gr;\n"
+        "use gr::*;\n"
+        "\n"
+        "#[allow(unused_parens)]\n"
+        "#[no_mangle]\n"
+        "pub extern \"C\"\n"
+        "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {\n"
+    ]
+    DECL = [
+        "extern crate gr;\n"
+        "use gr::*;\n"
+        "\n"
+        "#[no_mangle]\n"
+        "pub extern \"C\"\n"
+        "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI) {\n"
+    ]
     START = DECL
     input_mapping = {name:str(i) for name,i in zip(inputs, range(len(inputs)))}
     const_mapping = {name:str(i) for name,i in zip(consts, range(len(consts)))}
@@ -41,7 +45,7 @@ def output_rust(exp, inputs, consts, assigns):
 
 
     def _e_variable(work_stack, count, exp):
-        #logger("expand_variable: {}", exp)
+        assert(logger("expand_variable: {}", exp))
         assert(exp[0] == "Variable")
         assert(len(exp) == 2)
         assert(exp[1] in assigns)
@@ -54,14 +58,14 @@ def output_rust(exp, inputs, consts, assigns):
         work_stack.append((False, 2,     assigns[exp[1]]))
 
     def _input(work_stack, count, exp):
-        #logger("expand_input: {}", exp)
+        assert(logger("expand_input: {}", exp))
         assert(exp[0] == "Input")
         assert(len(exp) == 2)
         index = input_mapping[exp[1]]
         work_stack.append((True, count, ["_x[", index, "]"]))
 
     def _const(work_stack, count, exp):
-        #logger("expand_const: {}", exp)
+        assert(logger("expand_const: {}", exp))
         assert(exp[0] == "Const")
         assert(len(exp) == 2)
         index = const_mapping[exp[1]]
@@ -73,7 +77,7 @@ def output_rust(exp, inputs, consts, assigns):
 
     def _c_variable(work_stack, count, args):
         nonlocal body
-        #logger("variable: {}", args)
+        assert(logger("variable: {}", args))
         assert(args[0] == "Variable")
         assert(len(args) == 3)
         name = args[1]
@@ -82,7 +86,7 @@ def output_rust(exp, inputs, consts, assigns):
         work_stack.append((True, count, [name]))
 
     def _infix(work_stack, count, args):
-        #logger("infix: {}", args)
+        assert(logger("infix: {}", args))
         assert(args[0] in INFIX)
         assert(len(args) == 3)
         op = args[0]
@@ -91,25 +95,27 @@ def output_rust(exp, inputs, consts, assigns):
         work_stack.append((True, count, l + [" ", op, " "] + r))
 
     def _binop(work_stack, count, args):
-        #logger("binop: {}", args)
+        assert(logger("binop: {}", args))
         assert(args[0] in BINOPS or args[0] == "powi")
         assert(len(args) == 3)
         op = args[0]
         first = args[1]
         secon = args[2]
-        work_stack.append((True, count, [op, "("] + first + [", "] + secon + [")"]))
+        ret = [op, "("] + first + [", "] + secon + [")"]
+        work_stack.append((True, count, ret))
 
     def _pow(work_stack, count, args):
-        #logger("pow: {}", args)
+        assert(logger("pow: {}", args))
         assert(args[0] == "pow")
         assert(len(args) == 3)
         base = args[1]
         expo = args[2]
         assert(expo[0] == "Integer")
-        work_stack.append((True, count, ["pow("] + base + [", ", expo[1] + ")"]))
+        ret = ["pow("] + base + [", ", expo[1] + ")"]
+        work_stack.append((True, count, ret))
 
     def _unop(work_stack, count, args):
-        #logger("unop: {}", args)
+        assert(logger("unop: {}", args))
         assert(args[0] in UNOPS)
         assert(len(args) == 2)
         op = args[0]
@@ -117,7 +123,7 @@ def output_rust(exp, inputs, consts, assigns):
         work_stack.append((True, count, [op, "("] + arg + [")"]))
 
     def _box(work_stack, count, args):
-        #logger("box: {}", args)
+        assert(logger("box: {}", args))
         assert(args[0] == "Box")
         if len(args) == 1:
             work_stack.append((True, count, ["None"]))
@@ -130,14 +136,15 @@ def output_rust(exp, inputs, consts, assigns):
 
     def _tuple(work_stack, count, args):
         nonlocal START
-        #logger("tuple: {}", args)
+        assert(logger("tuple: {}", args))
         assert(args[0] == "Tuple")
         assert(len(args) == 3)
         START = DIFF_DECL
-        work_stack.append((True, count, ["("] + args[1] + [", "] + args[2] + [")"]))
+        ret = ["("] + args[1] + [", "] + args[2] + [")"]
+        work_stack.append((True, count, ret))
 
     def _return(work_stack, count, args):
-        #logger("Return: {}", args)
+        assert(logger("Return: {}", args))
         assert(args[0] == "Return")
         assert(len(args) == 2)
         return ["    "] + args[1]
@@ -166,14 +173,14 @@ def main(argv):
     logging.set_log_filename(None)
     logging.set_log_level(logging.HIGH)
     try:
+        from pass_utils import get_runmain_input
         from function_to_lexed import function_to_lexed
         from lexed_to_parsed import lexed_to_parsed
-        from pass_lift_inputs_and_inline_assigns import lift_inputs_and_inline_assigns
-        from pass_utils import get_runmain_input
-        from pass_simplify import simplify
-        from pass_reverse_diff import reverse_diff
-        from pass_lift_consts import lift_consts
-        from pass_single_assignment import single_assignment
+        from pass_lift_inputs_and_inline_assigns import pass_lift_inputs_and_inline_assigns
+        from pass_simplify import pass_simplify
+        from pass_reverse_diff import pass_reverse_diff
+        from pass_lift_consts import pass_lift_consts
+        from pass_single_assignment import pass_single_assignment
 
         data = get_runmain_input(argv)
         logging.set_log_level(logging.NONE)

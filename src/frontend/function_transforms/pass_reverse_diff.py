@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
 
-import sys
 
 import sys
 
@@ -11,26 +9,22 @@ except ModuleNotFoundError:
     sys.path.append("../")
     import gelpia_logging as logging
     import color_printing as color
-
-from expression_walker import no_mut_walk
-
 logger = logging.make_module_logger(color.cyan("function_to_lexed"),
                                     logging.HIGH)
 
+from expression_walker import no_mut_walk
 
 
 
 
-def reverse_diff(exp, inputs):
+def pass_reverse_diff(exp, inputs):
     """
     Performs reverse accumulated automatic differentiation of the given exp
     for all variables
     """
 
-    # Constants
     UNUSED = {"Const", "ConstantInterval", "Integer", "Float"}
 
-    # Function local variables
     gradient = dict([(k,("Integer","0")) for k in inputs])
     seen_undiff = False
 
@@ -170,36 +164,34 @@ def reverse_diff(exp, inputs):
 
     def _undiff(work_stack, count, exp):
         nonlocal seen_undiff
-        assert(exp[0] == "floor_power2" or exp[0] == "sym_interval" or exp[0] == "sub2" or exp[0] == "sub2_I")
+        assert(exp[0] in {"floor_power2", "sym_interval", "sub2", "sub2_I"})
         seen_undiff = True
         work_stack.append((True, 0, "Return"))
         work_stack.append((True, 1, "Now"))
 
-    my_expand_dict = {
-        "*": _mul,
-        "+": _add,
-        "-": _sub,
-        "/": _div,
-        "Input": _input,
-        "abs": _abs,
-        "acos": _acos,
-        "asin": _asin,
-        "asinh": _asinh,
-        "atan": _atan,
-        "cos": _cos,
-        "cosh": _cosh,
-        "exp": _exp,
-        "floor_power2": _undiff,
-        "log": _log,
-        "neg": _neg,
-        "pow": _pow,
-        "sin": _sin,
-        "sinh": _sinh,
-        "sqrt": _sqrt,
-        "sym_interval": _undiff,
-        "tan": _tan,
-        "tanh": _tanh,
-    }
+    my_expand_dict = { "*":            _mul,
+                       "+":            _add,
+                       "-":            _sub,
+                       "/":            _div,
+                       "Input":        _input,
+                       "abs":          _abs,
+                       "acos":         _acos,
+                       "asin":         _asin,
+                       "asinh":        _asinh,
+                       "atan":         _atan,
+                       "cos":          _cos,
+                       "cosh":         _cosh,
+                       "exp":          _exp,
+                       "floor_power2": _undiff,
+                       "log":          _log,
+                       "neg":          _neg,
+                       "pow":          _pow,
+                       "sin":          _sin,
+                       "sinh":         _sinh,
+                       "sqrt":         _sqrt,
+                       "sym_interval": _undiff,
+                       "tan":          _tan,
+                       "tanh":         _tanh}
 
     no_mut_walk(my_expand_dict, (*exp[1], ("Integer", "1")))
 
@@ -220,34 +212,32 @@ def main(argv):
     logging.set_log_filename(None)
     logging.set_log_level(logging.HIGH)
     try:
+        from pass_utils import get_runmain_input
         from function_to_lexed import function_to_lexed
         from lexed_to_parsed import lexed_to_parsed
-        from pass_lift_inputs_and_inline_assigns import lift_inputs_and_inline_assigns
-        from pass_utils import get_runmain_input
-        from pass_simplify import simplify
+        from pass_lift_inputs_and_inline_assigns import pass_lift_inputs_and_inline_assigns
+        from pass_simplify import pass_simplify
 
         data = get_runmain_input(argv)
-        logging.set_log_level(logging.NONE)
 
+        logging.set_log_level(logging.NONE)
         tokens = function_to_lexed(data)
         tree = lexed_to_parsed(tokens)
-        exp, inputs = lift_inputs_and_inline_assigns(tree)
-        exp = simplify(exp, inputs)
+        exp, inputs = pass_lift_inputs_and_inline_assigns(tree)
+        exp = pass_simplify(exp, inputs)
 
         logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)
-        d, diff_exp = reverse_diff(exp, inputs)
-
+        d, diff_exp = pass_reverse_diff(exp, inputs)
 
         logging.set_log_level(logging.NONE)
-        diff_exp = simplify(diff_exp, inputs)
+        diff_exp = pass_simplify(diff_exp, inputs)
 
         logging.set_log_level(logging.HIGH)
         logger("inputs:")
         for name, interval in inputs.items():
             logger("  {} = {}", name, interval)
-        logger("expression:")
-        logger("  {}", diff_exp)
+        logger("expression:\n{}\n")
         logger("diffs:")
         if d:
             for name, diff in zip(inputs, diff_exp[1][2][1:]):

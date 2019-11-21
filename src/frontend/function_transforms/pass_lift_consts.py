@@ -9,23 +9,18 @@ except ModuleNotFoundError:
     sys.path.append("../")
     import gelpia_logging as logging
     import color_printing as color
+logger = logging.make_module_logger(color.cyan("lift_consts"),
+                                    logging.HIGH)
 
 from expression_walker import walk
 from pass_utils import BINOPS, UNOPS
 
-logger = logging.make_module_logger(color.cyan("lift_consts"),
-                                    logging.HIGH)
 
 
 
-
-def lift_consts(exp, inputs):
+def pass_lift_consts(exp, inputs):
     """ Extracts constant values from an expression """
-    # Note about hashed: This argument should never be used, it is there to
-    #   work as a static variable, and it must be declared in the outermost
-    #   function scope to achieve this. It is not a global to avoid name clashes.
 
-    # Constants
     CONST = {"Const", "ConstantInterval", "Integer", "Float", "SymbolicConst"}
     NON_CONST_UNOPS = {"sinh", "cosh", "tanh", "dabs", "datanh", "floor_power2",
                        "sym_interval"}
@@ -40,7 +35,7 @@ def lift_consts(exp, inputs):
 
         try:
             key = hashed[exp]
-            #logger("Found use of existing const {}", key)
+            assert(logger("Found use of existing const {}", key))
 
         except KeyError:
             key = "$_const_{}".format(len(hashed))
@@ -48,7 +43,7 @@ def lift_consts(exp, inputs):
             hashed[exp] = key
             assert(key not in consts)
             consts[key] = exp
-            #logger("Lifting const {} as {}", exp, key)
+            assert(logger("Lifting const {} as {}", exp, key))
 
         return ('Const', key)
 
@@ -193,11 +188,11 @@ def lift_consts(exp, inputs):
                                 [_one_item for _ in UNOPS]))
     my_contract_dict.update(zip(NON_CONST_UNOPS,
                                 [_bad_one_item for _ in NON_CONST_UNOPS]))
-    my_contract_dict["Box"]       = _box
-    my_contract_dict["Tuple"]     = _tuple
-    my_contract_dict["pow"]       = _pow
-    my_contract_dict["Variable"]  = _variable
-    my_contract_dict["Return"]    = _return
+    my_contract_dict["Box"]      = _box
+    my_contract_dict["Tuple"]    = _tuple
+    my_contract_dict["pow"]      = _pow
+    my_contract_dict["Variable"] = _variable
+    my_contract_dict["Return"]   = _return
 
 
     n, new_exp = walk(my_expand_dict, my_contract_dict, exp)
@@ -222,8 +217,8 @@ def main(argv):
         from pass_reverse_diff import reverse_diff
 
         data = get_runmain_input(argv)
-        logging.set_log_level(logging.NONE)
 
+        logging.set_log_level(logging.NONE)
         tokens = function_to_lexed(data)
         tree = lexed_to_parsed(tokens)
         exp, inputs = lift_inputs_and_inline_assigns(tree)

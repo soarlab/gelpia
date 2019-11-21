@@ -1,4 +1,5 @@
 
+
 import os.path as path
 import re
 import subprocess
@@ -33,6 +34,15 @@ def get_runmain_input(argv):
 
     return data
 
+
+def extract_exp_from_diff(diff_exp):
+    assert(diff_exp[0] == "Return")
+    assert(len(diff_exp) == 2)
+    diff_retval = diff_exp[1]
+    if diff_retval[0] != "Tuple":
+        return diff_exp
+    exp = diff_retval[1]
+    return ("Return", exp)
 
 # def exp_to_str(exp):
 #     exp_str = str(exp)

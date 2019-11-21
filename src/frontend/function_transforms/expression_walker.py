@@ -1,5 +1,16 @@
 
+
 import sys
+
+try:
+    import gelpia_logging as logging
+    import color_printing as color
+except ModuleNotFoundError:
+    sys.path.append("../")
+    import gelpia_logging as logging
+    import color_printing as color
+logger = logging.make_module_logger(color.cyan("expression_walker"),
+                                    logging.HIGH)
 
 from pass_utils import BINOPS, UNOPS, ATOMS
 
@@ -34,10 +45,10 @@ def expand_many(work_stack, count, exp):
 
 
 def expand_error(work_stack, count, exp):
-    print("EXPAND ERROR: {}".format(exp), file=sys.stderr)
-    print("STACK:", file=sys.stderr)
+    logger.error("Expand error on expression: {}", exp)
+    logger.error("Stack:")
     for tup in reversed(work_stack):
-        print("\t",tup, file=sys.stderr)
+        logger.error("  {}", tup)
     sys.exit(-1)
 
 
@@ -51,10 +62,8 @@ default_walk_expand_func_dict.update(zip(ATOMS,
 default_walk_expand_func_dict["Box"]    = expand_many
 default_walk_expand_func_dict["Const"]  = expand_atom
 default_walk_expand_func_dict["Input"]  = expand_atom
-default_walk_expand_func_dict["Return"] = expand_one
 default_walk_expand_func_dict["Tuple"]  = expand_two
-
-
+default_walk_expand_func_dict["Return"] = expand_one
 
 
 
@@ -69,11 +78,11 @@ def contract_return(work_stack, count, args):
     return tuple(args)
 
 
-def contract_error(work_stack, count, exp):
-    print("CONTRACT ERROR: {}".format(exp), file=sys.stderr)
-    print("STACK:", file=sys.stderr)
+def contract_error(work_stack, count, args):
+    logger.error("Contract error on args: {}", args)
+    logger.error("Stack:")
     for tup in reversed(work_stack):
-        print("\t",tup, file=sys.stderr)
+        logger.error("  {}", tup)
     sys.exit(-1)
 
 
@@ -85,10 +94,8 @@ default_walk_contract_func_dict.update(zip(UNOPS,
 default_walk_contract_func_dict["Box"]    = contract_many
 default_walk_contract_func_dict["Const"]  = contract_many
 default_walk_contract_func_dict["Input"]  = contract_many
-default_walk_contract_func_dict["Return"] = contract_return
 default_walk_contract_func_dict["Tuple"]  = contract_many
-
-
+default_walk_contract_func_dict["Return"] = contract_return
 
 
 
@@ -122,9 +129,8 @@ constant_walk_expand_func_dict.update(zip(ATOMS,
 constant_walk_expand_func_dict["Box"]    = constant_expand_many
 constant_walk_expand_func_dict["Const"]  = constant_expand_atom
 constant_walk_expand_func_dict["Input"]  = constant_expand_atom
-constant_walk_expand_func_dict["Return"] = constant_expand_one
 constant_walk_expand_func_dict["Tuple"]  = constant_expand_two
-
+constant_walk_expand_func_dict["Return"] = constant_expand_one
 
 
 
@@ -136,8 +142,6 @@ def constant_contract_return(work_stack, count, args):
 
 constant_walk_contract_func_dict = dict()
 constant_walk_contract_func_dict["Return"] = constant_contract_return
-
-
 
 
 
