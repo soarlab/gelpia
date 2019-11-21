@@ -2,6 +2,8 @@
 
 import sys
 
+from expression_walker import walk
+from pass_utils import INFIX, UNOPS
 try:
     import gelpia_logging as logging
     import color_printing as color
@@ -12,39 +14,31 @@ except ModuleNotFoundError:
 logger = logging.make_module_logger(color.cyan("output_interp"),
                                     logging.HIGH)
 
-from expression_walker import walk
-from pass_utils import INFIX, BINOPS, UNOPS
-
-
-
 
 def output_interp(exp, inputs, consts):
-    input_mapping = {name:str(i) for name,i in zip(inputs, range(len(inputs)))}
-    const_mapping = {name:str(i) for name,i in zip(consts, range(len(consts)))}
 
+    input_mapping = {name: str(i) for name, i in zip(inputs, range(len(inputs)))}
+    const_mapping = {name: str(i) for name, i in zip(consts, range(len(consts)))}
 
     def _const(work_stack, count, exp):
         assert(exp[0] == "Const")
         assert(len(exp) == 2)
-        work_stack.append((True, count,  ['c'+str(const_mapping[exp[1]])]))
+        work_stack.append((True, count,  ['c' + str(const_mapping[exp[1]])]))
 
     def _input(work_stack, count, exp):
         assert(exp[0] == "Input")
         assert(len(exp) == 2)
-        work_stack.append((True, count,  ['i'+str(input_mapping[exp[1]])]))
+        work_stack.append((True, count,  ['i' + str(input_mapping[exp[1]])]))
 
-    my_expand_dict = {"Const":    _const,
-                      "Input":    _input}
-
-
-
+    my_expand_dict = {"Const": _const,
+                      "Input": _input}
 
     def _pow(work_stack, count, args):
         assert(args[0] == "pow")
         assert(len(args) == 3)
         assert(args[2][0] == "Integer")
         assert(type(args[1]) is list)
-        work_stack.append((True, count, args[1] + ["p"+args[2][1]]))
+        work_stack.append((True, count, args[1] + ["p" + args[2][1]]))
 
     def _sub2(work_stack, count, args):
         assert(args[0] == "sub2")
@@ -65,13 +59,13 @@ def output_interp(exp, inputs, consts):
         assert(len(args) == 3)
         assert(type(args[1]) is list)
         assert(type(args[2]) is list)
-        work_stack.append((True, count, args[1] + args[2] + ["o"+args[0]]))
+        work_stack.append((True, count, args[1] + args[2] + ["o" + args[0]]))
 
     def _unops(work_stack, count, args):
         assert(args[0] in UNOPS)
         assert(len(args) == 2)
         assert(type(args[1]) is list)
-        work_stack.append((True, count, args[1] + ["f"+args[0].lower()]))
+        work_stack.append((True, count, args[1] + ["f" + args[0].lower()]))
 
     def _return(work_stack, count, args):
         assert(args[0] == "Return")
@@ -81,7 +75,7 @@ def output_interp(exp, inputs, consts):
     my_contract_dict = dict()
     my_contract_dict.update(zip(INFIX, [_infix for _ in INFIX]))
     my_contract_dict.update(zip(UNOPS, [_unops for _ in UNOPS]))
-    my_contract_dict["pow"]  = _pow
+    my_contract_dict["pow"] = _pow
     my_contract_dict["powi"] = _powi
     my_contract_dict["sub2"] = _sub2
     my_contract_dict["Return"] = _return
@@ -91,8 +85,6 @@ def output_interp(exp, inputs, consts):
     return ','.join(exp)
 
 
-
-
 def main(argv):
     logging.set_log_filename(None)
     logging.set_log_level(logging.HIGH)
@@ -100,7 +92,8 @@ def main(argv):
         from pass_utils import get_runmain_input, extract_exp_from_diff
         from function_to_lexed import function_to_lexed
         from lexed_to_parsed import lexed_to_parsed
-        from pass_lift_inputs_and_inline_assigns import pass_lift_inputs_and_inline_assigns
+        from pass_lift_inputs_and_inline_assigns import \
+            pass_lift_inputs_and_inline_assigns
         from pass_simplify import pass_simplify
         from pass_reverse_diff import pass_reverse_diff
         from pass_lift_consts import pass_lift_consts

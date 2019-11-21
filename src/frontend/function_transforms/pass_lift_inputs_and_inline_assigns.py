@@ -1,7 +1,9 @@
 
 
 import sys
+from collections import OrderedDict
 
+from expression_walker import walk
 try:
     import gelpia_logging as logging
     import color_printing as color
@@ -12,21 +14,15 @@ except ModuleNotFoundError:
 logger = logging.make_module_logger(color.cyan("lift_inputs_and_inline_assigns"),
                                     logging.HIGH)
 
-from expression_walker import walk
-
-from collections import OrderedDict
-
-
-
 
 def pass_lift_inputs_and_inline_assigns(exp):
     """ Extracts input variables from an expression and inlines assignments"""
 
     # Function local variables
-    assigns      = dict()        # name -> expression
-    used_assigns = set()         # assignments seen in the main exp
-    inputs       = OrderedDict() # name -> input range
-    used_inputs  = set()         # inputs seen in the main exp
+    assigns = dict()         # name -> expression
+    used_assigns = set()          # assignments seen in the main exp
+    inputs = OrderedDict()  # name -> input range
+    used_inputs = set()          # inputs seen in the main exp
 
     def _input_interval(work_stack, count, exp):
         assert(exp[0] == "InputInterval")
@@ -57,7 +53,6 @@ def pass_lift_inputs_and_inline_assigns(exp):
         logger.error("Use of undeclared name: {}", exp[1])
         sys.exit(-1)
 
-
     # A leading tuple must be an assign
     while type(exp[0]) is tuple:
         assignment = exp[0]
@@ -75,11 +70,10 @@ def pass_lift_inputs_and_inline_assigns(exp):
             assert(logger("Found input {} = {}", name[1], val))
         else:
             assigns[name[1]] = val
-            assert(logger("Found assign {} = {}", name[1],val))
+            assert(logger("Found assign {} = {}", name[1], val))
 
         # Work on the rest of the expression
         exp = exp[1]
-
 
     my_expand_dict = {"InputInterval": _input_interval,
                       "Name":          _name}
@@ -87,8 +81,6 @@ def pass_lift_inputs_and_inline_assigns(exp):
     new_exp = walk(my_expand_dict, dict(), exp, assigns)
 
     return new_exp, inputs
-
-
 
 
 def main(argv):

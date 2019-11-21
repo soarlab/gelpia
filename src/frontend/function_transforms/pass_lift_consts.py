@@ -2,6 +2,8 @@
 
 import sys
 
+from expression_walker import walk
+from pass_utils import BINOPS, UNOPS
 try:
     import gelpia_logging as logging
     import color_printing as color
@@ -11,11 +13,6 @@ except ModuleNotFoundError:
     import color_printing as color
 logger = logging.make_module_logger(color.cyan("lift_consts"),
                                     logging.HIGH)
-
-from expression_walker import walk
-from pass_utils import BINOPS, UNOPS
-
-
 
 
 def pass_lift_consts(exp, inputs):
@@ -47,7 +44,6 @@ def pass_lift_consts(exp, inputs):
 
         return ('Const', key)
 
-
     def _expand_positive_atom(work_stack, count, exp):
         work_stack.append((True, count, (*exp, True)))
 
@@ -55,30 +51,14 @@ def pass_lift_consts(exp, inputs):
         assert(len(exp) == 2)
         work_stack.append((True, count, (exp[0], exp[1], False)))
 
-    def _expand_variable(work_stack, count, exp):
-        assert(exp[0] == "Variable")
-        assert(len(exp) == 2)
-        status = assign_status.get(exp[1], None)
-        if status == None:
-            work_stack.append((True,  count, exp[0]))
-            work_stack.append((True,  2,     exp[1]))
-            work_stack.append((False, 2,     assigns[exp[1]]))
-        else:
-            if status:
-                work_stack.append((True,  count, (*assigns[exp[1]], status)))
-            else:
-                work_stack.append((True,  count, (exp[0], exp[1], False)))
-
     my_expand_dict = dict()
     my_expand_dict.update(zip(CONST, [_expand_positive_atom for _ in CONST]))
-    my_expand_dict["Input"]    = _expand_negative_atom
-    my_expand_dict["Variable"] = _expand_variable
-
+    my_expand_dict["Input"] = _expand_negative_atom
 
     def _pow(work_stack, count, args):
         assert(args[0] == "pow")
         assert(len(args) == 3)
-        l, left  = args[1][-1], args[1][:-1]
+        l, left = args[1][-1], args[1][:-1]
         r, right = args[2][-1], args[2][:-1]
         op = args[0]
 
@@ -100,7 +80,7 @@ def pass_lift_consts(exp, inputs):
 
     def _two_item(work_stack, count, args):
         assert(len(args) == 3)
-        l, left  = args[1][-1], args[1][:-1]
+        l, left = args[1][-1], args[1][:-1]
         r, right = args[2][-1], args[2][:-1]
         op = args[0]
 
@@ -119,7 +99,7 @@ def pass_lift_consts(exp, inputs):
     def _tuple(work_stack, count, args):
         assert(args[0] == "Tuple")
         assert(len(args) == 3)
-        l, left  = args[1][-1], args[1][:-1]
+        l, left = args[1][-1], args[1][:-1]
         if len(args[2]) == 1:
             r, right = False, args[2]
         else:
@@ -160,19 +140,6 @@ def pass_lift_consts(exp, inputs):
         box.append(False)
         work_stack.append((True, count, tuple(box)))
 
-    def _variable(work_stack, count, args):
-        assert(args[0] == "Variable")
-        assert(len(args) == 3)
-        if args[2] == ("Box",):
-            v, val = False, args[2]
-        else:
-            v, val = args[2][-1], args[2][:-1]
-        assigns[args[1]] = val
-        if v:
-            work_stack.append((True, count, (*val, True)))
-        else:
-            work_stack.append((True, count, ("Variable", args[1], False)))
-
     def _return(work_stack, count, args):
         assert(args[0] == "Return")
         assert(len(args) == 2)
@@ -188,12 +155,10 @@ def pass_lift_consts(exp, inputs):
                                 [_one_item for _ in UNOPS]))
     my_contract_dict.update(zip(NON_CONST_UNOPS,
                                 [_bad_one_item for _ in NON_CONST_UNOPS]))
-    my_contract_dict["Box"]      = _box
-    my_contract_dict["Tuple"]    = _tuple
-    my_contract_dict["pow"]      = _pow
-    my_contract_dict["Variable"] = _variable
-    my_contract_dict["Return"]   = _return
-
+    my_contract_dict["Box"] = _box
+    my_contract_dict["Tuple"] = _tuple
+    my_contract_dict["pow"] = _pow
+    my_contract_dict["Return"] = _return
 
     n, new_exp = walk(my_expand_dict, my_contract_dict, exp)
     assert(n in {True, False})
@@ -203,15 +168,14 @@ def pass_lift_consts(exp, inputs):
     return n, new_exp, consts
 
 
-
-
 def main(argv):
     logging.set_log_filename(None)
     logging.set_log_level(logging.HIGH)
     try:
         from function_to_lexed import function_to_lexed
         from lexed_to_parsed import lexed_to_parsed
-        from pass_lift_inputs_and_inline_assigns import lift_inputs_and_inline_assigns
+        from pass_lift_inputs_and_inline_assigns import \
+            lift_inputs_and_inline_assigns
         from pass_utils import get_runmain_input
         from pass_simplify import simplify
         from pass_reverse_diff import reverse_diff
@@ -228,7 +192,7 @@ def main(argv):
 
         logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)
-        const, exp, consts = lift_consts(diff_exp, inputs)
+        const, exp, consts = pass_lift_consts(diff_exp, inputs)
 
         logger("inputs:")
         for name, interval in inputs.items():

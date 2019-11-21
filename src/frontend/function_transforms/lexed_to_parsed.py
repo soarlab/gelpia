@@ -21,10 +21,6 @@ except ModuleNotFoundError:
 from function_to_lexed import GelpiaLexer
 
 
-
-
-
-
 class GelpiaParser(Parser):
     tokens = GelpiaLexer.tokens
 
@@ -48,9 +44,9 @@ class GelpiaParser(Parser):
 
     @_("interval variable SEMICOLON function")
     def function(self, p):
-        assert(logger( "function: interval variable SEMICOLON function"))
-        assert(logger( "          {} {} SEMICOLON {}",
-                       p.variable, p.interval, p.function))
+        assert(logger("function: interval variable SEMICOLON function"))
+        assert(logger("          {} {} SEMICOLON {}",
+                      p.variable, p.interval, p.function))
         return (("Assign", p.variable, p.interval), p.function)
 
     @_("interval symbolic_const SEMICOLON function")
@@ -60,8 +56,8 @@ class GelpiaParser(Parser):
 
     @_("expression_star")
     def function(self, p):
-        assert(logger( "function: expression_star"))
-        assert(logger( "          {}", p.expression_star))
+        assert(logger("function: expression_star"))
+        assert(logger("          {}", p.expression_star))
         return ("Return", p.expression_star)
 
     # expression_star
@@ -74,14 +70,14 @@ class GelpiaParser(Parser):
 
     @_("expression SEMICOLON")
     def expression_star(self, p):
-        assert(logger( "expression_star: expression SEMICOLON"))
-        assert(logger( "                 {} SEMICOLON", p.expression))
+        assert(logger("expression_star: expression SEMICOLON"))
+        assert(logger("                 {} SEMICOLON", p.expression))
         return p.expression
 
     @_("expression")
     def expression_star(self, p):
-        assert(logger( "expression_star: expression"))
-        assert(logger( "                 {}", p.expression))
+        assert(logger("expression_star: expression"))
+        assert(logger("                 {}", p.expression))
         return p.expression
 
     # expression
@@ -99,7 +95,7 @@ class GelpiaParser(Parser):
     def expression(self, p):
         assert(logger("expression: expression INFIX_POW expression"))
         assert(logger("            {} INFIX_POW {}",
-        p.expression0, p.expression1))
+                      p.expression0, p.expression1))
         return ("pow", p.expression0, p.expression1)
 
     @_("MINUS expression %prec UMINUS")
@@ -139,14 +135,14 @@ class GelpiaParser(Parser):
         assert(logger("interval: LBRACE negconst COMMA negconst RBRACE"))
         assert(logger("          LBRACE {} COMMA {} RBRACE",
                       p.negconst0, p.negconst1))
-        left  = p.negconst0
+        left = p.negconst0
         right = p.negconst1
-        low  = float(left[1])
+        low = float(left[1])
         high = float(right[1])
 
         if low > high:
             logger.error("Upside down intervals not allowed: [{}, {}]",
-                          low, high)
+                         low, high)
             sys.exit(-1)
 
         if low == high:
@@ -169,7 +165,7 @@ class GelpiaParser(Parser):
         if val[0] == "-":
             return (typ, val[1:])
         else:
-            return (typ, "-"+val)
+            return (typ, "-" + val)
 
     # const
     @_("const")
@@ -227,7 +223,7 @@ class GelpiaParser(Parser):
         assert(logger("                {}", p[0]))
         return ("SymbolicConst", p[0])
 
-
+    # errors
     def error(self, p):
         if p:
             logger.error("Line {}: Syntax error at {}".format(p.lineno, str(p)))
@@ -236,13 +232,9 @@ class GelpiaParser(Parser):
         sys.exit(-1)
 
 
-
-
 def lexed_to_parsed(tokens):
     parser = GelpiaParser()
     return parser.parse(tokens)
-
-
 
 
 def main(argv):

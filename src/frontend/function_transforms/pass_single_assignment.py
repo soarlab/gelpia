@@ -2,6 +2,8 @@
 
 import sys
 
+from expression_walker import walk
+from pass_utils import BINOPS, UNOPS
 try:
     import gelpia_logging as logging
     import color_printing as color
@@ -12,14 +14,10 @@ except ModuleNotFoundError:
 logger = logging.make_module_logger(color.cyan("single_assignment"),
                                     logging.HIGH)
 
-from expression_walker import walk
-from pass_utils import BINOPS, UNOPS
-
-
-
 
 def pass_single_assignment(exp, inputs):
     """ Converts the expression to single assignment form """
+
     PASSTHROUGH = {
         "Const",
         "ConstantInterval",
@@ -27,10 +25,7 @@ def pass_single_assignment(exp, inputs):
         "Input",
         "Integer",
     }
-    UNCACHED    = PASSTHROUGH.union({"Tuple", "Variable"})
-    TWO_ITEMS   = BINOPS.union({"Tuple"})
-    ONE_ITEM    = UNOPS.union({"Return"})
-
+    UNCACHED = PASSTHROUGH.union({"Tuple", "Variable"})
 
     def cache(exp, hashed=dict()):
         if exp[0] in UNCACHED:
@@ -39,15 +34,14 @@ def pass_single_assignment(exp, inputs):
             key = hashed[exp]
             assert(logger("Eliminated redundant subexpression : {}", exp))
         except KeyError:
-            key = "_expr_"+str(len(hashed))
+            key = "_expr_" + str(len(hashed))
             hashed[exp] = key
             assigns[key] = exp
         return ("Variable", key)
 
-
     def _two_items(work_stack, count, args):
         assert(len(args) == 3)
-        left  = cache(args[1])
+        left = cache(args[1])
         right = cache(args[2])
         work_stack.append((True, count, (args[0], left, right)))
 
@@ -72,11 +66,6 @@ def pass_single_assignment(exp, inputs):
     return exp, assigns
 
 
-
-
-
-
-
 def main(argv):
     logging.set_log_filename(None)
     logging.set_log_level(logging.HIGH)
@@ -84,7 +73,8 @@ def main(argv):
         from pass_utils import get_runmain_input
         from function_to_lexed import function_to_lexed
         from lexed_to_parsed import lexed_to_parsed
-        from pass_lift_inputs_and_inline_assigns import pass_lift_inputs_and_inline_assigns
+        from pass_lift_inputs_and_inline_assigns import \
+            pass_lift_inputs_and_inline_assigns
         from pass_simplify import pass_simplify
         from pass_reverse_diff import pass_reverse_diff
         from pass_lift_consts import pass_lift_consts

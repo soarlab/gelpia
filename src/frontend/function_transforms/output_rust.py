@@ -2,6 +2,8 @@
 
 import sys
 
+from expression_walker import walk
+from pass_utils import INFIX, BINOPS, UNOPS
 try:
     import gelpia_logging as logging
     import color_printing as color
@@ -12,14 +14,9 @@ except ModuleNotFoundError:
 logger = logging.make_module_logger(color.cyan("output_rust"),
                                     logging.HIGH)
 
-from expression_walker import walk
-from pass_utils import INFIX, BINOPS, UNOPS
-
-
-
-
 
 def output_rust(exp, inputs, consts, assigns):
+
     DIFF_DECL = [
         "extern crate gr;\n"
         "use gr::*;\n"
@@ -38,11 +35,10 @@ def output_rust(exp, inputs, consts, assigns):
         "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI) {\n"
     ]
     START = DECL
-    input_mapping = {name:str(i) for name,i in zip(inputs, range(len(inputs)))}
-    const_mapping = {name:str(i) for name,i in zip(consts, range(len(consts)))}
+    input_mapping = {name: str(i) for name, i in zip(inputs, range(len(inputs)))}
+    const_mapping = {name: str(i) for name, i in zip(consts, range(len(consts)))}
     seen_assigns = set()
     body = list()
-
 
     def _e_variable(work_stack, count, exp):
         assert(logger("expand_variable: {}", exp))
@@ -71,9 +67,9 @@ def output_rust(exp, inputs, consts, assigns):
         index = const_mapping[exp[1]]
         work_stack.append((True, count, ["_c[", index, "]"]))
 
-    my_expand_dict = {"Input"    : _input,
-                      "Const"    : _const,
-                      "Variable" : _e_variable}
+    my_expand_dict = {"Input": _input,
+                      "Const": _const,
+                      "Variable": _e_variable}
 
     def _c_variable(work_stack, count, args):
         nonlocal body
@@ -90,9 +86,9 @@ def output_rust(exp, inputs, consts, assigns):
         assert(args[0] in INFIX)
         assert(len(args) == 3)
         op = args[0]
-        l = args[1]
-        r = args[2]
-        work_stack.append((True, count, l + [" ", op, " "] + r))
+        left = args[1]
+        right = args[2]
+        work_stack.append((True, count, left + [" ", op, " "] + right))
 
     def _binop(work_stack, count, args):
         assert(logger("binop: {}", args))
@@ -167,8 +163,6 @@ def output_rust(exp, inputs, consts, assigns):
     return "".join(START + body + retval + ["\n}"])
 
 
-
-
 def main(argv):
     logging.set_log_filename(None)
     logging.set_log_level(logging.HIGH)
@@ -176,7 +170,8 @@ def main(argv):
         from pass_utils import get_runmain_input
         from function_to_lexed import function_to_lexed
         from lexed_to_parsed import lexed_to_parsed
-        from pass_lift_inputs_and_inline_assigns import pass_lift_inputs_and_inline_assigns
+        from pass_lift_inputs_and_inline_assigns import \
+            pass_lift_inputs_and_inline_assigns
         from pass_simplify import pass_simplify
         from pass_reverse_diff import pass_reverse_diff
         from pass_lift_consts import pass_lift_consts
@@ -187,12 +182,12 @@ def main(argv):
 
         tokens = function_to_lexed(data)
         tree = lexed_to_parsed(tokens)
-        exp, inputs = lift_inputs_and_inline_assigns(tree)
-        exp = simplify(exp, inputs)
-        d, diff_exp = reverse_diff(exp, inputs)
-        diff_exp = simplify(diff_exp, inputs)
-        c, diff_exp, consts = lift_consts(diff_exp, inputs)
-        diff_exp, assigns = single_assignment(diff_exp, inputs)
+        exp, inputs = pass_lift_inputs_and_inline_assigns(tree)
+        exp = pass_simplify(exp, inputs)
+        d, diff_exp = pass_reverse_diff(exp, inputs)
+        diff_exp = pass_simplify(diff_exp, inputs)
+        c, diff_exp, consts = pass_lift_consts(diff_exp, inputs)
+        diff_exp, assigns = pass_single_assignment(diff_exp, inputs)
 
         logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)

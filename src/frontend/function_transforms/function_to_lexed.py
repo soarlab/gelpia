@@ -19,8 +19,6 @@ except ModuleNotFoundError:
     sys.exit(-1)
 
 
-
-
 class GelpiaLexer(Lexer):
     tokens = [
         # Variables
@@ -56,18 +54,18 @@ class GelpiaLexer(Lexer):
 
     # Sets of special symbols
     BINOPS = {r"pow", r"sub2"}
-    UNOPS  = {r"abs", r"acos", r"acosh", r"asin", r"asinh", r"atan", r"atanh",
-              r"cos", r"cosh", r"exp", r"log", r"sin", r"sinh", r"sqrt", r"tan",
-              r"tanh", r"floor_power2", r"sym_interval"}
+    UNOPS = {r"abs", r"acos", r"acosh", r"asin", r"asinh", r"atan", r"atanh",
+             r"cos", r"cosh", r"exp", r"log", r"sin", r"sinh", r"sqrt",
+             r"tan", r"tanh", r"floor_power2", r"sym_interval"}
     SYMBOLIC_CONSTS = {r"pi", r"exp1", r"half_pi", r"two_pi"}
 
     # Ignored input
     @_(r"\n+")
     def ignore_newline(self, t):
         self.lineno += t.value.count('\n')
-    ignore_space   = r"\s"
+    ignore_space = r"\s"
     ignore_comment = r"\#.*"
-    ignore_labels  = r"({})".format(r")|(".join([r"cost:", r"var:"]))
+    ignore_labels = r"({})".format(r")|(".join([r"cost:", r"var:"]))
 
     # Prefix operators
     BINOP = r"({})".format(r")|(".join(BINOPS))
@@ -76,28 +74,29 @@ class GelpiaLexer(Lexer):
     # Literals
     SYMBOLIC_CONST = r"({})".format(r")|(".join(SYMBOLIC_CONSTS))
     FLOAT = (r"("                  # match all floats
-             r"("                  #  match float with '.'
-             r"("                  #   match a number base
-             r"(\d+\.\d+)"         #    <num.num>
-             r"|"                  #    or
-             r"(\d+\.)"            #    <num.>
-             r"|"                  #    or
-             r"(\.\d+)"            #    <.num>
-             r")"                  #
-             r"("                  #   then match an exponent
-             r"(e|E)(\+|-)?\d+"    #    <exponent>
-             r")?"                 #    optionally
-             r")"                  #
-             r"|"                  #  or
-             r"("                  #  match float without '.'
-             r"\d+"                #   <num>
-             r"((e|E)(\+|-)?\d+)"  #   <exponent>
-             r")"                  #
+             r"("                  # | match float with '.'
+             r"("                  # |  match a number base
+             r"(\d+\.\d+)"         # |   <num.num>
+             r"|"                  # |   or
+             r"(\d+\.)"            # |   <num.>
+             r"|"                  # |   or
+             r"(\.\d+)"            # |   <.num>
+             r")"                  # |
+             r"("                  # |  then match an exponent
+             r"(e|E)(\+|-)?\d+"    # |   <exponent>
+             r")?"                 # |   optionally
+             r")"                  # |
+             r"|"                  # | or
+             r"("                  # | match float without '.'
+             r"\d+"                # |  <num>
+             r"((e|E)(\+|-)?\d+)"  # |  <exponent>
+             r")"
              r")")
     INTEGER = r"\d+"
 
     # Variables
     NAME = r"([a-zA-Z]|\_)([a-zA-Z]|\_|\d)*"
+
     def NAME(self, t):
         if t.value in self.BINOPS:
             t.type = BINOP
@@ -112,28 +111,26 @@ class GelpiaLexer(Lexer):
         return t
 
     # Infix Operators
-    PLUS      = r"\+"
-    MINUS     = r"-"
-    TIMES     = r"\*"
-    DIVIDE    = r"/"
+    PLUS = r"\+"
+    MINUS = r"-"
+    TIMES = r"\*"
+    DIVIDE = r"/"
     INFIX_POW = r"\^"
 
     # Assignment
     EQUALS = r"="
 
     # Deliminators
-    LPAREN    = r"\("
-    RPAREN    = r"\)"
-    LBRACE    = r"\["
-    RBRACE    = r"\]"
-    COMMA     = r","
+    LPAREN = r"\("
+    RPAREN = r"\)"
+    LBRACE = r"\["
+    RBRACE = r"\]"
+    COMMA = r","
     SEMICOLON = r";"
 
     def error(self, t):
         logger.error("Line {}: Bad character '{}'", self.lineno, t.value[0])
         sys.exit(-1)
-
-
 
 
 def function_to_lexed(function):
@@ -142,8 +139,6 @@ def function_to_lexed(function):
     for token in tokens:
         assert(logger("{}", token))
         yield token
-
-
 
 
 def main(argv):
