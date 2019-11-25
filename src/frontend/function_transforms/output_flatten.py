@@ -3,7 +3,7 @@
 import sys
 
 from expression_walker import walk
-from pass_utils import INFIX, BINOPS, UNOPS
+from pass_utils import INFIX, BINOPS, UNOPS, SYMBOLIC_CONSTS
 try:
     import gelpia_logging as logging
     import color_printing as color
@@ -11,75 +11,71 @@ except ModuleNotFoundError:
     sys.path.append("../")
     import gelpia_logging as logging
     import color_printing as color
-logger = logging.make_module_logger(color.cyan("output_rust"),
+logger = logging.make_module_logger(color.cyan("output_flatten"),
                                     logging.HIGH)
 
 
-def output_rust(exp, inputs, consts, assigns):
-
-    DIFF_DECL = [
-        "extern crate gr;\n"
-        "use gr::*;\n"
-        "\n"
-        "#[allow(unused_parens)]\n"
-        "#[no_mangle]\n"
-        "pub extern \"C\"\n"
-        "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {\n"
-    ]
-    DECL = [
-        "extern crate gr;\n"
-        "use gr::*;\n"
-        "\n"
-        "#[no_mangle]\n"
-        "pub extern \"C\"\n"
-        "fn gelpia_func(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI) {\n"
-    ]
-    START = DECL
-    input_mapping = {name: str(i) for name, i in zip(inputs, range(len(inputs)))}
-    const_mapping = {name: str(i) for name, i in zip(consts, range(len(consts)))}
-    seen_assigns = set()
-    body = list()
+def output_flatten(exp, inputs=None, consts=None, assigns=None):
 
     def _e_variable(work_stack, count, exp):
         assert(logger("expand_variable: {}", exp))
         assert(exp[0] == "Variable")
         assert(len(exp) == 2)
         assert(exp[1] in assigns)
-        if exp[1] in seen_assigns:
-            work_stack.append((True, count, [exp[1]]))
-            return
-        seen_assigns.add(exp[1])
-        work_stack.append((True,  count, exp[0]))
-        work_stack.append((True,  2,     exp[1]))
-        work_stack.append((False, 2,     assigns[exp[1]]))
+        work_stack.append((False, count, assigns[exp[1]]))
 
     def _input(work_stack, count, exp):
         assert(logger("expand_input: {}", exp))
         assert(exp[0] == "Input")
         assert(len(exp) == 2)
-        index = input_mapping[exp[1]]
-        work_stack.append((True, count, ["_x[", index, "]"]))
+        work_stack.append((True, count, [exp[1]]))
 
     def _const(work_stack, count, exp):
         assert(logger("expand_const: {}", exp))
         assert(exp[0] == "Const")
         assert(len(exp) == 2)
-        index = const_mapping[exp[1]]
-        work_stack.append((True, count, ["_c[", index, "]"]))
+        work_stack.append((False, count, consts[exp[1]]))
+
+    def _float(work_stack, count, exp):
+        assert(logger("expand_float: {}", exp))
+        assert(exp[0] == "Float")
+        assert(len(exp) == 2)
+        work_stack.append((True, count, ["[", exp[1], "]"]))
+
+    def _integer(work_stack, count, exp):
+        assert(logger("expand_integer: {}", exp))
+        assert(exp[0] == "Integer")
+        assert(len(exp) == 2)
+        work_stack.append((True, count, ["[", exp[1], "]"]))
+
+    def _input_interval(work_stack, count, exp):
+        assert(logger("expand_input_interval: {}", exp))
+        assert(exp[0] == "InputInterval")
+        assert(len(exp) == 3)
+        work_stack.append((True, count, ["[", exp[1][1], ", ", exp[2][1], "]"]))
+
+    def _symbolic_const(work_stack, count, exp):
+        assert(logger("expand_symbolic_const: {}", exp))
+        assert(exp[0] == "SymbolicConst")
+        assert(len(exp) == 2)
+        assert(exp[1] in SYMBOLIC_CONSTS)
+        pair = SYMBOLIC_CONSTS[exp[1]]
+        work_stack.append((False, count, ("ConstantInterval", pair[0], pair[1])))
+
+    def _constant_interval(work_stack, count, exp):
+        assert(logger("expand_constant_interval: {}", exp))
+        assert(exp[0] == "ConstantInterval")
+        assert(len(exp) == 3)
+        work_stack.append((True, count, ["[", exp[1][1], ", ", exp[2][1], "]"]))
 
     my_expand_dict = {"Input": _input,
                       "Const": _const,
+                      "Float": _float,
+                      "Integer": _integer,
+                      "InputInterval": _input_interval,
+                      "SymbolicConst": _symbolic_const,
+                      "ConstantInterval": _constant_interval,
                       "Variable": _e_variable}
-
-    def _c_variable(work_stack, count, args):
-        nonlocal body
-        assert(logger("variable: {}", args))
-        assert(args[0] == "Variable")
-        assert(len(args) == 3)
-        name = args[1]
-        value = args[2]
-        body += ["    let ", name, " = "] + value + [";\n"]
-        work_stack.append((True, count, [name]))
 
     def _infix(work_stack, count, args):
         assert(logger("infix: {}", args))
@@ -88,7 +84,8 @@ def output_rust(exp, inputs, consts, assigns):
         op = args[0]
         left = args[1]
         right = args[2]
-        work_stack.append((True, count, left + [" ", op, " "] + right))
+        ret = ["("] + left + [" ", op, " "] + right + [")"]
+        work_stack.append((True, count, ret))
 
     def _binop(work_stack, count, args):
         assert(logger("binop: {}", args))
@@ -118,38 +115,36 @@ def output_rust(exp, inputs, consts, assigns):
         arg = args[1]
         work_stack.append((True, count, [op, "("] + arg + [")"]))
 
+    def _neg(work_stack, count, args):
+        assert(logger("neg: {}", args))
+        assert(args[0] == "neg")
+        assert(len(args) == 2)
+        work_stack.append((True, count, ["-("] + args[1] + [")"]))
+
     def _box(work_stack, count, args):
         assert(logger("box: {}", args))
         assert(args[0] == "Box")
         if len(args) == 1:
             work_stack.append((True, count, ["None"]))
             return
-        box = ["Some(vec!["]
+        box = ["Box("]
         for sub in args[1:]:
             box += sub + [", "]
-        box = box[0:-1] + ["])"]
+        box = box[0:-1] + [")"]
         work_stack.append((True, count, box))
 
     def _tuple(work_stack, count, args):
-        nonlocal START
         assert(logger("tuple: {}", args))
         assert(args[0] == "Tuple")
         assert(len(args) == 3)
-        START = DIFF_DECL
-        ret = ["("] + args[1] + [", "] + args[2] + [")"]
+        ret = ["Tuple("] + args[1] + [", "] + args[2] + [")"]
         work_stack.append((True, count, ret))
 
     def _return(work_stack, count, args):
         assert(logger("Return: {}", args))
         assert(args[0] == "Return")
         assert(len(args) == 2)
-        return ["    "] + args[1]
-
-    def _neg(work_stack, count, args):
-        assert(logger("neg: {}", args))
-        assert(args[0] == "neg")
-        assert(len(args) == 2)
-        work_stack.append((True, count, ["-("] + args[1] + [")"]))
+        return args[1]
 
     my_contract_dict = dict()
     my_contract_dict.update(zip(BINOPS,
@@ -159,22 +154,23 @@ def output_rust(exp, inputs, consts, assigns):
     my_contract_dict.update(zip(INFIX,
                                 [_infix for _ in INFIX]))
     my_contract_dict["pow"] = _pow
-    my_contract_dict["Variable"] = _c_variable
-    my_contract_dict["Box"] = _box
     my_contract_dict["neg"] = _neg
+    my_contract_dict["Box"] = _box
     my_contract_dict["Tuple"] = _tuple
     my_contract_dict["Return"] = _return
 
-    retval = walk(my_expand_dict, my_contract_dict, exp, assigns)
+    retlist = walk(my_expand_dict, my_contract_dict, exp, assigns)
+    retval = "".join(retlist)
+    assert(logger("Final output: {}", retval))
 
-    return "".join(START + body + retval + ["\n}"])
+    return retval
 
 
 def main(argv):
     logging.set_log_filename(None)
     logging.set_log_level(logging.HIGH)
     try:
-        from pass_utils import get_runmain_input
+        from pass_utils import get_runmain_input, extract_exp_from_diff
         from function_to_lexed import function_to_lexed
         from lexed_to_parsed import lexed_to_parsed
         from pass_lift_inputs_and_inline_assigns import \
@@ -194,7 +190,7 @@ def main(argv):
         d, diff_exp = pass_reverse_diff(exp, inputs)
         diff_exp = pass_simplify(diff_exp, inputs)
         c, diff_exp, consts = pass_lift_consts(diff_exp, inputs)
-        diff_exp, assigns = pass_single_assignment(diff_exp, inputs)
+        exp = extract_exp_from_diff(diff_exp)
 
         logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)
@@ -204,15 +200,12 @@ def main(argv):
         logger("consts:")
         for name, val in consts.items():
             logger("  {} = {}", name, val)
-        logger("assigns:")
-        for name, val in assigns.items():
-            logger("  {} = {}", name, val)
         logger("expression:")
-        logger("  {}", diff_exp)
+        logger("  {}", exp)
 
-        rust_function = output_rust(diff_exp, inputs, consts, assigns)
+        flat_exp = output_flatten(exp, inputs, consts)
 
-        logger("rust_function: \n{}", rust_function)
+        logger("flat_exp: \n{}", flat_exp)
 
         return 0
 

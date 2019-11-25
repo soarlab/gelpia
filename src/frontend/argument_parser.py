@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 
 import color_printing as color
 import gelpia_logging as logging
@@ -6,8 +6,6 @@ import gelpia_logging as logging
 import argparse
 import shlex
 import sys
-
-
 
 
 defaults = argparse.Namespace(
@@ -25,9 +23,6 @@ defaults = argparse.Namespace(
     log_file=None,
     log_query=False,
 )
-
-
-
 
 
 def parse_args(argv):
@@ -52,7 +47,9 @@ def parse_args(argv):
         comments = [line[1:] for line in lines if line[0] == "#"]
         comments = [line.strip() for line in comments]
         comments = [line for line in comments if line[0] == "-"]
-        file_argv = [tok for tok in shlex.split(line) for line in comments]
+        file_argv = list()
+        for line in comments:
+            file_argv.extend(shlex.split(line))
 
         file_args = arg_parser.parse_args(["-f", function_str] + file_argv)
 
@@ -80,46 +77,46 @@ def get_final_args(defaults, args, file_args):
     f = file_args
 
     final_args = argparse.Namespace(
-        function = f.function,
-        debug = combine(d.debug,
-                        a.debug,
-                        f.debug),
-        verbose = combine(d.verbose,
-                          a.verbose,
-                          f.verbose),
-        mode = combine(d.mode,
-                       a.mode,
-                       f.mode),
-        timeout = combine(d.timeout,
-                          a.timeout,
-                          f.timeout),
-        max_iters = combine(d.max_iters,
-                            a.max_iters,
-                            f.max_iters),
-        input_epsilon = combine(d.input_epsilon,
-                                a.input_epsilon,
-                                f.input_epsilon),
-        output_epsilon = combine(d.output_epsilon,
-                                 a.output_epsilon,
-                                 f.output_epsilon),
-        output_epsilon_relative = combine(d.output_epsilon_relative,
-                                          a.output_epsilon_relative,
-                                          f.output_epsilon_relative),
-        seed = combine(d.seed,
-                       a.seed,
-                       f.seed),
-        grace = combine(d.grace,
-                        a.grace,
-                        f.grace),
-        update = combine(d.update,
-                         a.update,
-                         f.update),
-        log_file = combine(d.log_file,
-                           a.log_file,
-                           f.log_file),
-        log_query = combine(d.log_query,
-                            a.log_query,
-                            f.log_query),
+        function=f.function,
+        debug=combine(d.debug,
+                      a.debug,
+                      f.debug),
+        verbose=combine(d.verbose,
+                        a.verbose,
+                        f.verbose),
+        mode=combine(d.mode,
+                     a.mode,
+                     f.mode),
+        timeout=combine(d.timeout,
+                        a.timeout,
+                        f.timeout),
+        max_iters=combine(d.max_iters,
+                          a.max_iters,
+                          f.max_iters),
+        input_epsilon=combine(d.input_epsilon,
+                              a.input_epsilon,
+                              f.input_epsilon),
+        output_epsilon=combine(d.output_epsilon,
+                               a.output_epsilon,
+                               f.output_epsilon),
+        output_epsilon_relative=combine(d.output_epsilon_relative,
+                                        a.output_epsilon_relative,
+                                        f.output_epsilon_relative),
+        seed=combine(d.seed,
+                     a.seed,
+                     f.seed),
+        grace=combine(d.grace,
+                      a.grace,
+                      f.grace),
+        update=combine(d.update,
+                       a.update,
+                       f.update),
+        log_file=combine(d.log_file,
+                         a.log_file,
+                         f.log_file),
+        log_query=combine(d.log_query,
+                          a.log_query,
+                          f.log_query),
     )
 
     final_args.verbose = logging.LEVELS[final_args.verbose]
@@ -180,7 +177,7 @@ def create_arg_parser():
                             help="Which mode the optimizer is in"
                             " (default '{}')".format(defaults.mode))
     arg_parser.add_argument("-t", "--timeout",
-                            type=float,
+                            type=int,
                             help="Timout for gelpia."
                             " (default {})".format(defaults.timeout))
     arg_parser.add_argument("-M", "--max-iters",
@@ -199,7 +196,8 @@ def create_arg_parser():
     arg_parser.add_argument("-r", "--output-epsilon-relative",
                             type=float,
                             help="Relative cutoff for function output size"
-                            " (default {})".format(defaults.output_epsilon_relative))
+                            " (default {})"
+                            .format(defaults.output_epsilon_relative))
     arg_parser.add_argument("-s", "--seed",
                             type=int,
                             help="Seed for the random number generator. A value"
@@ -229,7 +227,6 @@ def create_arg_parser():
                             " examination/benchmarking."
                             " (default {})".format(defaults.log_query))
     return arg_parser
-
 
 
 if __name__ == "__main__":

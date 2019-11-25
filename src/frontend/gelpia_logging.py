@@ -5,24 +5,21 @@ import color_printing as color
 import sys
 
 
-
-QUIET   = -10
-NONE    = 0
-LOW     = 10
-MEDIUM  = 20
-HIGH    = 30
+QUIET = -10
+NONE = 0
+LOW = 10
+MEDIUM = 20
+HIGH = 30
 
 LEVELS = {
-    "none"   : NONE,
-    "low"    : LOW,
-    "medium" : MEDIUM,
-    "high"   : HIGH,
+    "none":   NONE,
+    "low":    LOW,
+    "medium": MEDIUM,
+    "high":   HIGH,
 }
 
 LOG_LEVEL = None
 LOG_FILE = None
-
-
 
 
 def set_log_level(level):
@@ -54,20 +51,22 @@ def log(level, module, message, *args):
         print(formatted_message, file=LOG_FILE)
     return True
 
+
 def make_module_logger(module, level=None):
-    logger = lambda level, message, *args : log(level, module, message, *args)
+    logger = lambda level, message, *args: log(level, module, message, *args)
     if level is not None:
-        logger = lambda message, *args : log(level, module, message, *args)
-    logger.error = lambda message, *args : error(module+": "+message, *args)
-    logger.warning = lambda message, *args : warning(module+": "+message, *args)
+        logger = lambda message, *args: log(level, module, message, *args)
+    logger.error = lambda message, *args: error(module+": "+message, *args)
+    logger.warning = lambda message, *args: warning(module+": "+message, *args)
     return logger
+
 
 def error(message, *args):
     formatted_message = "{}: {}".format(color.red("ERROR"),
                                         message.format(*args))
     print(formatted_message, file=sys.stderr)
     if LOG_FILE != sys.stdout:
-        print(color.strip(formatted_message), file=LOGFILE)
+        print(color.strip(formatted_message), file=LOG_FILE)
 
 
 def warning(message, *args):
@@ -76,6 +75,4 @@ def warning(message, *args):
     if NONE <= LOG_LEVEL:
         print(formatted_message, file=sys.stderr)
         if LOG_FILE != sys.stdout:
-            print(color.strip(formatted_message), file=LOGFILE)
-
-
+            print(color.strip(formatted_message), file=LOG_FILE)

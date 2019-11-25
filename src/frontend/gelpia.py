@@ -3,12 +3,17 @@
 import argument_parser
 import color_printing as color
 import gelpia_logging as logging
+import ian_utils as iu
+from process_function import process_function
 
 import os
 import os.path as path
+import re
 import sys
+import time
+from multiprocessing import Process, Value
 
-
+logger = logging.make_module_logger(color.cyan("gelpia_main"))
 
 
 PYTHON_DIR = path.abspath(path.dirname(__file__))
@@ -16,32 +21,26 @@ GIT_DIR = path.split(PYTHON_DIR)[0]
 SRC_DIR = path.join(GIT_DIR, "src")
 BIN_DIR = path.join(GIT_DIR, "bin")
 if PYTHON_DIR != BIN_DIR:
-    logging.error("gelpia.py should not be run directly from src")
+    logger.error("gelpia.py should not be run directly from src")
 
 
-gelpia_logger = logging.make_module_logger(color.blue("gelpia_main"))
-
-
-
-def mk_file_hash(function):
-    h  = hash(function)
+def hash_string(function):
+    h = hash(function)
     h *= hash(time.time())
     h *= os.getpid()
-    return hex(h % (1 << 48))[2:] # Trim 0x
+    return hex(h % (1 << 48))[2:]  # Trim 0x
 
 
 def append_to_environ(pathname, addition):
     try:
         current = os.environ[pathname]
-        if addition in current:
-            return
+        # if addition in current:
+        #     return
         os.environ[pathname] = "{}:{}".format(addition, current)
-        gelpia_logger(logging.HIGH, "  {} = {}",
-                      pathname, os.environ[pathname])
+        logger(logging.HIGH, "  {} = {}", pathname, os.environ[pathname])
     except KeyError:
         os.environ[pathname] = addition
-        gelpia_logger(logging.HIGH, "  new {} = {}",
-                      pathname, os.environ[pathname])
+        logger(logging.HIGH, "  new {} = {}", pathname, os.environ[pathname])
 
 
 def run_once(f):
@@ -58,7 +57,7 @@ def run_once(f):
 
 @run_once
 def setup_requirements(git_dir):
-    gelpia_logger(logging.MEDIUM, "Adding to ENV")
+    logger(logging.MEDIUM, "Adding to ENV")
 
     path_addition = path.join(git_dir, "requirements/bin")
     append_to_environ("PATH", path_addition)
@@ -95,7 +94,7 @@ def setup_rust_env(git_dir, debug):
     return executable
 
 
-def write_rust_function(rust_function):
+def write_rust_function(rust_function, src_dir):
     file_id = hash_string(rust_function)
     filename = path.join(src_dir, "func/src/lib_generated_{}.rs".format(file_id))
 
@@ -109,37 +108,47 @@ def write_rust_function(rust_function):
     return file_id
 
 
-def find_max(function, epsilons, timeout, update, iters, seed, debug):
+def _find_max(inputs, consts, rust_function,
+              interp_function, file_id, epsilons, timeout,
+              grace, update, iters, seed, debug, src_dir,
+              executable):
     input_epsilon, output_epsilon, output_epsilon_relative = epsilons
-    inputs, consts, rust_function, interp_function = process_function(function)
-
-    file_id = write_rust_function(rust_function)
-
-    executable_args = ["-c", "[" + "]|[".join(consts.values()) + "]",
+    executable_args = ["-c", "|".join(consts.values()),
                        "-f", interp_function,
-                       "-i", "[" + "]|[".join(inputs.values()) + "]",
-                       "-x", input_epsilon,
-                       "-y", output_epsilon,
-                       "-r", output_epsilon_relative,
+                       "-i", "|".join(inputs.values()),
+                       "-x", str(input_epsilon),
+                       "-y", str(output_epsilon),
+                       "-r", str(output_epsilon_relative),
                        "-S", "generated_"+file_id,
                        "-n", ",".join(inputs.keys()),
-                       "-t", timeout,
-                       "-u", update,
-                       "-M", iters,
-                       "--seed", seed,
+                       "-t", str(timeout),
+                       "-u", str(update),
+                       "-M", str(iters),
+                       "--seed", str(seed),
                        "-d" if debug else "",
-                       "-L" if logging.get_log_level() >= logging.HIGH else "",]
+                       "-L" if logging.get_log_level() >= logging.HIGH else ""]
 
+    assert(logger(logging.MEDIUM, "calling '{} {}'", executable, executable_args))
     answer_lines = []
-    for line in iu.run_async(executable, executable_args):
+    max_lower = None
+    max_upper = None
+    if grace == 0:
+        timeout = 2*timeout
+    else:
+        timeout += grace
+    for line in iu.run_async(executable, executable_args, timeout):
+        logger(logging.HIGH, "rust_solver_output: '{}'", line)
         if line.startswith("lb:"):
-            gelpia_logger(logging.HIGH, line)
+            match = re.match(r"lb: ([^,]*), possible ub: ([^,]*), guaranteed ub: ([^,]*)", line)
+            max_lower = match.groups(1)
+            max_upper = match.groups(3)
         else:
             answer_lines.append(line.strip())
 
     to_delete = [".compiled/libfunc_generated_"+file_id+".so",
                  "func/target/release/libfunc_generated_"+file_id+".so",
-                 "func/target/release/func_generated_"+file_id+".d",]
+                 "func/target/release/func_generated_"+file_id+".d",
+                 "func/src/lib_generated_"+file_id+".rs",]
     to_delete = [path.join(src_dir, f) for f in to_delete]
     for f in to_delete:
         try:
@@ -151,26 +160,57 @@ def find_max(function, epsilons, timeout, update, iters, seed, debug):
         output = " ".join(answer_lines)
         idx = output.find('[')
         output = output[idx:]
-        lst = eval(output, {'inf':float('inf')})
+        lst = eval(output, {'inf': float('inf')})
         assert(type(lst[-1]) is dict)
         for k in list(lst[-1]):
             if k[0] == "$":
                 del lst[-1][k]
-    except:
-        logging.error("Unable to parse rust solver's output: {}", output)
-        sys.exit(-1)
+        max_lower = lst[0][0]
+        max_upper = lst[0][1]
 
-    max_lower = lst[0][0]
-    max_upper = lst[0][1]
+    except:
+        if max_lower is None:
+            logging.error("Unable to parse rust solver's output: '{}'", output)
+            sys.exit(-1)
 
     domain = lst[-1]
     for inp in inputs:
         if inp in domain.keys():
-            gelpia_logger(logging.LOW, "  {} in {}", inp, domain[inp])
+            logger(logging.LOW, "  {} in {}", inp, domain[inp])
         else:
-            gelpia_logger(logging.LOW, "  {} in any", inp)
+            logger(logging.LOW, "  {} in any", inp)
 
     return max_lower, max_upper, domain
+
+
+def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
+             src_dir, executable, max_lower=None, max_upper=None):
+    inputs, consts, rust_function, interp_function = process_function(function)
+    file_id = write_rust_function(rust_function, src_dir)
+
+    my_max_lower, my_max_upper, domain = _find_max(inputs, consts, rust_function,
+                                                   interp_function, file_id, epsilons, timeout,
+                                                   grace, update, iters, seed, debug, src_dir,
+                                                   executable)
+    if max_lower is not None:
+        max_lower.value = my_max_lower
+        max_upper.value = my_max_upper
+
+    return my_max_lower, my_max_upper
+
+
+def find_min(function, epsilons, timeout, grace, update, iters, seed, debug,
+             src_dir, executable):
+    inputs, consts, rust_function, interp_function = process_function(function, invert=True)
+    file_id = write_rust_function(rust_function, src_dir)
+
+    max_lower, max_upper, domain = _find_max(inputs, consts, rust_function,
+                                             interp_function, file_id, epsilons, timeout,
+                                             grace, update, iters, seed, debug, src_dir,
+                                             executable)
+    min_lower = -max_upper
+    min_upper = -max_lower
+    return min_lower, min_upper
 
 
 def main(argv):
@@ -182,22 +222,68 @@ def main(argv):
     setup_requirements(GIT_DIR)
     rust_executable = setup_rust_env(GIT_DIR, args.debug)
 
-    max_lower, max_upper, domain = find_max(args.function,
-                                            (args.input_epsilon,
-                                             args.output_epsilon,
-                                             args.output_epsilon_relative),
-                                            args.timeout,
-                                            args.update,
-                                            args.max_iters,
-                                            args.seed,
-                                            args.debug)
-    print("Maximum is in [{}, {}]".format(max_lower, max_upper))
+    if args.mode == "min":
+        min_lower, min_upper, domain = find_min(args.function,
+                                                (args.input_epsilon,
+                                                 args.output_epsilon,
+                                                 args.output_epsilon_relative),
+                                                args.timeout,
+                                                args.grace,
+                                                args.update,
+                                                args.max_iters,
+                                                args.seed,
+                                                args.debug,
+                                                SRC_DIR,
+                                                rust_executable)
+        print("Minimum is in [{}, {}]".format(min_lower, min_upper))
+    elif args.mode == "max":
+        max_lower, max_upper, domain = find_max(args.function,
+                                                (args.input_epsilon,
+                                                 args.output_epsilon,
+                                                 args.output_epsilon_relative),
+                                                args.timeout,
+                                                args.grace,
+                                                args.update,
+                                                args.max_iters,
+                                                args.seed,
+                                                args.debug,
+                                                SRC_DIR,
+                                                rust_executable)
+        print("Maximum is in [{}, {}]".format(max_lower, max_upper))
+    else:
+        max_lower = Value("d", float("nan"))
+        max_upper = Value("d", float("nan"))
+        p = Process(target=find_max, args=(args.function,
+                                           (args.input_epsilon,
+                                            args.output_epsilon,
+                                            args.output_epsilon_relative),
+                                           args.timeout,
+                                           args.grace,
+                                           args.update,
+                                           args.max_iters,
+                                           args.seed,
+                                           args.debug,
+                                           SRC_DIR,
+                                           rust_executable,
+                                           max_lower,
+                                           max_upper))
+        p.start()
+        min_lower, min_upper = find_min(args.function,
+                                       (args.input_epsilon,
+                                        args.output_epsilon,
+                                        args.output_epsilon_relative),
+                                       args.timeout,
+                                       args.grace,
+                                       args.update,
+                                       args.max_iters,
+                                       args.seed,
+                                       args.debug,
+                                       SRC_DIR,
+                                       rust_executable)
+        p.join()
+        print("Minimum is in [{}, {}]".format(min_lower, min_upper))
+        print("Maximum is in [{}, {}]".format(max_lower.value, max_upper.value))
     return 0
-
-
-
-
-
 
 
 if __name__ == "__main__":

@@ -65,6 +65,9 @@ def pass_lift_consts(exp, inputs):
         if right[0] != "Integer":
             op = "powi"
 
+        if op == "pow":
+            r = False
+
         # If both are constant don't consolidate yet
         status = False
         if l and r:
@@ -73,8 +76,7 @@ def pass_lift_consts(exp, inputs):
         elif l:
             left = make_constant(left)
         elif r:
-            if op == "powi":
-                right = make_constant(right)
+            right = make_constant(right)
 
         work_stack.append((True, count, (op, left, right, status)))
 

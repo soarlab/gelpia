@@ -470,6 +470,17 @@ def pass_simplify(exp, inputs):
             work_stack.append((True, count, ("Integer", str(-int(arg[1])))))
             return
 
+        # Collapse integer expressions
+        if arg[0] == "Float":
+            assert(logger("Combined float neg"))
+            num = arg[1]
+            if num[0] == "-":
+                work_stack.append((True, count, ("Float", num[1:])))
+                return
+            work_stack.append((True, count, ("Float", "-" + num)))
+            return
+
+
         # -(-x) -> x
         if arg[0] == "neg":
             assert(logger("Eliminated double negative in negative"))

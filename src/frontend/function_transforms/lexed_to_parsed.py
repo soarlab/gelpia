@@ -146,15 +146,15 @@ class GelpiaParser(Parser):
             sys.exit(-1)
 
         if low == high:
-            return ("Float", left)
+            return ("Float", left[1])
         else:
-            return ("InputInterval", left, right)
+            return ("InputInterval", ("Float", left[1]), ("Float", right[1]))
 
     @_("LBRACE negconst RBRACE")
     def interval(self, p):
         assert(logger("interval: LBRACE negconst RBRACE"))
         assert(logger("          LBRACE {} RBRACE", p.negconst))
-        return ("Float", p.negconst)
+        return ("Float", p.negconst[1])
 
     # negconst
     @_("MINUS negconst")
