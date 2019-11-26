@@ -223,7 +223,7 @@ def main(argv):
     rust_executable = setup_rust_env(GIT_DIR, args.debug)
 
     if args.mode == "min":
-        min_lower, min_upper, domain = find_min(args.function,
+        min_lower, min_upper = find_min(args.function,
                                                 (args.input_epsilon,
                                                  args.output_epsilon,
                                                  args.output_epsilon_relative),
@@ -237,7 +237,7 @@ def main(argv):
                                                 rust_executable)
         print("Minimum is in [{}, {}]".format(min_lower, min_upper))
     elif args.mode == "max":
-        max_lower, max_upper, domain = find_max(args.function,
+        max_lower, max_upper = find_max(args.function,
                                                 (args.input_epsilon,
                                                  args.output_epsilon,
                                                  args.output_epsilon_relative),
