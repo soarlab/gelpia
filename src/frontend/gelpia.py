@@ -235,7 +235,8 @@ def main(argv):
                                                 args.debug,
                                                 SRC_DIR,
                                                 rust_executable)
-        print("Minimum is in [{}, {}]".format(min_lower, min_upper))
+        print("Minimum lower bound {}".format(min_lower))
+        print("Minimum upper bound {}".format(min_upper))
     elif args.mode == "max":
         max_lower, max_upper = find_max(args.function,
                                                 (args.input_epsilon,
@@ -249,7 +250,8 @@ def main(argv):
                                                 args.debug,
                                                 SRC_DIR,
                                                 rust_executable)
-        print("Maximum is in [{}, {}]".format(max_lower, max_upper))
+        print("Maximum lower bound {}".format(max_lower))
+        print("Maximum upper bound {}".format(max_upper))
     else:
         max_lower = Value("d", float("nan"))
         max_upper = Value("d", float("nan"))
@@ -281,8 +283,11 @@ def main(argv):
                                        SRC_DIR,
                                        rust_executable)
         p.join()
-        print("Minimum is in [{}, {}]".format(min_lower, min_upper))
-        print("Maximum is in [{}, {}]".format(max_lower.value, max_upper.value))
+        print("Minimum lower bound {}".format(min_lower))
+        print("Minimum upper bound {}".format(min_upper))
+        print("Maximum lower bound {}".format(max_lower.value))
+        print("Maximum upper bound {}".format(max_upper.value))
+
     return 0
 
 
