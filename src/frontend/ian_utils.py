@@ -91,7 +91,7 @@ def run_async(cmd, args_list, timeout, error_string="An Error has occured",
                     if timeout != 0 and time.time() > term_time:
                         print("Killed by timeout")
                         proc.kill()
-                time.sleep(0.1)
+                #time.sleep(0.1)
 
             # Clear remaining buffered messages
             while stdout_r.is_alive() or not stdout_q.empty():
