@@ -37,17 +37,17 @@ This query embedds in it that a minimum should be found.
 It has two inputs, `x1` and `x2`, both have the range -32.768 to 32.768.
 There are two expressions, so gelpia will find the minimum of their sum.
 
-> # --mode=min
->
-> [-32.768, 32.768] x1;
-> [-32.768, 32.768] x2;
->
-> 20 * exp(-0.2 * sqrt(((x1 - 5)^2 + (x2 - 5)^2) / 2));
-> exp((cos(2*pi*(x1 - 5)) + cos(2*pi*(x2 - 5))) / 2);
+    # --mode=min
+
+    [-32.768, 32.768] x1;
+    [-32.768, 32.768] x2;
+
+    20 * exp(-0.2 * sqrt(((x1 - 5)^2 + (x2 - 5)^2) / 2));
+    exp((cos(2*pi*(x1 - 5)) + cos(2*pi*(x2 - 5))) / 2);
 
 Running gelpia on this example yields:
 
-> \> ./bin/gelpia documents/example_1.dop
-> Minimum lower bound 0.37836383188673656
-> Minimum upper bound 0.468112869754073
+    > ./bin/gelpia documents/example_1.dop
+    Minimum lower bound 0.37836383188673656
+    Minimum upper bound 0.468112869754073
 
