@@ -62,21 +62,21 @@ A benchmarking system for Gelpia is located at
 
 #### Example uses:
 
-> \> ./bin/gelpia --function "x=[1,10]; y=[5,15]; x^2 + x*y + y*sin(x/10)" \
-> Maximum lower bound 262.6220647721184 \
-> Maximum upper bound 262.6220647721185
+    > ./bin/gelpia --function "x=[1,10]; y=[5,15]; x^2 + x*y + y*sin(x/10)"
+    Maximum lower bound 262.6220647721184
+    Maximum upper bound 262.6220647721185
 
 The default mode is to find the maximum, but this can be changed with the
 `--mode` argument.
 
-> \> ./bin/gelpia --function "x=[1,10]; y=[5,15]; x^2 + x*y + y*sin(x/10)" --mode=min \
-> Minimum lower bound 6.499167083234139 \
-> Minimum upper bound 6.499167083234142 \
-> \> ./bin/gelpia --function "x=[1,10]; y=[5,15]; x^2 + x*y + y*sin(x/10)" --mode=min-max \
-> Minimum lower bound 6.499167083234139 \
-> Minimum upper bound 6.499167083234142 \
-> Maximum lower bound 262.6220647721184 \
-> Maximum upper bound 262.6220647721185
+    > ./bin/gelpia --function "x=[1,10]; y=[5,15]; x^2 + x*y + y*sin(x/10)" --mode=min
+    Minimum lower bound 6.499167083234139
+    Minimum upper bound 6.499167083234142
+    > ./bin/gelpia --function "x=[1,10]; y=[5,15]; x^2 + x*y + y*sin(x/10)" --mode=min-max
+    Minimum lower bound 6.499167083234139
+    Minimum upper bound 6.499167083234142
+    Maximum lower bound 262.6220647721184
+    Maximum upper bound 262.6220647721185
 
 
 ## Authors
