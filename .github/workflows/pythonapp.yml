@@ -12,11 +12,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
     - name: Install dependencies
       run: |
-        sudo apt install flex bison wget python3-pip python3
-        pip3 install --upgrade pip
-        pip3 install sly
+        python -m pip install --upgrade pip
+        pip install sly
+        sudo apt install flex bison wget
     - name: Build requirements
       run: |
         make requirements -j2
