@@ -28,7 +28,6 @@ jobs:
       run: |
         git clone https://github.com/soarlab/gelpia_tests.git
         cd gelpia_tests
-        git checkout version_2
         make
     - name: Run tests
       run: |
