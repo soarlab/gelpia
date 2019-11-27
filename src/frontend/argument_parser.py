@@ -169,7 +169,7 @@ def create_arg_parser():
     arg_parser.add_argument("-v", "--verbose",
                             nargs="?",
                             const="low",
-                            choices=["none", "low", "medium", "high"],
+                            choices=["quiet", "none", "low", "medium", "high"],
                             help="Set output verbosity"
                             " (default '{}')".format(defaults.verbose))
     arg_parser.add_argument("-m", "--mode",
@@ -178,7 +178,7 @@ def create_arg_parser():
                             " (default '{}')".format(defaults.mode))
     arg_parser.add_argument("-t", "--timeout",
                             type=int,
-                            help="Timout for gelpia."
+                            help="Timeout for gelpia."
                             " (default {})".format(defaults.timeout))
     arg_parser.add_argument("-M", "--max-iters",
                             type=int,
@@ -187,11 +187,11 @@ def create_arg_parser():
                             " (default {})".format(defaults.max_iters))
     arg_parser.add_argument("-i", "--input-epsilon",
                             type=float,
-                            help="Cuttoff for function input size."
+                            help="Cutoff for function input size."
                             " (default {})".format(defaults.input_epsilon))
     arg_parser.add_argument("-o", "--output-epsilon",
                             type=float,
-                            help="Cuttoff for function output size."
+                            help="Cutoff for function output size."
                             " (default {})".format(defaults.output_epsilon))
     arg_parser.add_argument("-r", "--output-epsilon-relative",
                             type=float,

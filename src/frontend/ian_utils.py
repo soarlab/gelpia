@@ -26,42 +26,6 @@ class AsyncReader(threading.Thread):
             self.q.put(output)
 
 
-# popen wrappers
-def run(cmd, args_list, error_string="An Error has occured", expected_return=0):
-    command = [cmd] + args_list
-    should_exit = None
-    try:
-        with subprocess.Popen(command,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT) as proc:
-            output = proc.stdout.read().decode("utf-8")
-            proc.wait()
-
-            has_expected = expected_return is not None
-            if has_expected and proc.returncode != expected_return:
-                logging.error(error_string)
-                logging.error("Return code: {}".format(proc.returncode))
-                logging.error("Command used: {}".format(command))
-                logging.error("Trace:\n{}".format(output))
-                should_exit = proc.returncode
-    except KeyboardInterrupt:
-        raise
-    except Exception as e:
-        logging.error("Unable to run given executable, does it exist?")
-        logging.error("executable: {}", command)
-        logging.error("Python exception: {}", e)
-        try:
-            logging.error("Trace:\n{}".format("\n".join(output)))
-        except:
-            pass
-        sys.exit(-1)
-
-    if should_exit is not None:
-        sys.exit(should_exit)
-
-    return output
-
-
 def run_async(cmd, args_list, timeout, error_string="An Error has occured",
               expected_return=0):
     command = [cmd] + args_list
@@ -120,30 +84,3 @@ def run_async(cmd, args_list, timeout, error_string="An Error has occured",
 
     if (should_exit is not None):
         sys.exit(should_exit)
-
-
-# function timing
-def time_func(function, *args):
-    start = time.time()
-    ret = function(*args)
-    end = time.time()
-    return (end-start, ret)
-
-
-# nicer file parsing for args
-class IanArgumentParser(argparse.ArgumentParser):
-    def __init__(self, *args, **kwargs):
-        super(IanArgumentParser, self).__init__(*args, **kwargs)
-
-    def convert_arg_line_to_args(self, line):
-        try:
-            for arg in shlex.split(line):
-                if not arg.strip():
-                    continue
-                if arg[0] == '#':
-                    break
-                yield arg
-        except:
-            logging.error("Unable to parse argument string")
-            logging.error("given string: {}".format(line))
-            sys.exit(-1)
