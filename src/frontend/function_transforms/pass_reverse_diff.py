@@ -1,28 +1,26 @@
-#!/usr/bin/env python3
+
 
 import sys
 
-import ian_utils as iu
-
 from expression_walker import no_mut_walk
+try:
+    import gelpia_logging as logging
+    import color_printing as color
+except ModuleNotFoundError:
+    sys.path.append("../")
+    import gelpia_logging as logging
+    import color_printing as color
+logger = logging.make_module_logger(color.cyan("function_to_lexed"),
+                                    logging.HIGH)
 
 
-
-
-def reverse_diff(exp, inputs, assigns, consts=None):
+def pass_reverse_diff(exp, inputs):
     """
     Performs reverse accumulated automatic differentiation of the given exp
     for all variables
     """
-
-    # Constants
-    UNUSED = {"Const", "ConstantInterval", "PointInterval", "Integer", "Float"}
-    POWS   = {"pow", "powi"}
-
-    # Function local variables
-    gradient = dict([(k,("Integer","0")) for k in inputs])
+    gradient = dict([(k, ("Integer", "0")) for k in inputs])
     seen_undiff = False
-
 
     def _input(work_stack, count, exp):
         assert(exp[0] == "Input")
@@ -58,15 +56,23 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         upper = exp[1]
         lower = exp[2]
         work_stack.append((False, count, (*exp[1], ("/", exp[-1], lower))))
-        work_stack.append((False, count, (*exp[2], ("/", ("*", ("neg", exp[-1]), upper), ("pow", lower, ("Integer", "2"))))))
+        ret = (*exp[2], ("/", ("*", ("neg", exp[-1]), upper),
+                         ("pow", lower, ("Integer", "2"))))
+        work_stack.append((False, count, ret))
 
-    def _pow(work_stack,count, exp):
-        assert(exp[0] in {"pow", "powi"})
+    def _pow(work_stack, count, exp):
+        assert(exp[0] == "pow")
         assert(len(exp) == 4)
         base = exp[1]
         expo = exp[2]
-        work_stack.append((False, count, (*exp[1], ("*", exp[-1], ("*", expo, ("powi", base, ("-", expo, ("Integer", "1"))))))))
-        work_stack.append((False, count, (*exp[2], ("*", exp[-1], ("*", ("log", base), ("powi", base, expo))))))
+        ret1 = (*exp[1], ("*", exp[-1],
+                          ("*", expo,
+                           ("pow", base, ("-", expo, ("Integer", "1"))))))
+        work_stack.append((False, count, ret1))
+        ret2 = (*exp[2], ("*", exp[-1],
+                          ("*", ("log", base),
+                           ("pow", base, expo))))
+        work_stack.append((False, count, ret2))
 
     def _neg(work_stack, count, exp):
         assert(exp[0] == "neg")
@@ -77,7 +83,8 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         assert(exp[0] == "exp")
         assert(len(exp) == 3)
         expo = exp[1]
-        work_stack.append((False, count, (*exp[1], ("*", ("exp", expo), exp[-1]))))
+        ret = (*exp[1], ("*", ("exp", expo), exp[-1]))
+        work_stack.append((False, count, ret))
 
     def _log(work_stack, count, exp):
         assert(exp[0] == "log")
@@ -89,19 +96,24 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         assert(exp[0] == "sqrt")
         assert(len(exp) == 3)
         x = exp[1]
-        work_stack.append((False, count, (*exp[1], ("/", exp[-1], ("*", ("Integer", "2"), ("sqrt", x))))))
+        ret = (*exp[1], ("/", exp[-1], ("*", ("Integer", "2"), ("sqrt", x))))
+        work_stack.append((False, count, ret))
 
     def _cos(work_stack, count, exp):
         assert(exp[0] == "cos")
         assert(len(exp) == 3)
         x = exp[1]
-        work_stack.append((False, count, (*exp[1], ("*", ("neg", ("sin", x)), exp[-1]))))
+        ret = (*exp[1], ("*", ("neg", ("sin", x)), exp[-1]))
+        work_stack.append((False, count, ret))
 
     def _acos(work_stack, count, exp):
         assert(exp[0] == "acos")
         assert(len(exp) == 3)
         x = exp[1]
-        work_stack.append((False, count, (*exp[1], ("neg", ("/", exp[-1], ("sqrt", ("-", ("Integer", "1"), ("pow", x, ("Integer", "2")))))))))
+        ret = (*exp[1], ("neg", ("/", exp[-1],
+                                 ("sqrt", ("-", ("Integer", "1"),
+                                           ("pow", x, ("Integer", "2")))))))
+        work_stack.append((False, count, ret))
 
     def _sin(work_stack, count, exp):
         assert(exp[0] == "sin")
@@ -113,19 +125,26 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         assert(exp[0] == "asin")
         assert(len(exp) == 3)
         x = exp[1]
-        work_stack.append((False, count, (*exp[1], ("/", exp[-1], ("sqrt", ("-", ("Integer", "1"), ("pow", x, ("Integer", "2"))))))))
+        ret = (*exp[1], ("/", exp[-1],
+                         ("sqrt", ("-", ("Integer", "1"),
+                                   ("pow", x, ("Integer", "2"))))))
+        work_stack.append((False, count, ret))
 
     def _tan(work_stack, count, exp):
         assert(exp[0] == "tan")
         assert(len(exp) == 3)
         x = exp[1]
-        work_stack.append((False, count, (*exp[1], ("*", ("+", ("Integer", "1"), ("pow", ("tan", x), ("Integer", "2"))), exp[-1]))))
+        ret = (*exp[1], ("*", ("+", ("Integer", "1"),
+                               ("pow", ("tan", x), ("Integer", "2"))), exp[-1]))
+        work_stack.append((False, count, ret))
 
     def _atan(work_stack, count, exp):
         assert(exp[0] == "atan")
         assert(len(exp) == 3)
         x = exp[1]
-        work_stack.append((False, count, (*exp[1], ("/", exp[-1], ("+", ("Integer", "1"), ("pow", x, ("Integer", "2")))))))
+        ret = (*exp[1], ("/", exp[-1],
+                         ("+", ("Integer", "1"), ("pow", x, ("Integer", "2")))))
+        work_stack.append((False, count, ret))
 
     def _cosh(work_stack, count, exp):
         assert(exp[0] == "cosh")
@@ -143,13 +162,18 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         assert(exp[0] == "asinh")
         assert(len(exp) == 3)
         x = exp[1]
-        work_stack.append((False, count, (*exp[1], ("/", exp[-1], ("sqrt", ("+", ("pow", x, ("Integer", "2")), ("Integer", "1")))))))
+        ret = (*exp[1], ("/", exp[-1],
+                         ("sqrt", ("+", ("pow", x, ("Integer", "2")),
+                                   ("Integer", "1")))))
+        work_stack.append((False, count, ret))
 
     def _tanh(work_stack, count, exp):
         assert(exp[0] == "tanh")
         assert(len(exp) == 3)
         x = exp[1]
-        work_stack.append((False, count, (*exp[1], ("*", ("-", ("Integer", "1"), ("pow", ("tanh", x), ("Integer", "2"))), exp[-1]))))
+        ret = (*exp[1], ("*", ("-", ("Integer", "1"),
+                               ("pow", ("tanh", x), ("Integer", "2"))), exp[-1]))
+        work_stack.append((False, count, ret))
 
     def _abs(work_stack, count, exp):
         assert(exp[0] == "abs")
@@ -157,118 +181,91 @@ def reverse_diff(exp, inputs, assigns, consts=None):
         x = exp[1]
         work_stack.append((False, count, (*exp[1], ("*", ("dabs", x), exp[-1]))))
 
-    def _variable(work_stack, count, exp):
-        assert(exp[0] == "Variable")
-        assert(len(exp) == 3)
-        work_stack.append((False, count, (*assigns[exp[1]], exp[-1])))
-
     def _undiff(work_stack, count, exp):
         nonlocal seen_undiff
-        assert(exp[0] == "floor_power2" or exp[0] == "sym_interval" or exp[0] == "sub2" or exp[0] == "sub2_I")
+        assert(exp[0] in {"floor_power2", "sym_interval", "sub2", "sub2_I"})
         seen_undiff = True
         work_stack.append((True, 0, "Return"))
         work_stack.append((True, 1, "Now"))
 
-    my_expand_dict = {
-        "*": _mul,
-        "+": _add,
-        "-": _sub,
-        "/": _div,
-        "Input": _input,
-        "Variable": _variable,
-        "abs": _abs,
-        "acos": _acos,
-        "asin": _asin,
-        "asinh": _asinh,
-        "atan": _atan,
-        "cos": _cos,
-        "cosh": _cosh,
-        "exp": _exp,
-        "floor_power2": _undiff,
-        "log": _log,
-        "neg": _neg,
-        "pow": _pow,
-        "powi": _pow,
-        "sin": _sin,
-        "sinh": _sinh,
-        "sqrt": _sqrt,
-        "sym_interval": _undiff,
-        "tan": _tan,
-        "tanh": _tanh,
-    }
+    my_expand_dict = {"*":            _mul,
+                      "+":            _add,
+                      "-":            _sub,
+                      "/":            _div,
+                      "Input":        _input,
+                      "abs":          _abs,
+                      "acos":         _acos,
+                      "asin":         _asin,
+                      "asinh":        _asinh,
+                      "atan":         _atan,
+                      "cos":          _cos,
+                      "cosh":         _cosh,
+                      "exp":          _exp,
+                      "floor_power2": _undiff,
+                      "log":          _log,
+                      "neg":          _neg,
+                      "pow":          _pow,
+                      "sin":          _sin,
+                      "sinh":         _sinh,
+                      "sqrt":         _sqrt,
+                      "sym_interval": _undiff,
+                      "tan":          _tan,
+                      "tanh":         _tanh}
 
-    no_mut_walk(my_expand_dict, (*exp[1], ("Integer", "1")), assigns)
+    no_mut_walk(my_expand_dict, (*exp[1], ("Integer", "1")))
 
-    if seen_undiff:
-        result = ("Box",)
+    if seen_undiff or len(inputs) == 0:
+        r = False
+        retval = ("Return", exp[1])
     else:
+        r = True
         result = ("Box",) + tuple(d for d in gradient.values())
+        retval = ("Return", ("Tuple", exp[1], result))
 
-    retval = ("Return", ("Tuple", exp[1], result))
-
-    return retval
-
-
-
-
-
-
-
-
+    return r, retval
 
 
 def main(argv):
+    logging.set_log_filename(None)
+    logging.set_log_level(logging.HIGH)
     try:
-        from lexed_to_parsed import parse_function
-        from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
-        from pass_simplify import simplify
-        from pass_lift_consts import lift_consts
-        from pass_utils import get_runmain_input, print_exp
-        from pass_utils import print_assigns, print_inputs, print_consts
+        from pass_utils import get_runmain_input
+        from function_to_lexed import function_to_lexed
+        from lexed_to_parsed import lexed_to_parsed
+        from pass_lift_inputs_and_inline_assigns import \
+            pass_lift_inputs_and_inline_assigns
+        from pass_simplify import pass_simplify
 
         data = get_runmain_input(argv)
-        exp = parse_function(data)
-        exp, inputs, assigns = lift_inputs_and_assigns(exp)
-        exp = simplify(exp, inputs, assigns)
-        e, exp, consts = lift_consts(exp, inputs, assigns)
 
-        iu.set_log_level(100)
-        exp = reverse_diff(exp, inputs, assigns, consts)
-        iu.set_log_level(0)
+        logging.set_log_level(logging.NONE)
+        tokens = function_to_lexed(data)
+        tree = lexed_to_parsed(tokens)
+        exp, inputs = pass_lift_inputs_and_inline_assigns(tree)
+        exp = pass_simplify(exp, inputs)
 
-        if len(argv) == 3 and argv[2] == "test":
-            assert(exp[0] == "Return")
-            tup = exp[1]
-            assert(tup[0] == "Tuple")
-            box = tup[2]
-            if box[0] == "Const":
-                const = box
-                assert(const[0] == "Const")
-                box = expand(const, assigns, consts)
+        logging.set_log_level(logging.HIGH)
+        logger("raw: \n{}\n", data)
+        d, diff_exp = pass_reverse_diff(exp, inputs)
 
-            assert(box[0] == "Box")
-            if len(box) == 1:
-                print("No input variables")
-                assert(len(inputs) == 0)
-                return
+        logging.set_log_level(logging.NONE)
+        diff_exp = pass_simplify(diff_exp, inputs)
 
-            for name, diff in zip(inputs.keys(), box[1:]):
-                print("d{} = {}".format(name, expand(diff, assigns, consts)))
+        logging.set_log_level(logging.HIGH)
+        logger("inputs:")
+        for name, interval in inputs.items():
+            logger("  {} = {}", name, interval)
+        logger("expression:\n{}\n")
+        logger("diffs:")
+        if d:
+            for name, diff in zip(inputs, diff_exp[1][2][1:]):
+                logger("  d/d{} = {}", name, diff)
 
-        else:
-
-            print()
-            print()
-            print_inputs(inputs)
-            print()
-            print_consts(consts)
-            print()
-            print_assigns(assigns)
-            print()
-            print_exp(exp)
+        return 0
 
     except KeyboardInterrupt:
-        print("\nGoodbye")
+        logger(color.green("Goodbye"))
+        return 0
 
 
 if __name__ == "__main__":

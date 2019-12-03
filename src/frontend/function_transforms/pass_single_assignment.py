@@ -1,50 +1,47 @@
-#!/usr/bin/env python3
 
-import collections
-import os
-import re
-import subprocess
+
 import sys
-
-import ian_utils as iu
 
 from expression_walker import walk
 from pass_utils import BINOPS, UNOPS
+try:
+    import gelpia_logging as logging
+    import color_printing as color
+except ModuleNotFoundError:
+    sys.path.append("../")
+    import gelpia_logging as logging
+    import color_printing as color
+logger = logging.make_module_logger(color.cyan("single_assignment"),
+                                    logging.HIGH)
 
 
+def pass_single_assignment(exp, inputs):
+    """ Converts the expression to single assignment form """
 
-
-def single_assignment(exp, inputs, assigns, consts=None):
     PASSTHROUGH = {
         "Const",
         "ConstantInterval",
         "Float",
         "Input",
         "Integer",
-        "PointInterval",
     }
-    UNCACHED    = PASSTHROUGH.union({"Tuple", "Variable"})
-    TWO_ITEMS   = BINOPS.union({"Tuple"})
-    ONE_ITEM    = UNOPS.union({"Return"})
-
+    UNCACHED = PASSTHROUGH.union({"Tuple", "Variable"})
 
     def cache(exp, hashed=dict()):
         if exp[0] in UNCACHED:
             return exp
         try:
             key = hashed[exp]
-            iu.log(5, lambda :iu.cyan("Eliminated redundant subexpression")
-                   + ": {}".format(exp))
+            assert(logger("Eliminated redundant subexpression : {}", exp))
         except KeyError:
-            key = "_expr_"+str(len(hashed))
+            key = "_expr_" + str(len(hashed))
             hashed[exp] = key
             assigns[key] = exp
         return ("Variable", key)
 
-
     def _two_items(work_stack, count, args):
         assert(len(args) == 3)
-        left  = cache(args[1])
+        left = cache(args[1])
         right = cache(args[2])
         work_stack.append((True, count, (args[0], left, right)))
 
@@ -63,46 +60,58 @@ def single_assignment(exp, inputs, assigns, consts=None):
     my_contract_dict["Tuple"] = _two_items
     my_contract_dict["Box"] = _many_items
 
+    assigns = dict()
     exp = walk(dict(), my_contract_dict, exp, assigns)
 
-    return exp
-
-
-
-
-
+    return exp, assigns
 
 
 def main(argv):
+    logging.set_log_filename(None)
+    logging.set_log_level(logging.HIGH)
     try:
-        from lexed_to_parsed import parse_function
-        from pass_lift_consts import lift_consts
-        from pass_lift_inputs_and_assigns import lift_inputs_and_assigns
-        from pass_simplify import simplify
-        from pass_utils import get_runmain_input, print_exp, print_inputs
-        from pass_utils import print_assigns, print_consts
+        from pass_utils import get_runmain_input
+        from function_to_lexed import function_to_lexed
+        from lexed_to_parsed import lexed_to_parsed
+        from pass_lift_inputs_and_inline_assigns import \
+            pass_lift_inputs_and_inline_assigns
+        from pass_simplify import pass_simplify
+        from pass_reverse_diff import pass_reverse_diff
+        from pass_lift_consts import pass_lift_consts
 
         data = get_runmain_input(argv)
-        exp = parse_function(data)
-        exp, inputs, assigns = lift_inputs_and_assigns(exp)
-        exp = simplify(exp, inputs, assigns)
-        e, exp, consts = lift_consts(exp, inputs, assigns)
-        iu.set_log_level(100)
-        exp = single_assignment(exp, inputs, assigns, consts)
+        logging.set_log_level(logging.NONE)
 
-        print()
-        print()
-        print_inputs(inputs)
-        print()
-        print_assigns(assigns)
-        print()
-        print_consts(consts)
-        print()
-        print_exp(exp)
+        tokens = function_to_lexed(data)
+        tree = lexed_to_parsed(tokens)
+        exp, inputs = pass_lift_inputs_and_inline_assigns(tree)
+        exp = pass_simplify(exp, inputs)
+        d, diff_exp = pass_reverse_diff(exp, inputs)
+        diff_exp = pass_simplify(diff_exp, inputs)
+        c, diff_exp, consts = pass_lift_consts(diff_exp, inputs)
+
+        logging.set_log_level(logging.HIGH)
+        logger("raw: \n{}\n", data)
+        diff_exp, assigns = pass_single_assignment(diff_exp, inputs)
+
+        logger("inputs:")
+        for name, interval in inputs.items():
+            logger("  {} = {}", name, interval)
+        logger("consts:")
+        for name, val in consts.items():
+            logger("  {} = {}", name, val)
+        logger("assigns:")
+        for name, val in assigns.items():
+            logger("  {} = {}", name, val)
+        logger("expression:")
+        logger("  {}", exp)
+
+        return 0
 
     except KeyboardInterrupt:
-        print("\nGoodbye")
+        logger(color.green("Goodbye"))
+        return 0
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    sys.exit(main(sys.argv))
