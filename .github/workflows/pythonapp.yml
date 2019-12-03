@@ -20,10 +20,10 @@ jobs:
         sudo apt install flex bison wget
     - name: Build requirements
       run: |
-        make requirements -j2
+        make requirements
     - name: Build gelpia
       run: |
-        make -j2
+        make
     - name: Get gelpia_tests
       run: |
         git clone https://github.com/soarlab/gelpia_tests.git
