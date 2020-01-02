@@ -9,7 +9,7 @@ path = "algorithm.rs"
 
 [dependencies]
 rand = "0.3.*"
-time = "*"
+time = "0.1.*"
 
 [dependencies.gelpia_utils]
 path = "../gelpia_utils"
