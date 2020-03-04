@@ -76,7 +76,7 @@ def setup_requirements(git_dir):
 
 
 @run_once
-def setup_rust_env(git_dir, debug):
+def setup_rust_env(git_dir, debug, serial=False):
     append_to_environ("LD_LIBRARY_PATH", path.join(git_dir, ".compiled"))
 
     if debug:
@@ -89,7 +89,11 @@ def setup_rust_env(git_dir, debug):
                       path.join(git_dir, "src/func/target/{}".format(name)))
     append_to_environ("LD_LIBRARY_PATH",
                       path.join(git_dir, "target/{}/deps".format(name)))
-    executable = path.join(git_dir, "target/{}/cooperative".format(name))
+
+    if serial:
+        executable = path.join(git_dir, "target/{}/serial".format(name))
+    else:
+        executable = path.join(git_dir, "target/{}/cooperative".format(name))
 
     return executable
 
@@ -220,7 +224,7 @@ def main(argv):
     logging.set_log_filename(args.log_file)
 
     setup_requirements(GIT_DIR)
-    rust_executable = setup_rust_env(GIT_DIR, args.debug)
+    rust_executable = setup_rust_env(GIT_DIR, args.debug, args.serial)
 
     if args.mode == "min":
         min_lower, min_upper = find_min(args.function,

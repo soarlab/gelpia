@@ -9,6 +9,7 @@ import sys
 
 
 defaults = argparse.Namespace(
+    serial=False,
     debug=False,
     verbose="none",
     mode="max",
@@ -78,6 +79,9 @@ def get_final_args(defaults, args, file_args):
 
     final_args = argparse.Namespace(
         function=f.function,
+        serial=combine(d.serial,
+                       a.serial,
+                       f.serial),
         debug=combine(d.debug,
                       a.debug,
                       f.debug),
@@ -131,6 +135,7 @@ def log_args(args):
     logger = logging.make_module_logger(color.cyan("argument_parser"),
                                         logging.MEDIUM)
     logger("Argument settings:")
+    logger("  serial = {}", args.serial)
     logger("  debug = {}", args.debug)
     logger("  verbose = {}", args.verbose)
     logger("  mode = '{}'", args.mode)
@@ -160,6 +165,11 @@ def create_arg_parser():
                        help="The function to optimize. Uses a modified dop"
                        " format. For examples see the 'examples' directory"
                        " in gelpia's git.")
+    arg_parser.add_argument("--serial",
+                            action="store_const",
+                            const=True,
+                            help="Use the serial rust solver."
+                            " (default {})".format(defaults.serial))
     arg_parser.add_argument("-d", "--debug",
                             action="store_const",
                             const=True,
