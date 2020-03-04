@@ -1,120 +1,250 @@
-/*
-  Implements the basic IBBA maximization algorithm with a priority queue.
-*/
-
+// Cooperative optimization solver
 use std::collections::BinaryHeap;
+use std::io::Write;
+extern crate rand;
 
+#[macro_use(max)]
 extern crate gelpia_utils;
-use gelpia_utils::{Quple, INF, NINF, Flt};
-
 extern crate gr;
-use gr::{GI, width_box, split_box, midpoint_box, eps_tol};
+
+use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol, check_diff};
+
+use gr::{GI, width_box, split_box, midpoint_box};
+
+use std::sync::{Barrier, RwLock, Arc, RwLockWriteGuard};
+
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use std::thread;
+
+use std::time::Duration;
 
 extern crate function;
 use function::FuncObj;
 
-// BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-use std::env;
+extern crate args;
+use args::{process_args};
 
-extern crate getopts;
-use getopts::Options;
-// END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
+extern crate time;
 
+/// Returns the guaranteed upperbound for the algorithm
+/// from the queue.
+fn get_upper_bound(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
+                   f_best_high: f64) -> f64{
+    let mut max = f_best_high;
+    for qi in q.iter() {
+        max = max!{max, qi.fdata.upper()};
+    }
+    max
+}
 
-fn ibba(x_0: &Vec<GI>, e_x: Flt, e_f: Flt, f: FuncObj) -> (Flt, Vec<GI>) {
-    let mut f_best_high = NINF;
-    let mut f_best_low  = NINF;
+fn log_max(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
+           f_best_low: f64,
+           f_best_high: f64) {
+    let max = get_upper_bound(q, f_best_high);
+    let _ = writeln!(&mut std::io::stderr(),
+                     "lb: {}, possible ub: {}, guaranteed ub: {}",
+                     f_best_low,
+                     f_best_high,
+                     max);
+}
+
+#[allow(dead_code)]
+fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
+    let mut lq: BinaryHeap<Quple> = (*q).clone();
+    while lq.len() != 0 {
+        let qi = lq.pop().unwrap();
+        let (gen, v, _) = (qi.pf, qi.p, qi.fdata);
+        print!("[{}, {}, {}], ", v, gen, qi.fdata.to_string());
+    }
+    println!("\n");
+}
+
+/// Returns a tuple (function_estimate, eval_interval)
+/// # Arguments
+/// * `f` - The function to evaluate with
+/// * `input` - The input domain
+fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI, Option<Vec<GI>>) {
+    let mid = midpoint_box(input);
+    let (est_m, _) = f.call(&mid);
+    let (fsx, dfsx) = f.call(&input);
+    let (fsx_u, _) = f.call(&input.iter()
+                            .map(|&si| GI::new_p(si.upper()))
+                            .collect::<Vec<_>>());
+    let (fsx_l, _) = f.call(&input.iter()
+                            .map(|&si| GI::new_p(si.lower()))
+                            .collect::<Vec<_>>());
+    let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
+    (est_max, fsx, dfsx)
+}
+
+// Returns the upper bound, the domain where this bound occurs and a status
+// flag indicating whether the answer is complete for the problem.
+fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
+        f_bestag: Arc<RwLock<Flt>>,
+        f_best_shared: Arc<RwLock<Flt>>,
+        x_bestbb: Arc<RwLock<Vec<GI>>>,
+        b1: Arc<Barrier>, b2: Arc<Barrier>,
+        q: Arc<RwLock<BinaryHeap<Quple>>>,
+        sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
+        f: FuncObj,
+        logging: bool, max_iters: u32)
+        -> (Flt, Flt, Vec<GI>) {
     let mut best_x = x_0.clone();
-    let mut q = BinaryHeap::new();
-    let mut i: u32 = 0;
 
-    let (fc, dfc) = f.call(&x_0);
-    q.push(Quple{p: INF, pf: i, data: x_0.clone(), fdata: fc, dfdata: dfc});
-    while q.len() != 0 {
-        let v = q.pop();
-        let (ref x, fx) =
-            match v {
-                Some(y) => (y.data, y.fdata),
-                None => panic!("wtf")
+    let mut iters: u32 = 0;
+    let (est_max, first_val, _) = est_func(&f, &x_0);
+
+    q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
+                                  fdata: first_val, dfdata: None});
+    let mut f_best_low = est_max;
+    let mut f_best_high = est_max;
+
+    while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
+        if max_iters != 0 && iters >= max_iters {
+            break;
+        }
+
+        // Take q as writable during an iteration
+        let mut q = q.write().unwrap();
+
+        let fbl_orig = f_best_low;
+        f_best_low = max!(f_best_low, *f_bestag.read().unwrap());
+
+        if iters % 2048 == 0 {
+            let guaranteed_bound = get_upper_bound(&q, f_best_high);
+            if (guaranteed_bound - f_best_high).abs() < e_f {
+                f_best_high = guaranteed_bound;
+                break;
+            }
+        }
+
+        if logging && fbl_orig != f_best_low {
+            log_max(&q, f_best_low, f_best_high);
+        }
+
+        let (ref x, iter_est, fx, ref dfx, gen) =
+            match q.pop() {
+                Some(y) => (y.data, y.p, y.fdata, y.dfdata, y.pf),
+                None    => unreachable!()
             };
 
-//        let xw = width_box(x);
-        //let fx = f.call(x);
-//        let fw = fx.width();
-
+        if check_diff(dfx.clone(), x, &x_0) {
+            continue;
+        }
         if fx.upper() < f_best_low ||
             width_box(x, e_x) ||
-            eps_tol(fx, e_f) //|| (!contains_zero && !on_boundary)
-        {
-                if f_best_high < fx.upper() {
-                    f_best_high = fx.upper();
-                    best_x = x.clone();
+            eps_tol(fx, iter_est, e_f, e_f_r) {
+                {
+                    if f_best_high < fx.upper() {
+                        f_best_high = fx.upper();
+                        best_x = x.clone();
+                        if logging {
+                            log_max(&q, f_best_low, f_best_high);
+                        }
+                    }
+                    continue;
                 }
-                continue;
             }
         else {
             let (x_s, is_split) = split_box(&x);
             for sx in x_s {
-                let est = f.call(&midpoint_box(&sx)).0;
-                if f_best_low < est.lower()  {
-                    f_best_low = est.lower();
+                let (est_max, fsx, dfsx) = est_func(&f, &sx);
+                if f_best_low < est_max  {
+                    f_best_low = est_max;
+                    *x_bestbb.write().unwrap() = sx.clone();
                 }
-                i += 1;
+                iters += 1;
                 if is_split {
-                    let (fc, dfc) = f.call(&x_0);
-                    q.push(Quple{p: est.upper(),
-                                 pf: i,
-                                 data: sx.clone(),
-                                 fdata: fc,
-                                 dfdata: dfc});
+                    q.push(Quple{p: est_max,
+                                 pf: gen+1,
+                                 data: sx,
+                                 fdata: fsx,
+                                 dfdata:dfsx});
                 }
             }
         }
     }
-//    println!("{:?}", i);
-    (f_best_high, best_x)
+    stop.store(true, Ordering::Release);
+    (f_best_low, f_best_high, best_x)
 }
-
-// BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-fn proc_consts(consts: &String) -> Vec<GI> {
-    let mut result = vec![];
-    for inst in consts.split('|') {
-        if inst == "" {
-            continue;
-        }
-        result.push(GI::new_c(inst).unwrap());
-    }
-    result
-}
-
-// END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
 
 fn main() {
-    // BEGIN: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-    let args: Vec<String> = env::args().collect();
+    let args = process_args();
 
-    let mut opts = Options::new();
-    opts.reqopt("c", "constants", "", "");
-    opts.reqopt("f", "function", "", "");
-    opts.reqopt("i", "input", "", "");
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => {m},
-        Err(f) => {panic!(f.to_string())}
-    };
-    let const_string = matches.opt_str("c").unwrap();
-    let input_string = matches.opt_str("i").unwrap();
-    let func_string = matches.opt_str("f").unwrap();
+    let ref x_0 = args.domain;
+    let ref fo = args.function;
+    let x_err = args.x_error;
+    let y_err = args.y_error;
+    let y_rel = args.y_error_rel;
+    let seed = args.seed;
 
-    let args = proc_consts(&input_string.to_string());
-    let fo = FuncObj::new(&proc_consts(&const_string.to_string()),
-                              &func_string.to_string(), false, "".to_string());
-    
-    // END: MOVE THESE INTO OPTIONS PARSING FRAMEWORK
-
-    let (max, interval) = ibba(&args, 1e-4, 1e-4, fo.clone());
-    println!("Max: {:?}", max);
-    for i in 0..interval.len()  {
-        println!("X{}: {}", i, interval[i].to_string());
+    // Early out if there are no input variables...
+    if x_0.len() == 0 {
+        let result = fo.call(&x_0).0;
+        println!("[[{},{}], {{}}]", result.lower(), result.upper());
+        return
     }
-        
+
+    let q_inner: BinaryHeap<Quple> = BinaryHeap::new();
+    let q = Arc::new(RwLock::new(q_inner));
+
+    let b1 = Arc::new(Barrier::new(3));
+    let b2 = Arc::new(Barrier::new(3));
+
+    let sync = Arc::new(AtomicBool::new(false));
+    let stop = Arc::new(AtomicBool::new(false));
+
+    let f_bestag: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
+    let f_best_shared: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
+
+    let x_e = x_0.clone();
+    let x_i = x_0.clone();
+
+    let x_bestbb = Arc::new(RwLock::new(x_0.clone()));
+
+    let ibba_thread =
+    {
+        let q = q.clone();
+        let b1 = b1.clone();
+        let b2 = b2.clone();
+        let f_bestag = f_bestag.clone();
+        let f_best_shared = f_best_shared.clone();
+        let x_bestbb = x_bestbb.clone();
+        let sync = sync.clone();
+        let stop = stop.clone();
+        let fo_c = fo.clone();
+        let logging = args.logging;
+        let iters= args.iters;
+        thread::Builder::new().name("IBBA".to_string()).spawn(move || {
+            ibba(x_i, x_err, y_err, y_rel,
+                 f_bestag, f_best_shared,
+                 x_bestbb,
+                 b1, b2, q, sync, stop, fo_c, logging, iters)
+        })};
+
+
+    let result = ibba_thread.unwrap().join();
+
+    if result.is_ok() {
+        let (min, mut max, mut interval) = result.unwrap();
+        // Go through all remaining intervals from IBBA to find the true
+        // max
+        let ref lq = q.read().unwrap();
+        for i in lq.iter() {
+            let ref top = *i;
+            let (ub, dom) = (top.fdata.upper(), &top.data);
+            if ub > max {
+                max = ub;
+                interval = dom.clone();
+            }
+        }
+        println!("[[{},{}], {{", min, max);
+        for i in 0..args.names.len() {
+            println!("'{}' : {},", args.names[i], interval[i].to_string());
+        }
+        println!("}}]");
+
+    }
+    else {println!("error")}
 }
