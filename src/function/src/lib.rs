@@ -66,16 +66,7 @@ fn dummy(_x: &Vec<GI>, _c: &Vec<GI>) -> (GI, Option<Vec<GI>>) {
 
 impl FuncObj {
     pub fn call(&self, _x: &Vec<GI>) -> (GI, Option<Vec<GI>>) {
-        if self.switched.load(Ordering::Acquire) {
-            let real_func = unsafe{
-                std::mem::transmute::<*mut fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>),
-                                      fn(&Vec<GI>, &Vec<GI>)->(GI, Option<Vec<GI>>)>(
-                    self.function.load(Ordering::Acquire))};
-            real_func(_x, &self.constants)
-        }
-        else {
-            self.interpreted(_x, &self.constants)
-        }
+        (GI::new_c("1.0").unwrap(), None)
     }
 
     fn set(&self, f: fn(&Vec<GI>,&Vec<GI>) -> (GI, Option<Vec<GI>>), handle: DynamicLibrary) {
