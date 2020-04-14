@@ -149,10 +149,12 @@ def _find_max(inputs, consts, rust_function,
         else:
             answer_lines.append(line.strip())
 
-    to_delete = [".compiled/libfunc_generated_"+file_id+".so",
-                 "func/target/release/libfunc_generated_"+file_id+".so",
-                 "func/target/release/func_generated_"+file_id+".d",
-                 "func/src/lib_generated_"+file_id+".rs",]
+    to_delete = [
+        path.join(GIT_DIR, ".compiled", "libfunc_generated_"+file_id+".so"),
+        path.join(SRC_DIR, "func", "target", "release", "libfunc_generated_"+file_id+".so"),
+        path.join(SRC_DIR, "func", "target", "release", "func_generated_"+file_id+".d"),
+        path.join(SRC_DIR, "func", "src", "lib_generated_"+file_id+".rs"),
+    ]
     to_delete = [path.join(src_dir, f) for f in to_delete]
     for f in to_delete:
         try:
