@@ -1,14 +1,10 @@
 
 
+import gelpia_logging as logging
+import color_printing as color
+
 import sys
 
-try:
-    import gelpia_logging as logging
-    import color_printing as color
-except ModuleNotFoundError:
-    sys.path.append("../")
-    import gelpia_logging as logging
-    import color_printing as color
 logger = logging.make_module_logger(color.cyan("function_to_lexed"),
                                     logging.HIGH)
 
@@ -16,7 +12,7 @@ try:
     from sly import Lexer
 except ModuleNotFoundError:
     logger.error("SLY must be installed for python3")
-    sys.exit(-1)
+    sys.exit(1)
 
 
 class GelpiaLexer(Lexer):
@@ -42,6 +38,12 @@ class GelpiaLexer(Lexer):
 
         # Assignment
         "EQUALS",
+
+        # Comparisons
+        "LESS_THAN",
+        "GREATER_THAN",
+        "LESS_THAN_OR_EQUAL",
+        "GREATER_THAN_OR_EQUAL",
 
         # Deliminators
         "LPAREN",
@@ -82,7 +84,7 @@ class GelpiaLexer(Lexer):
         self.lineno += t.value.count('\n')
     ignore_space = r"\s"
     ignore_comment = r"\#.*"
-    ignore_labels = r"({})".format(r")|(".join([r"cost:", r"var:"]))
+    ignore_labels = r"({})".format(r")|(".join([r"cost:", r"var:", r"ctr:"]))
 
     # Prefix operators
     BINOP = r"({})".format(r")|(".join(BINOPS))
@@ -90,6 +92,7 @@ class GelpiaLexer(Lexer):
 
     # Literals
     SYMBOLIC_CONST = r"({})".format(r")|(".join(SYMBOLIC_CONSTS))
+    #IB: should we also match the hex float constants? (i.e. printf("%a"))
     FLOAT = (r"("                  # match all floats
              r"("                  # | match float with '.'
              r"("                  # |  match a number base
@@ -137,6 +140,12 @@ class GelpiaLexer(Lexer):
     # Assignment
     EQUALS = r"="
 
+    # Comparisons
+    LESS_THAN = r"<"
+    GREATER_THAN = r">"
+    LESS_THAN_OR_EQUAL = "<="
+    GREATER_THAN_OR_EQUAL = ">="
+
     # Deliminators
     LPAREN = r"\("
     RPAREN = r"\)"
@@ -147,7 +156,7 @@ class GelpiaLexer(Lexer):
 
     def error(self, t):
         logger.error("Line {}: Bad character '{}'", self.lineno, t.value[0])
-        sys.exit(-1)
+        sys.exit(1)
 
 
 def function_to_lexed(function):

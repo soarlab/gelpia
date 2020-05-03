@@ -60,17 +60,10 @@ default_walk_expand_func_dict["Box"] = expand_many
 default_walk_expand_func_dict["Const"] = expand_atom
 default_walk_expand_func_dict["Input"] = expand_atom
 default_walk_expand_func_dict["Tuple"] = expand_two
-default_walk_expand_func_dict["Return"] = expand_one
 
 
 def contract_many(work_stack, count, args):
     work_stack.append((True, count, tuple(args)))
-
-
-def contract_return(work_stack, count, args):
-    assert(args[0] == "Return")
-    assert(len(args) == 2)
-    return tuple(args)
 
 
 def contract_error(work_stack, count, args):
@@ -90,7 +83,6 @@ default_walk_contract_func_dict["Box"] = contract_many
 default_walk_contract_func_dict["Const"] = contract_many
 default_walk_contract_func_dict["Input"] = contract_many
 default_walk_contract_func_dict["Tuple"] = contract_many
-default_walk_contract_func_dict["Return"] = contract_return
 
 
 def constant_expand_two(work_stack, count, exp):
@@ -127,17 +119,10 @@ constant_walk_expand_func_dict["Box"] = constant_expand_many
 constant_walk_expand_func_dict["Const"] = constant_expand_atom
 constant_walk_expand_func_dict["Input"] = constant_expand_atom
 constant_walk_expand_func_dict["Tuple"] = constant_expand_two
-constant_walk_expand_func_dict["Return"] = constant_expand_one
 
-
-def constant_contract_return(work_stack, count, args):
-    assert(args[0] == "Return")
-    assert(len(args) == 2)
-    return True
 
 
 constant_walk_contract_func_dict = dict()
-constant_walk_contract_func_dict["Return"] = constant_contract_return
 
 
 def walk(expand_dict, contract_dict, exp, assigns=None):
@@ -213,13 +198,17 @@ def _walk(default_expand_dict, expand_dict,
         return contract_err
 
     work_stack = [(False, 0, exp)]
-    while len(work_stack) > 0:
+    while True:
         done, count, exp = work_stack.pop()
 
         # Expand
         if done is False:
             tag = exp[0]
             expand_function(tag)(work_stack, count, exp)
+
+        # Check for termination
+        elif len(work_stack) == 0:
+            return exp
 
         # Contract all args
         elif work_stack[-1][0] is False:
@@ -255,7 +244,5 @@ def _walk(default_expand_dict, expand_dict,
             # reverse everything
             args.reverse()
 
-            # contract, if contraction returned something then we are done
-            retval = contract_function(op)(work_stack, op_count, args)
-            if retval is not None:
-                return retval
+            # contract
+            contract_function(op)(work_stack, op_count, args)

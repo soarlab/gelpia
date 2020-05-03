@@ -28,9 +28,9 @@ logger = logging.make_module_logger(color.cyan("process_function"),
 def process_function(data, invert=False):
     tokens = function_to_lexed(data)
     tree = lexed_to_parsed(tokens)
-    exp, inputs = pass_lift_inputs_and_inline_assigns(tree)
+    exp, constraints, inputs = pass_lift_inputs_and_inline_assigns(tree)
     if invert:
-        exp = ("Return", ("neg", exp[1]))
+        exp = ("neg", exp[1])
     exp = pass_simplify(exp, inputs)
     d, diff_exp = pass_reverse_diff(exp, inputs)
     diff_exp = pass_simplify(diff_exp, inputs)

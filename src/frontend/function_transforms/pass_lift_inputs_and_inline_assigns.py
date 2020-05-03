@@ -19,10 +19,12 @@ def pass_lift_inputs_and_inline_assigns(exp):
     """ Extracts input variables from an expression and inlines assignments"""
 
     # Function local variables
-    assigns = dict()         # name -> expression
-    used_assigns = set()          # assignments seen in the main exp
-    inputs = OrderedDict()  # name -> input range
-    used_inputs = set()          # inputs seen in the main exp
+    assigns = dict()       # name -> expression
+    used_assigns = set()   # assignments seen in the main exp
+    inputs = OrderedDict() # name -> input range
+    used_inputs = set()    # inputs seen in the main exp
+    constraints = set()    # constraints
+    cost = list()          # all cost expression pieces
 
     def _input_interval(work_stack, count, exp):
         assert(exp[0] == "InputInterval")
@@ -53,34 +55,45 @@ def pass_lift_inputs_and_inline_assigns(exp):
         logger.error("Use of undeclared name: {}", exp[1])
         sys.exit(-1)
 
-    # A leading tuple must be an assign
-    while type(exp[0]) is tuple:
-        assignment = exp[0]
-        assert(assignment[0] == "Assign")
-        name = assignment[1]
-        assert(name[0] == "Name")
-        val = assignment[2]
+    # Filter the expression, which is a large tuple
+    for part in exp:
+        if part[0] == "Assign":
+            name = part[1]
+            val = part[2]
+            if name[1] in inputs or name[1] in assigns:
+                logger.error("Variable assigned to twice: {}", name[1])
+                sys.exit(-1)
 
-        if name[1] in inputs or name[1] in assigns:
-            logger.error("Variable assigned to twice: {}", name[1])
-            sys.exit(-1)
+            if val[0] == "InputInterval":
+                inputs[name[1]] = val
+                assert(logger("Found input {} = {}", name[1], val))
+            else:
+                assigns[name[1]] = val
+                assert(logger("Found assign {} = {}", name[1], val))
 
-        if val[0] == "InputInterval":
-            inputs[name[1]] = val
-            assert(logger("Found input {} = {}", name[1], val))
-        else:
-            assigns[name[1]] = val
-            assert(logger("Found assign {} = {}", name[1], val))
+        if part[0] == "Cost":
+            cost.append(part[1])
 
-        # Work on the rest of the expression
-        exp = exp[1]
+        if part[0] == "Constrain":
+            constraints.add(part)
 
     my_expand_dict = {"InputInterval": _input_interval,
                       "Name":          _name}
 
-    new_exp = walk(my_expand_dict, dict(), exp, assigns)
+    joined_cost = cost[0]
+    for c in cost[1:]:
+        joined_cost = ("+", joined_cost, c)
 
-    return new_exp, inputs
+    new_exp = walk(my_expand_dict, dict(), joined_cost, assigns)
+
+    new_constraints = list()
+    for cons in constraints:
+        lhs = walk(my_expand_dict, dict(), cons[2], assigns)
+        rhs = walk(my_expand_dict, dict(), cons[3], assigns)
+        new_cons = (cons[1], lhs, rhs)
+        new_constraints.append(new_cons)
+
+    return new_exp, new_constraints, inputs
 
 
 def main(argv):
@@ -99,11 +112,14 @@ def main(argv):
 
         logging.set_log_level(logging.HIGH)
         logger("raw: \n{}\n", data)
-        exp, inputs = pass_lift_inputs_and_inline_assigns(tree)
+        exp, constraints, inputs = pass_lift_inputs_and_inline_assigns(tree)
 
         logger("inputs:")
         for name, interval in inputs.items():
             logger("  {} = {}", name, interval)
+        logger("constraints:")
+        for comp, lhs, rhs in constraints:
+            logger("  {} {} {}", lhs, comp, rhs)
         logger("expression:\n{}\n", exp)
 
         return 0
