@@ -1,7 +1,6 @@
 // Cooperative optimization solver
 use std::collections::BinaryHeap;
 use std::io::Write;
-extern crate rand;
 
 #[macro_use(max)]
 extern crate gelpia_utils;

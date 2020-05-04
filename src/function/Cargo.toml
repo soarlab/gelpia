@@ -11,4 +11,4 @@ path = "src/lib.rs"
 path = "../gr"
 
 [dependencies]
-dylib = "0.0.*"
+dylib = "=0.0.3"
