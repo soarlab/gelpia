@@ -641,19 +641,7 @@ pub fn log(x: GI) -> GI {
 }
 
 pub fn eps_tol(widest: GI, tol: f64) -> bool {
-    if widest.width() <= tol {
-        return true;
-    }
-    let exp_x = unsafe {
-        mem::transmute::<f64, u64>(widest.lower()) & 0x7FF0000000000000
-    };
-    let exp_y = unsafe {
-        mem::transmute::<f64, u64>(widest.upper()) & 0x7FF0000000000000
-    };
-    let exp = {if exp_x < exp_y {exp_y} else {exp_x}};
-    let d: f64 = unsafe { mem::transmute::<u64, f64>(exp) };
-    let ww = widest.width();
-    ww <= d
+    return widest.width() <= tol;
 }
 
 pub fn widest_index(_x: &Vec<GI>) -> usize {
