@@ -1,7 +1,9 @@
 #![allow(improper_ctypes)]
 
 extern crate libc;
+extern crate num_traits;
 use libc::{c_double, c_char, c_int};
+use num_traits::Float;
 use std::ffi::{CString, CStr};
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::f64::NEG_INFINITY as NINF;
@@ -641,7 +643,13 @@ pub fn log(x: GI) -> GI {
 }
 
 pub fn eps_tol(widest: GI, tol: f64) -> bool {
-    return widest.width() <= tol;
+    let (_,exp_x,_) = Float::integer_decode(widest.lower());
+    let (_,exp_y,_) = Float::integer_decode(widest.upper());
+    let exp = {if exp_x < exp_y {exp_y} else {exp_x}} as i64;
+    let wideste = ((exp+1023) << 52) & 0x7FF0000000000000;
+    let d: f64 = unsafe{mem::transmute(wideste)};
+    let ww = widest.width();
+    ww <= tol || ww <= d
 }
 
 pub fn widest_index(_x: &Vec<GI>) -> usize {
