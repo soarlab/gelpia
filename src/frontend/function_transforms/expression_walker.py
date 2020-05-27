@@ -198,7 +198,7 @@ def _walk(default_expand_dict, expand_dict,
         return contract_err
 
     work_stack = [(False, 0, exp)]
-    while True:
+    while len(work_stack) > 0:
         done, count, exp = work_stack.pop()
 
         # Expand
@@ -246,3 +246,4 @@ def _walk(default_expand_dict, expand_dict,
 
             # contract
             contract_function(op)(work_stack, op_count, args)
+    return "no_mut_walk used"

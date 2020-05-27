@@ -26,6 +26,27 @@ def pass_lift_inputs_and_inline_assigns(exp):
     constraints = set()    # constraints
     cost = list()          # all cost expression pieces
 
+    def _e_bool_op(work_stack, count, exp):
+        assert(exp[0] in {"or", "and"})
+        assert(len(exp) == 3)
+        work_stack.append((True, count, exp[0]))
+        work_stack.append((False, 2, exp[2]))
+        work_stack.append((False, 2, exp[1]))
+
+    def _e_bool_neg(work_stack, count, exp):
+        assert(exp[0] == "not")
+        assert(len(exp) == 2)
+        work_stack.append((True, count, exp[0]))
+        work_stack.append((False, 1, exp[1]))
+
+    def _e_constrain(work_stack, count, exp):
+        assert(exp[0] == "Constrain")
+        assert(len(exp) == 4)
+        work_stack.append((True, count, exp[0]))
+        work_stack.append((False, 3, exp[3]))
+        work_stack.append((False, 3, exp[2]))
+        work_stack.append((True,  3, exp[1]))
+
     def _input_interval(work_stack, count, exp):
         assert(exp[0] == "InputInterval")
         assert(len(exp) == 3)
@@ -67,18 +88,37 @@ def pass_lift_inputs_and_inline_assigns(exp):
             if val[0] == "InputInterval":
                 inputs[name[1]] = val
                 assert(logger("Found input {} = {}", name[1], val))
+                continue
             else:
                 assigns[name[1]] = val
                 assert(logger("Found assign {} = {}", name[1], val))
+                continue
 
         if part[0] == "Cost":
             cost.append(part[1])
+            continue
 
-        if part[0] == "Constrain":
+        if part[0] in {"or", "and", "not", "Constrain"}:
             constraints.add(part)
+            continue
+
+        logger.error("Unable to determine part of expressions:\n{}\n", part)
+        sys.exit(-1)
 
     my_expand_dict = {"InputInterval": _input_interval,
-                      "Name":          _name}
+                      "Name":          _name,
+                      "or":            _e_bool_op,
+                      "and":           _e_bool_op,
+                      "not":           _e_bool_neg,
+                      "Constrain":     _e_constrain}
+
+    def _contract(work_stack, count, args):
+        work_stack.append((True, count, tuple(args)))
+
+    my_contract_dict = {"or":            _contract,
+                        "and":           _contract,
+                        "not":           _contract,
+                        "Constrain":     _contract}
 
     joined_cost = cost[0]
     for c in cost[1:]:
@@ -88,9 +128,8 @@ def pass_lift_inputs_and_inline_assigns(exp):
 
     new_constraints = list()
     for cons in constraints:
-        lhs = walk(my_expand_dict, dict(), cons[2], assigns)
-        rhs = walk(my_expand_dict, dict(), cons[3], assigns)
-        new_cons = (cons[1], lhs, rhs)
+        logger("Proccesing constraint:\n{}\n", cons)
+        new_cons = walk(my_expand_dict, my_contract_dict, cons, assigns)
         new_constraints.append(new_cons)
 
     return new_exp, new_constraints, inputs

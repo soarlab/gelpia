@@ -41,10 +41,10 @@ def process_function(data, invert=False):
     interp_function = output_interp(exp, inputs, consts)
     flat_consts = collections.OrderedDict()
     for name, const in consts.items():
-        flat_consts[name] = output_flatten(("Return", const))
+        flat_consts[name] = output_flatten(const)
     flat_inputs = collections.OrderedDict()
     for name, input in inputs.items():
-        flat_inputs[name] = output_flatten(("Return", input))
+        flat_inputs[name] = output_flatten(input)
     return flat_inputs, flat_consts, rust_function, interp_function
 
 

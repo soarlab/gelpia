@@ -141,7 +141,7 @@ def _find_max(inputs, consts, rust_function,
     else:
         timeout += grace
     for line in iu.run_async(executable, executable_args, timeout):
-        logger(logging.HIGH, "rust_solver_output: '{}'", line)
+        logger(logging.HIGH, "rust_solver_output: '{}'", line.strip())
         if line.startswith("lb:"):
             match = re.match(r"lb: ([^,]*), possible ub: ([^,]*), guaranteed ub: ([^,]*)", line)
             max_lower = match.groups(1)

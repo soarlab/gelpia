@@ -45,6 +45,11 @@ class GelpiaLexer(Lexer):
         "LESS_THAN_OR_EQUAL",
         "GREATER_THAN_OR_EQUAL",
 
+        # Boolean Operators
+        "OR",
+        "AND",
+        "NOT",
+
         # Deliminators
         "LPAREN",
         "RPAREN",
@@ -141,10 +146,15 @@ class GelpiaLexer(Lexer):
     EQUALS = r"="
 
     # Comparisons
-    LESS_THAN = r"<"
-    GREATER_THAN = r">"
     LESS_THAN_OR_EQUAL = "<="
     GREATER_THAN_OR_EQUAL = ">="
+    LESS_THAN = r"<"
+    GREATER_THAN = r">"
+
+    # Boolean Operators
+    OR = r"\|\|"
+    AND = r"&&"
+    NOT = r"~"
 
     # Deliminators
     LPAREN = r"\("

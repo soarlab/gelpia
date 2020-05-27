@@ -140,12 +140,6 @@ def output_flatten(exp, inputs=None, consts=None, assigns=None):
         ret = ["Tuple("] + args[1] + [", "] + args[2] + [")"]
         work_stack.append((True, count, ret))
 
-    def _return(work_stack, count, args):
-        assert(logger("Return: {}", args))
-        assert(args[0] == "Return")
-        assert(len(args) == 2)
-        return args[1]
-
     my_contract_dict = dict()
     my_contract_dict.update(zip(BINOPS,
                                 [_binop for _ in BINOPS]))
@@ -157,7 +151,6 @@ def output_flatten(exp, inputs=None, consts=None, assigns=None):
     my_contract_dict["neg"] = _neg
     my_contract_dict["Box"] = _box
     my_contract_dict["Tuple"] = _tuple
-    my_contract_dict["Return"] = _return
 
     retlist = walk(my_expand_dict, my_contract_dict, exp, assigns)
     retval = "".join(retlist)

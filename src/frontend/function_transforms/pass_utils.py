@@ -37,10 +37,7 @@ def extract_exp_from_diff(diff_exp):
     Takes in an expression that has been ran through pass_reverse_diff and
     returns just the main expression, not the derrivatives
     """
-    assert(diff_exp[0] == "Return")
-    assert(len(diff_exp) == 2)
-    diff_retval = diff_exp[1]
-    if diff_retval[0] != "Tuple":
+    if diff_exp[0] != "Tuple":
         return diff_exp
-    exp = diff_retval[1]
-    return ("Return", exp)
+    exp = diff_exp[1]
+    return exp

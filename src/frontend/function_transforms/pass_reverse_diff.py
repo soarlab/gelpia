@@ -183,9 +183,9 @@ def pass_reverse_diff(exp, inputs):
 
     def _undiff(work_stack, count, exp):
         nonlocal seen_undiff
+        print("SEEN UNDIFF "*10)
         assert(exp[0] in {"floor_power2", "sym_interval", "sub2", "sub2_I"})
         seen_undiff = True
-        work_stack.append((True, 0, "Return"))
         work_stack.append((True, 1, "Now"))
 
     my_expand_dict = {"*":            _mul,
@@ -216,11 +216,11 @@ def pass_reverse_diff(exp, inputs):
 
     if seen_undiff or len(inputs) == 0:
         r = False
-        retval = ("Return", exp[1])
+        retval = exp[1]
     else:
         r = True
         result = ("Box",) + tuple(d for d in gradient.values())
-        retval = ("Return", ("Tuple", exp[1], result))
+        retval = ("Tuple", exp[1], result)
 
     return r, retval
 

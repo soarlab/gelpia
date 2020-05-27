@@ -139,12 +139,6 @@ def output_rust(exp, inputs, consts, assigns):
         ret = ["("] + args[1] + [", "] + args[2] + [")"]
         work_stack.append((True, count, ret))
 
-    def _return(work_stack, count, args):
-        assert(logger("Return: {}", args))
-        assert(args[0] == "Return")
-        assert(len(args) == 2)
-        return ["    "] + args[1]
-
     def _neg(work_stack, count, args):
         assert(logger("neg: {}", args))
         assert(args[0] == "neg")
@@ -163,7 +157,6 @@ def output_rust(exp, inputs, consts, assigns):
     my_contract_dict["Box"] = _box
     my_contract_dict["neg"] = _neg
     my_contract_dict["Tuple"] = _tuple
-    my_contract_dict["Return"] = _return
 
     retval = walk(my_expand_dict, my_contract_dict, exp, assigns)
 

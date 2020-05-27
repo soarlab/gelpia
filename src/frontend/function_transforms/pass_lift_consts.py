@@ -142,14 +142,6 @@ def pass_lift_consts(exp, inputs):
         box.append(False)
         work_stack.append((True, count, tuple(box)))
 
-    def _return(work_stack, count, args):
-        assert(args[0] == "Return")
-        assert(len(args) == 2)
-        r, retval = args[1][-1], args[1][:-1]
-        if r:
-            retval = make_constant(retval)
-        return r, ("Return", retval)
-
     my_contract_dict = dict()
     my_contract_dict.update(zip(BINOPS,
                                 [_two_item for _ in BINOPS]))
@@ -160,9 +152,13 @@ def pass_lift_consts(exp, inputs):
     my_contract_dict["Box"] = _box
     my_contract_dict["Tuple"] = _tuple
     my_contract_dict["pow"] = _pow
-    my_contract_dict["Return"] = _return
 
-    n, new_exp = walk(my_expand_dict, my_contract_dict, exp)
+    walk_ret = walk(my_expand_dict, my_contract_dict, exp)
+
+    n, new_exp = walk_ret[-1], walk_ret[:-1]
+    if n:
+        new_exp = make_constant(new_exp)
+
     assert(n in {True, False})
     assert(type(new_exp) is tuple)
     assert(new_exp[0] not in {True, False})

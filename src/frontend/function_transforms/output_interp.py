@@ -67,18 +67,12 @@ def output_interp(exp, inputs, consts):
         assert(type(args[1]) is list)
         work_stack.append((True, count, args[1] + ["f" + args[0].lower()]))
 
-    def _return(work_stack, count, args):
-        assert(args[0] == "Return")
-        assert(len(args) == 2)
-        return args[1]
-
     my_contract_dict = dict()
     my_contract_dict.update(zip(INFIX, [_infix for _ in INFIX]))
     my_contract_dict.update(zip(UNOPS, [_unops for _ in UNOPS]))
     my_contract_dict["pow"] = _pow
     my_contract_dict["powi"] = _powi
     my_contract_dict["sub2"] = _sub2
-    my_contract_dict["Return"] = _return
 
     exp = walk(my_expand_dict, my_contract_dict, exp)
 
