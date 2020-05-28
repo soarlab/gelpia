@@ -67,6 +67,10 @@ def output_smt2(constraints, inputs):
         retval = ["(^ "] + args[1] + [" "] + args[2] + [")"]
         work_stack.append((True, count, retval))
 
+    def _c_neg(work_stack, count, args):
+        retval = ["(- "] + args[1] + [")"]
+        work_stack.append((True, count, retval))
+
     my_contract_dict = {}
     my_contract_dict.update(zip(BINOPS,
                                 [_contract_sexp for _ in BINOPS]))
@@ -75,7 +79,7 @@ def output_smt2(constraints, inputs):
     my_contract_dict.update(zip(INFIX,
                                 [_contract_sexp for _ in INFIX]))
     my_contract_dict["pow"] = _c_pow
-    my_contract_dict["neg"] = _contract_sexp
+    my_contract_dict["neg"] = _c_neg
     my_contract_dict["or"] = _contract_sexp
     my_contract_dict["and"] = _contract_sexp
     my_contract_dict["not"] = _contract_sexp
