@@ -12,6 +12,7 @@ crate-type = ["dylib"]
 
 [dependencies]
 libc = "0.2.62"
+num-traits = "0.2"
 
 [build-dependencies]
 cc = "1.0.45"
