@@ -35,4 +35,4 @@ jobs:
     - name: Run tests
       run: |
         cd gelpia_tests
-        TESTER_ARGS="-v" make test
+        make test
