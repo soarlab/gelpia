@@ -212,15 +212,15 @@ def pass_reverse_diff(exp, inputs):
                       "tan":          _tan,
                       "tanh":         _tanh}
 
-    no_mut_walk(my_expand_dict, (*exp[1], ("Integer", "1")))
+    no_mut_walk(my_expand_dict, (*exp, ("Integer", "1")))
 
     if seen_undiff or len(inputs) == 0:
         r = False
-        retval = exp[1]
+        retval = exp
     else:
         r = True
         result = ("Box",) + tuple(d for d in gradient.values())
-        retval = ("Tuple", exp[1], result)
+        retval = ("Tuple", exp, result)
 
     return r, retval
 

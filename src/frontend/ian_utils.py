@@ -26,13 +26,14 @@ class AsyncReader(threading.Thread):
             self.q.put(output)
 
 
-def run_async(cmd, args_list, timeout, error_string="An Error has occured",
+def run_async(cmd, stdout_lines, args_list, timeout, error_string="An Error has occured",
               expected_return=0):
     command = [cmd] + args_list
     should_exit = None
     term_time = time.time() + timeout
     try:
         with subprocess.Popen(command,
+                              stdin=subprocess.PIPE,
                               bufsize=1,
                               universal_newlines=True,
                               stdout=subprocess.PIPE,
@@ -43,6 +44,9 @@ def run_async(cmd, args_list, timeout, error_string="An Error has occured",
             stdout_r = AsyncReader(proc.stdout, stdout_q)
             stdout_r.start()
             output = []
+
+            # Send output
+            proc.stdin.write("\n".join(stdout_lines)+"\n")
 
             while proc.poll() is None:
                 if not stdout_q.empty():

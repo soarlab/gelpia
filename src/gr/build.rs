@@ -6,6 +6,7 @@ fn main() {
     cc::Build::new()
         .cpp(true)
         .cpp_link_stdlib(Some("stdc++"))
+        .flag("-Wno-strict-aliasing")
         .flag("-msse3")
         .flag("-O3")
         .flag("-std=c++11")

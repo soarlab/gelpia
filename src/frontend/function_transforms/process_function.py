@@ -15,6 +15,7 @@ from pass_single_assignment import pass_single_assignment
 from output_rust import output_rust
 from output_interp import output_interp
 from output_flatten import output_flatten
+from output_smt2 import output_smt2
 try:
     import gelpia_logging as logging
     import color_printing as color
@@ -30,14 +31,16 @@ def process_function(data, invert=False):
     tree = lexed_to_parsed(tokens)
     exp, constraints, inputs = pass_lift_inputs_and_inline_assigns(tree)
     if invert:
-        exp = ("neg", exp[1])
+        exp = ("neg", exp)
     exp = pass_simplify(exp, inputs)
     d, diff_exp = pass_reverse_diff(exp, inputs)
+    logger("{}", diff_exp)
     diff_exp = pass_simplify(diff_exp, inputs)
     c, diff_exp, consts = pass_lift_consts(diff_exp, inputs)
     sa_exp, assigns = pass_single_assignment(diff_exp, inputs)
     rust_function = output_rust(sa_exp, inputs, consts, assigns)
     exp = extract_exp_from_diff(diff_exp)
+    logger("{}", exp)
     interp_function = output_interp(exp, inputs, consts)
     flat_consts = collections.OrderedDict()
     for name, const in consts.items():
@@ -45,7 +48,8 @@ def process_function(data, invert=False):
     flat_inputs = collections.OrderedDict()
     for name, input in inputs.items():
         flat_inputs[name] = output_flatten(input)
-    return flat_inputs, flat_consts, rust_function, interp_function
+    smt2 = output_smt2(constraints)
+    return flat_inputs, flat_consts, rust_function, interp_function, smt2
 
 
 def main(argv):

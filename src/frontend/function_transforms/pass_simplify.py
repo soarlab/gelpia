@@ -584,6 +584,8 @@ def pass_simplify(exp, inputs):
 
     exp = walk(dict(), my_contract_dict, exp)
 
+    logger("{}", exp)
+
     return exp
 
 

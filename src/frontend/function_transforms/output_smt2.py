@@ -15,7 +15,7 @@ logger = logging.make_module_logger(color.blue("output_smt2"),
                                     logging.HIGH)
 
 
-def output_smt2(constraints, inputs):
+def output_smt2(constraints):
 
     def _e_bool_op(work_stack, count, exp):
         assert(exp[0] in {"or", "and"})
@@ -87,15 +87,6 @@ def output_smt2(constraints, inputs):
 
     lines = list()
 
-    # Declare inputs
-    for i in inputs:
-        lines.append("(declare-fun {} () Real)".format(i))
-
-    # Assert input range
-    for i, domain in inputs.items():
-        lines.append("(assert (<= {} {}))".format(domain[1][1], i))
-        lines.append("(assert (<= {} {}))".format(i, domain[2][1]))
-
     # Translate constraints
     for c in constraints:
         cons = walk(my_expand_dict, my_contract_dict, c, None)
@@ -105,7 +96,7 @@ def output_smt2(constraints, inputs):
     lines.append("(check-sat)")
     lines.append("(exit)")
 
-    return "\n".join(lines)
+    return "".join(lines)
 
 def main(argv):
     logging.set_log_filename(None)
@@ -129,7 +120,15 @@ def main(argv):
         exp, constraints, inputs = pass_lift_inputs_and_inline_assigns(tree)
 
         logging.set_log_level(logging.HIGH)
-        smt2 = output_smt2(constraints, inputs)
+        smt2 = output_smt2(constraints)
+
+
+        for i in inputs:
+            print("(declare-fun {} () Real)".format(i))
+
+        for i, domain in inputs.items():
+            print("(assert (<= {} {}))".format(domain[1][1], i))
+            print("(assert (<= {} {}))".format(domain[2][1], i))
 
         print(smt2)
 

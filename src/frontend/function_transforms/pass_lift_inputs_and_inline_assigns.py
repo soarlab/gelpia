@@ -76,35 +76,6 @@ def pass_lift_inputs_and_inline_assigns(exp):
         logger.error("Use of undeclared name: {}", exp[1])
         sys.exit(-1)
 
-    # Filter the expression, which is a large tuple
-    for part in exp:
-        if part[0] == "Assign":
-            name = part[1]
-            val = part[2]
-            if name[1] in inputs or name[1] in assigns:
-                logger.error("Variable assigned to twice: {}", name[1])
-                sys.exit(-1)
-
-            if val[0] == "InputInterval":
-                inputs[name[1]] = val
-                assert(logger("Found input {} = {}", name[1], val))
-                continue
-            else:
-                assigns[name[1]] = val
-                assert(logger("Found assign {} = {}", name[1], val))
-                continue
-
-        if part[0] == "Cost":
-            cost.append(part[1])
-            continue
-
-        if part[0] in {"or", "and", "not", "Constrain"}:
-            constraints.add(part)
-            continue
-
-        logger.error("Unable to determine part of expressions:\n{}\n", part)
-        sys.exit(-1)
-
     my_expand_dict = {"InputInterval": _input_interval,
                       "Name":          _name,
                       "or":            _e_bool_op,
@@ -120,11 +91,48 @@ def pass_lift_inputs_and_inline_assigns(exp):
                         "not":           _contract,
                         "Constrain":     _contract}
 
+    # Filter the expression, which is a large tuple
+    for part in exp:
+        if part[0] == "Assign":
+            name = part[1]
+            val = part[2]
+            if name[1] in inputs or name[1] in assigns:
+                logger.error("Variable assigned to twice: {}", name[1])
+                sys.exit(-1)
+
+            if name[0] == "SymbolicConst":
+                logger("Dropping assign to SymbolicConst: {}", name[1])
+                continue
+
+            if val[0] == "InputInterval":
+                inputs[name[1]] = val
+                assert(logger("Found input {} = {}", name[1], val))
+                continue
+
+            assigns[name[1]] = val
+            assert(logger("Found assign {} = {}", name[1], val))
+            continue
+
+        if part[0] == "Cost":
+            cost.append(part[1])
+            continue
+
+        if part[0] in {"or", "and", "not", "Constrain"}:
+            constraints.add(part)
+            continue
+
+        logger.error("Unable to determine part of expressions:\n{}\n", part)
+        sys.exit(-1)
+
     joined_cost = cost[0]
     for c in cost[1:]:
         joined_cost = ("+", joined_cost, c)
 
+    logger("joined cost: {}", joined_cost)
+
     new_exp = walk(my_expand_dict, dict(), joined_cost, assigns)
+
+    logger("new_exp: {}", new_exp)
 
     new_constraints = list()
     for cons in constraints:

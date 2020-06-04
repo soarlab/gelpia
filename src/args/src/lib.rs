@@ -1,5 +1,6 @@
 // External libraries
 use std::env;
+use std::io::{self};
 
 extern crate getopts;
 use getopts::Options;
@@ -25,6 +26,7 @@ pub struct Args {
     pub func_suffix: String,
     pub logging: bool,
     pub seed: u32,
+    pub smt2: String,
 }
 
 
@@ -32,7 +34,7 @@ pub struct Args {
 
 // Transforms the standardized string representation of the constants list
 //     into a vector of intervals
-fn parse_constants(consts: &String) 
+fn parse_constants(consts: &String)
                -> Vec<GI> {
     let mut result = vec![];
     for inst in consts.split('|') {
@@ -47,7 +49,7 @@ fn parse_constants(consts: &String)
 
 // Transforms the standardized string representation of the free variables list
 //     into a vector of string
-fn parse_names(names: &String) 
+fn parse_names(names: &String)
               -> Vec<String> {
     let mut result = vec![];
     for n in names.split(',') {
@@ -68,14 +70,14 @@ pub fn process_args() -> Args {
 
     // Required
     opts.reqopt("S", "func-suffix", "", "");
-    opts.reqopt("c", "constants", "", "");
-    opts.reqopt("f", "function", "", "");
-    opts.reqopt("i", "input", "", "");
+//    opts.reqopt("c", "constants", "", "");
+//    opts.reqopt("f", "function", "", "");
+//    opts.reqopt("i", "input", "", "");
     opts.reqopt("x", "x_epsilon", "", "");
     opts.reqopt("y", "y_epsilon", "", "");
-    opts.reqopt("n", "names", "", "");
+//    opts.reqopt("n", "names", "", "");
     opts.reqopt("r", "y_epsilon_relative", "", "");
-    
+
     // Optional
     opts.optopt("t", "time_out", "", "");
     opts.optopt("M", "max_iters", "", "");
@@ -83,7 +85,7 @@ pub fn process_args() -> Args {
     opts.optflag("d", "debug", "Enable debugging");
     opts.optflag("L", "logging", "Enable maximum logging to stderr");
     opts.optopt("s", "seed", "Seed to use for random number generators", "");
-    
+
     // Check that the args are there
     let args: Vec<String> = env::args().collect();
     let matches = match opts.parse(&args[1..]) {
@@ -92,32 +94,53 @@ pub fn process_args() -> Args {
     };
 
     // Grab out the required arguments
-    let input_string = matches.opt_str("i").unwrap();
+    let mut input_string = String::new();
+    io::stdin().read_line(&mut input_string).unwrap();
+    input_string.pop();
+    // let input_string = matches.opt_str("i").unwrap();
+    //println!("debug: inputs: '{}'", input_string);
     let x_0 = parse_constants(&input_string);
 
-    let names_string = matches.opt_str("n").unwrap();
+    let mut names_string = String::new();
+    io::stdin().read_line(&mut names_string).unwrap();
+    names_string.pop();
+    // let names_string = matches.opt_str("n").unwrap();
+    //println!("debug: names: '{}'", names_string);
     let names = parse_names(&names_string);
 
-    let const_string = matches.opt_str("c").unwrap();
+    let mut const_string = String::new();
+    io::stdin().read_line(&mut const_string).unwrap();
+    const_string.pop();
+    // let const_string = matches.opt_str("c").unwrap();
+    //println!("debug: consts: '{}'", const_string);
     let consts = parse_constants(&const_string);
 
     let func_suffix = matches.opt_str("S").unwrap();
-    let func_string = matches.opt_str("f").unwrap();
+    let mut func_string = String::new();
+    io::stdin().read_line(&mut func_string).unwrap();
+    func_string.pop();
+    // let func_string = matches.opt_str("f").unwrap();
     let debug = matches.opt_present("d");
     let logging = matches.opt_present("L");
+    //println!("debug: function: '{}'", func_string);
     let fo = FuncObj::new(&consts, &func_string, debug, func_suffix.clone());
 
+
+    let mut smt2_string = String::new();
+    io::stdin().read_line(&mut smt2_string).unwrap();
+    smt2_string.pop();
+
     // Grab out optional arguments
-    let to = if matches.opt_present("t") { 
-        matches.opt_str("t").unwrap().parse::<u32>().unwrap() 
-    } else { 
-        0 as u32 
+    let to = if matches.opt_present("t") {
+        matches.opt_str("t").unwrap().parse::<u32>().unwrap()
+    } else {
+        0 as u32
     };
 
     let seed = if matches.opt_present("s") {
-        matches.opt_str("seed").unwrap().parse::<u32>().unwrap() 
-    } else { 
-        0 as u32 
+        matches.opt_str("seed").unwrap().parse::<u32>().unwrap()
+    } else {
+        0 as u32
     };
 
     let ui = if matches.opt_present("u") {
@@ -125,7 +148,7 @@ pub fn process_args() -> Args {
     } else {
         0 as u32
     };
-    
+
     let a_iters = if matches.opt_present("M") {
         matches.opt_str("M").unwrap().parse::<u32>().unwrap()
     } else {
@@ -133,16 +156,17 @@ pub fn process_args() -> Args {
     };
 
     // Return parsed information in a struct
-    Args{domain: x_0, 
-         function: fo, 
+    Args{domain: x_0,
+         function: fo,
          x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
-         y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(), 
-         y_error_rel: matches.opt_str("r").unwrap().parse::<f64>().unwrap(), 
-         timeout: to, 
+         y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(),
+         y_error_rel: matches.opt_str("r").unwrap().parse::<f64>().unwrap(),
+         timeout: to,
          iters: a_iters,
-         names: names, 
-         update_interval: ui, 
+         names: names,
+         update_interval: ui,
          func_suffix: func_suffix,
          logging: logging,
-         seed: seed}
+         seed: seed,
+         smt2: smt2_string}
 }

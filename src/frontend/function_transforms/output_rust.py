@@ -160,7 +160,11 @@ def output_rust(exp, inputs, consts, assigns):
 
     retval = walk(my_expand_dict, my_contract_dict, exp, assigns)
 
-    return "".join(START + body + retval + ["\n}"])
+    rustfunc = "".join(START + body + retval + ["\n}"])
+
+    logger("{}", rustfunc)
+
+    return rustfunc
 
 
 def main(argv):

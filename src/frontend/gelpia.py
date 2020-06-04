@@ -113,18 +113,23 @@ def write_rust_function(rust_function, src_dir):
 
 
 def _find_max(inputs, consts, rust_function,
-              interp_function, file_id, epsilons, timeout,
+              interp_function, smt2, file_id, epsilons, timeout,
               grace, update, iters, seed, debug, src_dir,
               executable):
     input_epsilon, output_epsilon, output_epsilon_relative = epsilons
-    executable_args = ["-c", "|".join(consts.values()),
-                       "-f", interp_function,
-                       "-i", "|".join(inputs.values()),
+    stdout_args = ["|".join(inputs.values()),
+                   ",".join(inputs.keys()),
+                   "|".join(consts.values()),
+                   interp_function,
+                   smt2]
+    executable_args = [#"-c", "|".join(consts.values()),
+                       #"-f", interp_function,
+                       #"-i", "|".join(inputs.values()),
                        "-x", str(input_epsilon),
                        "-y", str(output_epsilon),
                        "-r", str(output_epsilon_relative),
                        "-S", "generated_"+file_id,
-                       "-n", ",".join(inputs.keys()),
+                       #"-n", ",".join(inputs.keys()),
                        "-t", str(timeout),
                        "-u", str(update),
                        "-M", str(iters),
@@ -140,12 +145,14 @@ def _find_max(inputs, consts, rust_function,
         timeout = 2*timeout
     else:
         timeout += grace
-    for line in iu.run_async(executable, executable_args, timeout):
-        logger(logging.HIGH, "rust_solver_output: '{}'", line.strip())
+    for line in iu.run_async(executable, stdout_args, executable_args, timeout):
+        logger(logging.HIGH, "rust_solver_output: {}", line.strip())
         if line.startswith("lb:"):
             match = re.match(r"lb: ([^,]*), possible ub: ([^,]*), guaranteed ub: ([^,]*)", line)
             max_lower = match.groups(1)
             max_upper = match.groups(3)
+        elif line.startswith("debug:"):
+            pass
         else:
             answer_lines.append(line.strip())
 
@@ -173,13 +180,15 @@ def _find_max(inputs, consts, rust_function,
                 del lst[-1][k]
         max_lower = lst[0][0]
         max_upper = lst[0][1]
+        domain = lst[-1]
 
-    except:
+    except Exception as e:
         if max_lower is None:
             logging.error("Unable to parse rust solver's output: '{}'", output)
             sys.exit(-1)
+        raise e
 
-    domain = lst[-1]
+
     for inp in inputs:
         if inp in domain.keys():
             logger(logging.LOW, "  {} in {}", inp, domain[inp])
@@ -191,11 +200,11 @@ def _find_max(inputs, consts, rust_function,
 
 def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
              src_dir, executable, max_lower=None, max_upper=None):
-    inputs, consts, rust_function, interp_function = process_function(function)
+    inputs, consts, rust_function, interp_function, smt2 = process_function(function)
     file_id = write_rust_function(rust_function, src_dir)
 
     my_max_lower, my_max_upper, domain = _find_max(inputs, consts, rust_function,
-                                                   interp_function, file_id, epsilons, timeout,
+                                                   interp_function, smt2, file_id, epsilons, timeout,
                                                    grace, update, iters, seed, debug, src_dir,
                                                    executable)
     if max_lower is not None:
@@ -207,11 +216,11 @@ def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
 
 def find_min(function, epsilons, timeout, grace, update, iters, seed, debug,
              src_dir, executable):
-    inputs, consts, rust_function, interp_function = process_function(function, invert=True)
+    inputs, consts, rust_function, interp_function, smt2 = process_function(function, invert=True)
     file_id = write_rust_function(rust_function, src_dir)
 
     max_lower, max_upper, domain = _find_max(inputs, consts, rust_function,
-                                             interp_function, file_id, epsilons, timeout,
+                                             interp_function, smt2, file_id, epsilons, timeout,
                                              grace, update, iters, seed, debug, src_dir,
                                              executable)
     min_lower = -max_upper

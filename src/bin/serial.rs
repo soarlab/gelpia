@@ -1,13 +1,14 @@
 // Cooperative optimization solver
 use std::collections::BinaryHeap;
 use std::io::Write;
+use std::process::{Command, Stdio};
 extern crate rand;
 
 #[macro_use(max)]
 extern crate gelpia_utils;
 extern crate gr;
 
-use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol, check_diff};
+use gelpia_utils::{Quple, NINF, Flt, eps_tol, check_diff};
 
 use gr::{GI, width_box, split_box, midpoint_box};
 
@@ -17,7 +18,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use std::thread;
 
-use std::time::Duration;
+//use std::time::Duration;
 
 extern crate function;
 use function::FuncObj;
@@ -47,6 +48,49 @@ fn log_max(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
                      f_best_low,
                      f_best_high,
                      max);
+}
+
+fn check_sat(query: &String, names: &Vec<String>, inputs: &Vec<GI>) -> bool {
+    let mut query_parts = Vec::new();
+
+    for name in names.iter() {
+        let decl = format!("(declare-fun {} () Real)", name);
+        query_parts.push(decl);
+    }
+
+    for (name, input) in names.iter().zip(inputs.iter()) {
+        let low_domain = format!("(assert (<= {} {}))", input.lower(), name);
+        let high_domain = format!("(assert (<= {} {}))", name, input.upper());
+        query_parts.push(low_domain);
+        query_parts.push(high_domain);
+    }
+
+    query_parts.push(query.to_string());
+
+    let string_query = query_parts.concat();
+
+    let mut child = Command::new("dreal")
+        .arg("--in")
+        .arg("--nlopt-ftol-abs")
+        .arg("1e-18")
+        .arg("--nlopt-ftol-rel")
+        .arg("1e-18")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to execute dreal");
+
+    {
+    let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+    stdin.write_all(string_query.as_bytes()).expect("Failed to write to stdin");
+    }
+
+    let output = child.wait_with_output().expect("Failed to read stdout");
+    let result = String::from_utf8_lossy(&output.stdout);
+
+    print!("debug: dreal: {}", result);
+
+    result.contains("delta-sat")
 }
 
 #[allow(dead_code)]
@@ -82,15 +126,21 @@ fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI, Option<Vec<GI>>) {
 // flag indicating whether the answer is complete for the problem.
 fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         f_bestag: Arc<RwLock<Flt>>,
-        f_best_shared: Arc<RwLock<Flt>>,
+        _f_best_shared: Arc<RwLock<Flt>>,
         x_bestbb: Arc<RwLock<Vec<GI>>>,
-        b1: Arc<Barrier>, b2: Arc<Barrier>,
+        _b1: Arc<Barrier>, _b2: Arc<Barrier>,
         q: Arc<RwLock<BinaryHeap<Quple>>>,
-        sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
+        _sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
         f: FuncObj,
-        logging: bool, max_iters: u32)
+        logging: bool, max_iters: u32,
+        names: Vec<String>,
+        smt2_query: String)
         -> (Flt, Flt, Vec<GI>) {
     let mut best_x = x_0.clone();
+
+    if !check_sat(&smt2_query, &names, &best_x) {
+        panic!("Initial input does not satisfy constraint");
+    }
 
     let mut iters: u32 = 0;
     let (est_max, first_val, _) = est_func(&f, &x_0);
@@ -136,7 +186,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             width_box(x, e_x) ||
             eps_tol(fx, iter_est, e_f, e_f_r) {
                 {
-                    if f_best_high < fx.upper() {
+                    if f_best_high < fx.upper() && check_sat(&smt2_query, &names, x) {
                         f_best_high = fx.upper();
                         best_x = x.clone();
                         if logging {
@@ -155,7 +205,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     *x_bestbb.write().unwrap() = sx.clone();
                 }
                 iters += 1;
-                if is_split {
+                if is_split && check_sat(&smt2_query, &names, &sx) {
                     q.push(Quple{p: est_max,
                                  pf: gen+1,
                                  data: sx,
@@ -177,7 +227,7 @@ fn main() {
     let x_err = args.x_error;
     let y_err = args.y_error;
     let y_rel = args.y_error_rel;
-    let seed = args.seed;
+    //let seed = args.seed;
 
     // Early out if there are no input variables...
     if x_0.len() == 0 {
@@ -198,7 +248,7 @@ fn main() {
     let f_bestag: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
     let f_best_shared: Arc<RwLock<Flt>> = Arc::new(RwLock::new(NINF));
 
-    let x_e = x_0.clone();
+    //let x_e = x_0.clone();
     let x_i = x_0.clone();
 
     let x_bestbb = Arc::new(RwLock::new(x_0.clone()));
@@ -216,11 +266,13 @@ fn main() {
         let fo_c = fo.clone();
         let logging = args.logging;
         let iters= args.iters;
+        let names = args.names.clone();
+        let smt2_query = args.smt2.clone();
         thread::Builder::new().name("IBBA".to_string()).spawn(move || {
             ibba(x_i, x_err, y_err, y_rel,
                  f_bestag, f_best_shared,
                  x_bestbb,
-                 b1, b2, q, sync, stop, fo_c, logging, iters)
+                 b1, b2, q, sync, stop, fo_c, logging, iters, names, smt2_query)
         })};
 
 

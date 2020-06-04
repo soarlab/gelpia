@@ -1,5 +1,5 @@
 // Cooperative optimization solver
-use std::collections::BinaryHeap;
+//use std::collections::BinaryHeap;
 use std::io::Write;
 extern crate rand;
 
@@ -10,7 +10,7 @@ extern crate gr;
 
 use ga::{ea, Individual};
 
-use gelpia_utils::{Quple, INF, NINF, Flt, Parameters, eps_tol, check_diff};
+use gelpia_utils::{Quple, NINF, Flt, Parameters, eps_tol, check_diff};
 
 use gr::{GI, width_box, split_box, midpoint_box};
 
@@ -55,15 +55,15 @@ fn log_max(q: &RwLockWriteGuard<Vec<Quple>>,
                      max);
 }
 
-fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
-    let mut lq: BinaryHeap<Quple> = (*q).clone();
-    while lq.len() != 0 {
-        let qi = lq.pop().unwrap();
-        let (gen, v, fx) = (qi.pf, qi.p, qi.fdata);
-        print!("[{}, {}, {}], ", v, gen, qi.fdata.to_string());
-    }
-    println!("\n");
-}
+// fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
+//     let mut lq: BinaryHeap<Quple> = (*q).clone();
+//     while lq.len() != 0 {
+//         let qi = lq.pop().unwrap();
+//         let (gen, v, _fx) = (qi.pf, qi.p, qi.fdata);
+//         print!("[{}, {}, {}], ", v, gen, qi.fdata.to_string());
+//     }
+//     println!("\n");
+// }
 
 /// Returns a tuple (function_estimate, eval_interval)
 /// # Arguments
@@ -107,7 +107,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
     let mut f_best_high = est_max;
 
     let n_workers = 11;
-    let n_jobs = n_workers;
+    //let n_jobs = n_workers;
     let pool = ThreadPool::new(n_workers);
 
     while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
@@ -189,7 +189,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                         continue;
                     }
 
-                    
+
                     if fx.upper() < l_f_best_low ||
                         width_box(&x, e_x) ||
                         eps_tol(*fx, *iter_est, e_f, e_f_r) {
@@ -379,7 +379,7 @@ fn main() {
         });};
 
     let result = ibba_thread.unwrap().join();
-    let ea_result = ea_thread.unwrap().join();
+    let _ea_result = ea_thread.unwrap().join();
 
 
     // Join EA and Update here pending stop signaling.
@@ -388,7 +388,7 @@ fn main() {
         // Go through all remaining intervals from IBBA to find the true
         // max
         let n_workers = 11;
-        let n_jobs = n_workers;
+        //let n_jobs = n_workers;
         let pool = ThreadPool::new(n_workers);
         let (mtx, mrx) = channel();
         let outer_barr = Arc::new(Barrier::new(n_workers + 1));
@@ -397,7 +397,7 @@ fn main() {
             q.len()/n_workers + 1
         };
 
-        
+
         for i in 0..n_workers {
             let inner_barr = outer_barr.clone();
             let mtx = mtx.clone();
@@ -406,7 +406,7 @@ fn main() {
                 let lq = q.read().unwrap();
                 let mut lmax = max;
                 let mut ldom: Option<Vec<GI>> = None;
-                let q = q.clone();
+                //let q = q.clone();
                 for j in 0..p_q_len {
                     if i + j*n_workers >= lq.len() { break };
                     let ref xn = lq[i+j*n_workers];
@@ -416,7 +416,7 @@ fn main() {
                         ldom = Some(dom.clone());
                     }
                 }
-                mtx.send((lmax, ldom));
+                mtx.send((lmax, ldom)).unwrap();
                 inner_barr.wait();
             });
         }
@@ -429,8 +429,8 @@ fn main() {
                 interval = dom.unwrap().clone();
             }
         }
-        
-        
+
+
 /*        let mut lq = q.write().unwrap();
         while lq.len() != 0 {
             let ref top = lq.pop().unwrap();
