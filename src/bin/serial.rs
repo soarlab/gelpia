@@ -50,7 +50,11 @@ fn log_max(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
                      max);
 }
 
-fn check_sat(query: &String, names: &Vec<String>, inputs: &Vec<GI>) -> bool {
+fn check_sat(query: &String,
+             names: &Vec<String>,
+             inputs: &Vec<GI>,
+             abs_tol: Flt,
+             rel_tol: Flt) -> bool {
     let mut query_parts = Vec::new();
 
     for name in names.iter() {
@@ -72,9 +76,9 @@ fn check_sat(query: &String, names: &Vec<String>, inputs: &Vec<GI>) -> bool {
     let mut child = Command::new("dreal")
         .arg("--in")
         .arg("--nlopt-ftol-abs")
-        .arg("1e-18")
+        .arg(if abs_tol == 0.0 {"1e-6".to_string()} else {abs_tol.to_string()})
         .arg("--nlopt-ftol-rel")
-        .arg("1e-18")
+        .arg(if rel_tol == 0.0 {"1e-6".to_string()} else {rel_tol.to_string()})
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
@@ -88,7 +92,7 @@ fn check_sat(query: &String, names: &Vec<String>, inputs: &Vec<GI>) -> bool {
     let output = child.wait_with_output().expect("Failed to read stdout");
     let result = String::from_utf8_lossy(&output.stdout);
 
-    print!("debug: dreal: {}", result);
+    //print!("debug: dreal: {}", result);
 
     result.contains("delta-sat")
 }
@@ -138,7 +142,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         -> (Flt, Flt, Vec<GI>) {
     let mut best_x = x_0.clone();
 
-    if !check_sat(&smt2_query, &names, &best_x) {
+    if !check_sat(&smt2_query, &names, &best_x, e_f, e_f_r) {
         panic!("Initial input does not satisfy constraint");
     }
 
@@ -186,7 +190,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             width_box(x, e_x) ||
             eps_tol(fx, iter_est, e_f, e_f_r) {
                 {
-                    if f_best_high < fx.upper() && check_sat(&smt2_query, &names, x) {
+                    if f_best_high < fx.upper() && check_sat(&smt2_query, &names, x, e_f, e_f_r) {
                         f_best_high = fx.upper();
                         best_x = x.clone();
                         if logging {
@@ -205,7 +209,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     *x_bestbb.write().unwrap() = sx.clone();
                 }
                 iters += 1;
-                if is_split && check_sat(&smt2_query, &names, &sx) {
+                if is_split && check_sat(&smt2_query, &names, &sx, e_f, e_f_r) {
                     q.push(Quple{p: est_max,
                                  pf: gen+1,
                                  data: sx,

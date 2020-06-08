@@ -76,7 +76,7 @@ def setup_requirements(git_dir):
 
 
 @run_once
-def setup_rust_env(git_dir, debug, serial=False):
+def setup_rust_env(git_dir, debug):
     append_to_environ("LD_LIBRARY_PATH", path.join(git_dir, ".compiled"))
 
     if debug:
@@ -90,12 +90,10 @@ def setup_rust_env(git_dir, debug, serial=False):
     append_to_environ("LD_LIBRARY_PATH",
                       path.join(git_dir, "target/{}/deps".format(name)))
 
-    if serial:
-        executable = path.join(git_dir, "target/{}/serial".format(name))
-    else:
-        executable = path.join(git_dir, "target/{}/cooperative".format(name))
+    serial = path.join(git_dir, "target/{}/serial".format(name))
+    cooperative = path.join(git_dir, "target/{}/cooperative".format(name))
 
-    return executable
+    return (serial, cooperative)
 
 
 def write_rust_function(rust_function, src_dir):
@@ -199,9 +197,12 @@ def _find_max(inputs, consts, rust_function,
 
 
 def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
-             src_dir, executable, max_lower=None, max_upper=None):
+             src_dir, executables, max_lower=None, max_upper=None):
     inputs, consts, rust_function, interp_function, smt2 = process_function(function)
     file_id = write_rust_function(rust_function, src_dir)
+    executable = executables[1]
+    if smt2 != "":
+        executable = executables[0]
 
     my_max_lower, my_max_upper, domain = _find_max(inputs, consts, rust_function,
                                                    interp_function, smt2, file_id, epsilons, timeout,
@@ -215,9 +216,12 @@ def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
 
 
 def find_min(function, epsilons, timeout, grace, update, iters, seed, debug,
-             src_dir, executable):
+             src_dir, executables):
     inputs, consts, rust_function, interp_function, smt2 = process_function(function, invert=True)
     file_id = write_rust_function(rust_function, src_dir)
+    executable = executables[1]
+    if smt2 != "":
+        executable = executables[0]
 
     max_lower, max_upper, domain = _find_max(inputs, consts, rust_function,
                                              interp_function, smt2, file_id, epsilons, timeout,
@@ -235,7 +239,7 @@ def main(argv):
     logging.set_log_filename(args.log_file)
 
     setup_requirements(GIT_DIR)
-    rust_executable = setup_rust_env(GIT_DIR, args.debug, args.serial)
+    serial, cooperative = setup_rust_env(GIT_DIR, args.debug)
 
     if args.mode == "min":
         min_lower, min_upper = find_min(args.function,
@@ -249,7 +253,7 @@ def main(argv):
                                                 args.seed,
                                                 args.debug,
                                                 SRC_DIR,
-                                                rust_executable)
+                                                (serial, cooperative))
         print("Minimum lower bound {}".format(min_lower))
         print("Minimum upper bound {}".format(min_upper))
     elif args.mode == "max":
@@ -264,7 +268,7 @@ def main(argv):
                                                 args.seed,
                                                 args.debug,
                                                 SRC_DIR,
-                                                rust_executable)
+                                                (serial, cooperative))
         print("Maximum lower bound {}".format(max_lower))
         print("Maximum upper bound {}".format(max_upper))
     else:
@@ -281,22 +285,22 @@ def main(argv):
                                            args.seed,
                                            args.debug,
                                            SRC_DIR,
-                                           rust_executable,
+                                           (serial, cooperative),
                                            max_lower,
                                            max_upper))
         p.start()
         min_lower, min_upper = find_min(args.function,
-                                       (args.input_epsilon,
-                                        args.output_epsilon,
-                                        args.output_epsilon_relative),
-                                       args.timeout,
-                                       args.grace,
-                                       args.update,
-                                       args.max_iters,
-                                       args.seed,
-                                       args.debug,
-                                       SRC_DIR,
-                                       rust_executable)
+                                        (args.input_epsilon,
+                                         args.output_epsilon,
+                                         args.output_epsilon_relative),
+                                        args.timeout,
+                                        args.grace,
+                                        args.update,
+                                        args.max_iters,
+                                        args.seed,
+                                        args.debug,
+                                        SRC_DIR,
+                                        (serial, cooperative))
         p.join()
         print("Minimum lower bound {}".format(min_lower))
         print("Minimum upper bound {}".format(min_upper))

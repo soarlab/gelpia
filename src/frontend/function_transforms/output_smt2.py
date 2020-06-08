@@ -93,8 +93,9 @@ def output_smt2(constraints):
         lines.append("(assert {})".format("".join(cons)))
 
     # Add ending
-    lines.append("(check-sat)")
-    lines.append("(exit)")
+    if len(lines) > 0:
+        lines.append("(check-sat)")
+        lines.append("(exit)")
 
     return "".join(lines)
 
