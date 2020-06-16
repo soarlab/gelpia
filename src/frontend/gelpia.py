@@ -144,7 +144,10 @@ def _find_max(inputs, consts, rust_function,
     else:
         timeout += grace
     for line in iu.run_async(executable, stdout_args, executable_args, timeout):
-        logger(logging.HIGH, "rust_solver_output: {}", line.strip())
+        line = line.strip()
+        if line == "":
+            continue
+        logger(logging.HIGH, "rust_solver_output: {}", line)
         if line.startswith("lb:"):
             match = re.match(r"lb: ([^,]*), possible ub: ([^,]*), guaranteed ub: ([^,]*)", line)
             max_lower = match.groups(1)
@@ -152,7 +155,7 @@ def _find_max(inputs, consts, rust_function,
         elif line.startswith("debug:"):
             pass
         else:
-            answer_lines.append(line.strip())
+            answer_lines.append(line)
 
     to_delete = [
         path.join(GIT_DIR, ".compiled", "libfunc_generated_"+file_id+".so"),
@@ -167,8 +170,12 @@ def _find_max(inputs, consts, rust_function,
         except:
             pass
 
+    output = " ".join(answer_lines)
+
+    if output == "Overconstrained":
+        return output, output, None
+
     try:
-        output = " ".join(answer_lines)
         idx = output.find('[')
         output = output[idx:]
         lst = eval(output, {'inf': float('inf')})

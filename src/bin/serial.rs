@@ -142,10 +142,6 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         -> (Flt, Flt, Vec<GI>) {
     let mut best_x = x_0.clone();
 
-    if !check_sat(&smt2_query, &names, &best_x, e_f, e_f_r) {
-        panic!("Initial input does not satisfy constraint");
-    }
-
     let mut iters: u32 = 0;
     let (est_max, first_val, _) = est_func(&f, &x_0);
 
@@ -237,6 +233,12 @@ fn main() {
     if x_0.len() == 0 {
         let result = fo.call(&x_0).0;
         println!("[[{},{}], {{}}]", result.lower(), result.upper());
+        return
+    }
+
+    // Early out if the query makes no sense
+    if !check_sat(&args.smt2, &args.names, &x_0, y_err, y_rel) {
+        println!("Overconstrained");
         return
     }
 
