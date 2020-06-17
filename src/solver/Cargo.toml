@@ -1,0 +1,12 @@
+[package]
+name = "solver"
+version = "0.1.0"
+authors = ["Ian Briggs <ianbriggsutah@gmail.com>"]
+
+[lib]
+name = "solver"
+path = "src/lib.rs"
+
+[dependencies.gr]
+path = "../gr"
+

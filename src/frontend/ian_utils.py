@@ -72,7 +72,7 @@ def run_async(cmd, stdout_lines, args_list, timeout, error_string="An Error has 
                 logging.error(error_string)
                 logging.error("Return code: {}".format(proc.returncode))
                 logging.error("Command used: {}".format(command))
-                logging.error("Trace:\n{}".format("\n".join(output)))
+                logging.error("Trace:\n{}".format("".join(output)))
                 should_exit = proc.returncode
     except KeyboardInterrupt:
         raise

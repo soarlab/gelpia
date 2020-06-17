@@ -208,8 +208,6 @@ def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
     inputs, consts, rust_function, interp_function, smt2 = process_function(function)
     file_id = write_rust_function(rust_function, src_dir)
     executable = executables[1]
-    if smt2 != "":
-        executable = executables[0]
 
     my_max_lower, my_max_upper, domain = _find_max(inputs, consts, rust_function,
                                                    interp_function, smt2, file_id, epsilons, timeout,
@@ -227,8 +225,6 @@ def find_min(function, epsilons, timeout, grace, update, iters, seed, debug,
     inputs, consts, rust_function, interp_function, smt2 = process_function(function, invert=True)
     file_id = write_rust_function(rust_function, src_dir)
     executable = executables[1]
-    if smt2 != "":
-        executable = executables[0]
 
     max_lower, max_upper, domain = _find_max(inputs, consts, rust_function,
                                              interp_function, smt2, file_id, epsilons, timeout,

@@ -20,3 +20,5 @@ path = "../gr"
 [dependencies.function]
 path = "../function"
 
+[dependencies.solver]
+path = "../solver"

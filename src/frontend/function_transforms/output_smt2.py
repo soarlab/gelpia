@@ -90,14 +90,19 @@ def output_smt2(constraints):
     # Translate constraints
     for c in constraints:
         cons = walk(my_expand_dict, my_contract_dict, c, None)
-        lines.append("(assert {})".format("".join(cons)))
+        lines.append("".join(cons))
 
-    # Add ending
-    if len(lines) > 0:
-        lines.append("(check-sat)")
-        lines.append("(exit)")
+    if len(lines) == 0:
+        final = ""
+    elif len(lines) == 1:
+        final = lines[0]
+    else:
+        final = "(and {})".format(" ".join(lines))
 
-    return "".join(lines)
+    logger("smt2 query:\n{}", final)
+
+    return final
+
 
 def main(argv):
     logging.set_log_filename(None)
@@ -132,6 +137,9 @@ def main(argv):
             print("(assert (<= {} {}))".format(domain[2][1], i))
 
         print(smt2)
+
+        print("(check-sat)")
+        print("(exit)")
 
         return 0
 

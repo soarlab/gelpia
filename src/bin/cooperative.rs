@@ -7,6 +7,9 @@ extern crate rand;
 extern crate gelpia_utils;
 extern crate ga;
 extern crate gr;
+extern crate solver;
+
+use solver::Solver;
 
 use ga::{ea, Individual};
 
@@ -91,7 +94,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         q: Arc<RwLock<BinaryHeap<Quple>>>,
         sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
         f: FuncObj,
-        logging: bool, max_iters: u32)
+        logging: bool, max_iters: u32,
+        solver: Solver)
         -> (Flt, Flt, Vec<GI>) {
     let mut best_x = x_0.clone();
 
@@ -163,7 +167,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
                     *x_bestbb.write().unwrap() = sx.clone();
                 }
                 iters += 1;
-                if is_split {
+                if is_split && solver.check_may(&sx) {
                     q.push(Quple{p: est_max,
                                  pf: gen+1,
                                  data: sx,
@@ -296,10 +300,18 @@ fn main() {
     let y_rel = args.y_error_rel;
     let seed = args.seed;
 
+    let solver = Solver::new(&args.smt2, &args.names, y_err, y_rel);
+
     // Early out if there are no input variables...
     if x_0.len() == 0 {
         let result = fo.call(&x_0).0;
         println!("[[{},{}], {{}}]", result.lower(), result.upper());
+        return
+    }
+
+    // Early out if the query makes no sense
+    if !solver.check_may(&x_0) {
+        println!("Overconstrained");
         return
     }
 
@@ -336,11 +348,13 @@ fn main() {
         let fo_c = fo.clone();
         let logging = args.logging;
         let iters= args.iters;
+        let ibba_solver = solver.clone();
         thread::Builder::new().name("IBBA".to_string()).spawn(move || {
             ibba(x_i, x_err, y_err, y_rel,
                  f_bestag, f_best_shared,
                  x_bestbb,
-                 b1, b2, q, sync, stop, fo_c, logging, iters)
+                 b1, b2, q, sync, stop, fo_c, logging, iters,
+                 ibba_solver)
         })};
 
     let ea_thread =
@@ -354,19 +368,22 @@ fn main() {
         let b2 = b2.clone();
         let fo_c = fo.clone();
         let factor = x_e.len();
+        let ea_solver = solver.clone();
         thread::Builder::new().name("EA".to_string()).spawn(move || {
-            ea(x_e, Parameters{population: 50*factor, //1000,
-                               selection: 8, //4,
-                               elitism: 5, //2,
-                               mutation: 0.4_f64,//0.3_f64,
-                               crossover: 0.0_f64, // 0.5_f64
-                               seed:  seed,
-            },
+            ea(x_e,
+               Parameters{population: 50*factor, //1000,
+                          selection: 8, //4,
+                          elitism: 5, //2,
+                          mutation: 0.4_f64,//0.3_f64,
+                          crossover: 0.0_f64, // 0.5_f64
+                          seed:  seed,
+               },
                population,
                f_bestag,
                x_bestbb,
                b1, b2,
-               stop, sync, fo_c)
+               stop, sync, fo_c,
+               ea_solver)
         })};
 
     // pending finding out how to kill threads
