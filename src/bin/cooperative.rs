@@ -298,10 +298,12 @@ fn main() {
     let x_err = args.x_error;
     let y_err = args.y_error;
     let y_rel = args.y_error_rel;
+    let d_err = args.dreal_error;
+    let d_rel = args.dreal_error_rel;
     let seed = args.seed;
 
-    let ea_solver = Solver::new(&args.smt2, &args.names, y_err, y_rel);
-    let ibba_solver = Solver::new(&args.smt2, &args.names, y_err, y_rel);
+    let ea_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel);
+    let ibba_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel);
 
     // Early out if there are no input variables...
     if x_0.len() == 0 {

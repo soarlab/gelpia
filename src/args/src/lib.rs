@@ -19,6 +19,8 @@ pub struct Args {
     pub x_error: f64,
     pub y_error: f64,
     pub y_error_rel: f64,
+    pub dreal_error: f64,
+    pub dreal_error_rel: f64,
     pub timeout: u32,
     pub update_interval: u32,
     pub iters: u32,
@@ -77,6 +79,9 @@ pub fn process_args() -> Args {
     opts.reqopt("y", "y_epsilon", "", "");
 //    opts.reqopt("n", "names", "", "");
     opts.reqopt("r", "y_epsilon_relative", "", "");
+
+    opts.reqopt("Y", "dreal_epsilon", "", "");
+    opts.reqopt("R", "dreal_epsilon_relative", "", "");
 
     // Optional
     opts.optopt("t", "time_out", "", "");
@@ -161,6 +166,8 @@ pub fn process_args() -> Args {
          x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
          y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(),
          y_error_rel: matches.opt_str("r").unwrap().parse::<f64>().unwrap(),
+         dreal_error: matches.opt_str("Y").unwrap().parse::<f64>().unwrap(),
+         dreal_error_rel: matches.opt_str("R").unwrap().parse::<f64>().unwrap(),
          timeout: to,
          iters: a_iters,
          names: names,

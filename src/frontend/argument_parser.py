@@ -16,7 +16,9 @@ defaults = argparse.Namespace(
     max_iters=0,
     input_epsilon=0.001,
     output_epsilon=0.001,
-    output_epsilon_relative=0,
+    output_epsilon_relative=0.001,
+    dreal_epsilon=0.00001,
+    dreal_epsilon_relative=0.00001,
     seed=0,
     grace=0,
     update=0,
@@ -102,6 +104,12 @@ def get_final_args(defaults, args, file_args):
         output_epsilon_relative=combine(d.output_epsilon_relative,
                                         a.output_epsilon_relative,
                                         f.output_epsilon_relative),
+        dreal_epsilon=combine(d.dreal_epsilon,
+                              a.dreal_epsilon,
+                              f.dreal_epsilon),
+        dreal_epsilon_relative=combine(d.dreal_epsilon_relative,
+                                       a.dreal_epsilon_relative,
+                                       f.dreal_epsilon_relative),
         seed=combine(d.seed,
                      a.seed,
                      f.seed),
@@ -139,6 +147,8 @@ def log_args(args):
     logger("  input_epsilon = {}", args.input_epsilon)
     logger("  output_epsilon = {}", args.output_epsilon)
     logger("  output_epsilon_relative = {}", args.output_epsilon_relative)
+    logger("  dreal_epsilon = {}", args.dreal_epsilon)
+    logger("  dreal_epsilon_relative = {}", args.dreal_epsilon_relative)
     logger("  seed = {}", args.seed)
     logger("  grace = {}", args.grace)
     logger("  update = {}", args.update)
@@ -198,6 +208,14 @@ def create_arg_parser():
                             help="Relative cutoff for function output size"
                             " (default {})"
                             .format(defaults.output_epsilon_relative))
+    arg_parser.add_argument("--dreal-epsilon",
+                            type=float,
+                            help="Dreal's '--' argument"
+                            " (default {})".format(defaults.dreal_epsilon))
+    arg_parser.add_argument("--dreal-epsilon-relative",
+                            type=float,
+                            help="Dreal's '--' argument"
+                            " (default {})".format(defaults.dreal_epsilon_relative))
     arg_parser.add_argument("-s", "--seed",
                             type=int,
                             help="Seed for the random number generator. A value"
