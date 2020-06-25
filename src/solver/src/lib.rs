@@ -1,4 +1,5 @@
 
+
 use std::io::Write;
 use std::process::{Command, Stdio};
 
@@ -75,9 +76,9 @@ impl Solver {
     fn check_query(&self, query: String)
                    -> bool {
 
-        for line in query.lines() {
-            println!("debug: {}", line);
-        }
+        // for line in query.lines() {
+        //     println!("debug: {}", line);
+        // }
 
         let mut child = Command::new("dreal")
             .arg("--in")
