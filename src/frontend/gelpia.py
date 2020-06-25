@@ -230,6 +230,9 @@ def find_min(function, epsilons, timeout, grace, update, iters, seed, debug,
                                              interp_function, smt2, file_id, epsilons, timeout,
                                              grace, update, iters, seed, debug, src_dir,
                                              executable)
+    if type(min_lower) == str:
+        return max_lower, max_upper
+
     min_lower = -max_upper
     min_upper = -max_lower
     return min_lower, min_upper
