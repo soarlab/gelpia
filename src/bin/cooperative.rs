@@ -300,7 +300,8 @@ fn main() {
     let y_rel = args.y_error_rel;
     let seed = args.seed;
 
-    let solver = Solver::new(&args.smt2, &args.names, y_err, y_rel);
+    let ea_solver = Solver::new(&args.smt2, &args.names, y_err, y_rel);
+    let ibba_solver = Solver::new(&args.smt2, &args.names, y_err, y_rel);
 
     // Early out if there are no input variables...
     if x_0.len() == 0 {
@@ -310,7 +311,7 @@ fn main() {
     }
 
     // Early out if the query makes no sense
-    if !solver.check_may(&x_0) {
+    if !ea_solver.check_may(&x_0) {
         println!("Overconstrained");
         return
     }
@@ -348,7 +349,6 @@ fn main() {
         let fo_c = fo.clone();
         let logging = args.logging;
         let iters= args.iters;
-        let ibba_solver = solver.clone();
         thread::Builder::new().name("IBBA".to_string()).spawn(move || {
             ibba(x_i, x_err, y_err, y_rel,
                  f_bestag, f_best_shared,
@@ -368,7 +368,6 @@ fn main() {
         let b2 = b2.clone();
         let fo_c = fo.clone();
         let factor = x_e.len();
-        let ea_solver = solver.clone();
         thread::Builder::new().name("EA".to_string()).spawn(move || {
             ea(x_e,
                Parameters{population: 50*factor, //1000,
