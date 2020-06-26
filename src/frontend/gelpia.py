@@ -216,8 +216,13 @@ def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
                                                    grace, update, iters, seed, debug, src_dir,
                                                    executable)
     if max_lower is not None:
-        max_lower.value = my_max_lower
-        max_upper.value = my_max_upper
+        # Note: this means you can't tell the difference between the answer [0.0, 0.0] and [Overconstrained, Overconstrained] 
+        if my_max_lower == "Overconstrained":
+            max_lower.value = 0.0
+            max_upper.value = 0.0
+        else:
+            max_lower.value = my_max_lower
+            max_upper.value = my_max_upper
 
     return my_max_lower, my_max_upper
 
