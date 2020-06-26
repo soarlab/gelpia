@@ -154,7 +154,7 @@ def _find_max(inputs, consts, rust_function,
             match = re.match(r"lb: ([^,]*), possible ub: ([^,]*), guaranteed ub: ([^,]*)", line)
             max_lower = match.groups(1)
             max_upper = match.groups(3)
-        elif line.startswith("debug:"):
+        elif line.startswith("debug:") or line.startswith("Stopping"):
             pass
         else:
             answer_lines.append(line)
