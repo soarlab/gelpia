@@ -19,6 +19,7 @@ pub struct Args {
     pub x_error: f64,
     pub y_error: f64,
     pub y_error_rel: f64,
+    pub use_z3: bool,
     pub dreal_error: f64,
     pub dreal_error_rel: f64,
     pub timeout: u32,
@@ -88,6 +89,7 @@ pub fn process_args() -> Args {
     opts.optopt("M", "max_iters", "", "");
     opts.optopt("u", "update", "", "");
     opts.optflag("d", "debug", "Enable debugging");
+    opts.optflag("z", "use-z3", "");
     opts.optflag("L", "logging", "Enable maximum logging to stderr");
     opts.optopt("s", "seed", "Seed to use for random number generators", "");
 
@@ -127,6 +129,7 @@ pub fn process_args() -> Args {
     // let func_string = matches.opt_str("f").unwrap();
     let debug = matches.opt_present("d");
     let logging = matches.opt_present("L");
+    let use_z3 = matches.opt_present("z");
     //println!("debug: function: '{}'", func_string);
     let fo = FuncObj::new(&consts, &func_string, debug, func_suffix.clone());
 
@@ -166,6 +169,7 @@ pub fn process_args() -> Args {
          x_error: matches.opt_str("x").unwrap().parse::<f64>().unwrap(),
          y_error: matches.opt_str("y").unwrap().parse::<f64>().unwrap(),
          y_error_rel: matches.opt_str("r").unwrap().parse::<f64>().unwrap(),
+         use_z3: use_z3,
          dreal_error: matches.opt_str("Y").unwrap().parse::<f64>().unwrap(),
          dreal_error_rel: matches.opt_str("R").unwrap().parse::<f64>().unwrap(),
          timeout: to,

@@ -90,10 +90,9 @@ def setup_rust_env(git_dir, debug):
     append_to_environ("LD_LIBRARY_PATH",
                       path.join(git_dir, "target/{}/deps".format(name)))
 
-    serial = path.join(git_dir, "target/{}/serial".format(name))
     cooperative = path.join(git_dir, "target/{}/cooperative".format(name))
 
-    return (serial, cooperative)
+    return cooperative
 
 
 def write_rust_function(rust_function, src_dir):
@@ -112,7 +111,7 @@ def write_rust_function(rust_function, src_dir):
 
 def _find_max(inputs, consts, rust_function,
               interp_function, smt2, file_id, epsilons, timeout,
-              grace, update, iters, seed, debug, src_dir,
+              grace, update, iters, seed, debug, use_z3, src_dir,
               executable):
     input_epsilon, output_epsilon, output_epsilon_relative, dreal_epsilon, dreal_epsilon_relative = epsilons
     stdout_args = ["|".join(inputs.values()),
@@ -120,21 +119,18 @@ def _find_max(inputs, consts, rust_function,
                    "|".join(consts.values()),
                    interp_function,
                    smt2]
-    executable_args = [#"-c", "|".join(consts.values()),
-                       #"-f", interp_function,
-                       #"-i", "|".join(inputs.values()),
-                       "-x", str(input_epsilon),
+    executable_args = ["-x", str(input_epsilon),
                        "-y", str(output_epsilon),
                        "-r", str(output_epsilon_relative),
                        "-Y", str(dreal_epsilon),
                        "-R", str(dreal_epsilon_relative),
                        "-S", "generated_"+file_id,
-                       #"-n", ",".join(inputs.keys()),
                        "-t", str(timeout),
                        "-u", str(update),
                        "-M", str(iters),
                        "--seed", str(seed),
                        "-d" if debug else "",
+                       "-z" if use_z3 else "",
                        "-L" if logging.get_log_level() >= logging.HIGH else ""]
 
     assert(logger(logging.MEDIUM, "calling '{} {}'", executable, executable_args))
@@ -205,15 +201,16 @@ def _find_max(inputs, consts, rust_function,
     return max_lower, max_upper, domain
 
 
-def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
-             src_dir, executables, max_lower=None, max_upper=None):
+def find_max(function, epsilons, timeout, grace, update, iters, seed, debug, use_z3,
+             src_dir, executable, drop_constraints, max_lower=None, max_upper=None):
     inputs, consts, rust_function, interp_function, smt2 = process_function(function)
     file_id = write_rust_function(rust_function, src_dir)
-    executable = executables[1]
+    if drop_constraints:
+        smt2 = ""
 
     my_max_lower, my_max_upper, domain = _find_max(inputs, consts, rust_function,
                                                    interp_function, smt2, file_id, epsilons, timeout,
-                                                   grace, update, iters, seed, debug, src_dir,
+                                                   grace, update, iters, seed, debug, use_z3, src_dir,
                                                    executable)
     if max_lower is not None:
         # Note: this means you can't tell the difference between the answer [0.0, 0.0] and [Overconstrained, Overconstrained] 
@@ -227,15 +224,16 @@ def find_max(function, epsilons, timeout, grace, update, iters, seed, debug,
     return my_max_lower, my_max_upper
 
 
-def find_min(function, epsilons, timeout, grace, update, iters, seed, debug,
-             src_dir, executables):
+def find_min(function, epsilons, timeout, grace, update, iters, seed, debug, use_z3,
+             src_dir, executable, drop_constraints):
     inputs, consts, rust_function, interp_function, smt2 = process_function(function, invert=True)
     file_id = write_rust_function(rust_function, src_dir)
-    executable = executables[1]
+    if drop_constraints:
+        smt2 = ""
 
     max_lower, max_upper, domain = _find_max(inputs, consts, rust_function,
                                              interp_function, smt2, file_id, epsilons, timeout,
-                                             grace, update, iters, seed, debug, src_dir,
+                                             grace, update, iters, seed, debug, use_z3, src_dir,
                                              executable)
     if type(max_lower) == str:
         return max_lower, max_upper
@@ -252,40 +250,44 @@ def main(argv):
     logging.set_log_filename(args.log_file)
 
     setup_requirements(GIT_DIR)
-    serial, cooperative = setup_rust_env(GIT_DIR, args.debug)
+    cooperative = setup_rust_env(GIT_DIR, args.debug)
 
     if args.mode == "min":
         min_lower, min_upper = find_min(args.function,
-                                                (args.input_epsilon,
-                                                 args.output_epsilon,
-                                                 args.output_epsilon_relative,
-                                                 args.dreal_epsilon,
-                                                 args.dreal_epsilon_relative),
-                                                args.timeout,
-                                                args.grace,
-                                                args.update,
-                                                args.max_iters,
-                                                args.seed,
-                                                args.debug,
-                                                SRC_DIR,
-                                                (serial, cooperative))
+                                        (args.input_epsilon,
+                                         args.output_epsilon,
+                                         args.output_epsilon_relative,
+                                         args.dreal_epsilon,
+                                         args.dreal_epsilon_relative),
+                                        args.timeout,
+                                        args.grace,
+                                        args.update,
+                                        args.max_iters,
+                                        args.seed,
+                                        args.debug,
+                                        args.use_z3,
+                                        SRC_DIR,
+                                        cooperative,
+                                        args.drop_constraints)
         print("Minimum lower bound {}".format(min_lower))
         print("Minimum upper bound {}".format(min_upper))
     elif args.mode == "max":
         max_lower, max_upper = find_max(args.function,
-                                                (args.input_epsilon,
-                                                 args.output_epsilon,
-                                                 args.output_epsilon_relative,
-                                                 args.dreal_epsilon,
-                                                 args.dreal_epsilon_relative),
-                                                args.timeout,
-                                                args.grace,
-                                                args.update,
-                                                args.max_iters,
-                                                args.seed,
-                                                args.debug,
-                                                SRC_DIR,
-                                                (serial, cooperative))
+                                        (args.input_epsilon,
+                                         args.output_epsilon,
+                                         args.output_epsilon_relative,
+                                         args.dreal_epsilon,
+                                         args.dreal_epsilon_relative),
+                                        args.timeout,
+                                        args.grace,
+                                        args.update,
+                                        args.max_iters,
+                                        args.seed,
+                                        args.debug,
+                                        args.use_z3,
+                                        SRC_DIR,
+                                        cooperative,
+                                        args.drop_constraints)
         print("Maximum lower bound {}".format(max_lower))
         print("Maximum upper bound {}".format(max_upper))
     else:
@@ -303,8 +305,10 @@ def main(argv):
                                            args.max_iters,
                                            args.seed,
                                            args.debug,
+                                           args.use_z3,
                                            SRC_DIR,
-                                           (serial, cooperative),
+                                           cooperative,
+                                           args.drop_constraints,
                                            max_lower,
                                            max_upper))
         p.start()
@@ -320,8 +324,10 @@ def main(argv):
                                         args.max_iters,
                                         args.seed,
                                         args.debug,
+                                        args.use_z3,
                                         SRC_DIR,
-                                        (serial, cooperative))
+                                        cooperative,
+                                        args.drop_constraints)
         p.join()
         print("Minimum lower bound {}".format(min_lower))
         print("Minimum upper bound {}".format(min_upper))

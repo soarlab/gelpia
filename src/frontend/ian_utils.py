@@ -59,6 +59,7 @@ def run_async(cmd, stdout_lines, args_list, timeout, error_string="An Error has 
                     if timeout != 0 and time.time() > term_time:
                         print("Killed by timeout")
                         proc.kill()
+                        proc.wait(timeout=1)
                 #time.sleep(0.1)
 
             # Clear remaining buffered messages

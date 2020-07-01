@@ -9,6 +9,8 @@ use gr::GI;
 #[derive(Clone)]
 pub struct Solver {
     has_constraints: bool,
+    time_limit: String,
+    use_z3: bool,
     variable_names: Vec<String>,
     ftol_abs: String,
     ftol_rel: String,
@@ -19,7 +21,7 @@ pub struct Solver {
 
 impl Solver {
     pub fn new(query: &String, names: &Vec<String>,
-               ftol_abs: f64, ftol_rel: f64)
+               ftol_abs: f64, ftol_rel: f64, time_limit: u32, use_z3: bool)
                -> Solver {
         let query_preamble = names.iter()
             .map(|n| format!("(declare-fun {} () Real)\n", n))
@@ -33,9 +35,13 @@ impl Solver {
         let ftol_rel_string = { if ftol_rel <= 0.0
                                 { "1.0e-6".to_string() }
                                 else { ftol_rel.to_string() } };
-
+        let time_limit_string = { if time_limit == 0
+                                  { "6000".to_string() }
+                                  else { time_limit.to_string() } };
         Solver{
             has_constraints: query.len() > 0,
+            time_limit: time_limit_string,
+            use_z3: use_z3,
             variable_names: names.clone(),
             ftol_abs: ftol_abs_string,
             ftol_rel: ftol_rel_string,
@@ -79,32 +85,60 @@ impl Solver {
         // for line in query.lines() {
         //     println!("debug: {}", line);
         // }
+        if self.use_z3 {
+            let mut child = Command::new("z3")
+                .arg("-smt2")
+                .arg("-in")
+                .arg(format!("-T:{}", self.time_limit.clone()))
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("Failed to execute z3");
 
-        let mut child = Command::new("dreal")
-            .arg("--in")
-            .arg("--nlopt-ftol-abs")
-            .arg(self.ftol_abs.clone())
-            .arg("--nlopt-ftol-rel")
-            .arg(self.ftol_rel.clone())
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .expect("Failed to execute dreal");
+            {
+                let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+                stdin.write_all(query.as_bytes()).expect("Failed to write to stdin");
+            }
 
-        {
-            let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-            stdin.write_all(query.as_bytes()).expect("Failed to write to stdin");
-        }
+            let output = child.wait_with_output().expect("Failed to read stdout");
+            let result = String::from_utf8_lossy(&output.stdout);
 
-        let output = child.wait_with_output().expect("Failed to read stdout");
-        let result = String::from_utf8_lossy(&output.stdout);
-
-        if result.contains("delta-sat") {
-            true
-        } else if result.contains("unsat") {
-            false
+            if result.contains("unsat") {
+                false
+            } else if result.contains("sat") {
+                true
+            } else {
+                panic!("dreal did not output an answer");
+            }
         } else {
-            panic!("dreal did not output an answer");
+            let mut child = Command::new("dreal")
+                .arg("--in")
+                .arg("--nlopt-ftol-abs")
+                .arg(self.ftol_abs.clone())
+                .arg("--nlopt-ftol-rel")
+                .arg(self.ftol_rel.clone())
+                .arg("--nlopt-maxtime")
+                .arg(self.time_limit.clone())
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("Failed to execute dreal");
+
+            {
+                let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+                stdin.write_all(query.as_bytes()).expect("Failed to write to stdin");
+            }
+
+            let output = child.wait_with_output().expect("Failed to read stdout");
+            let result = String::from_utf8_lossy(&output.stdout);
+
+            if result.contains("unsat") {
+                false
+            } else if result.contains("delta-sat") {
+                true
+            } else {
+                panic!("dreal did not output an answer");
+            }
         }
     }
 

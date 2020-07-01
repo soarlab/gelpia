@@ -302,8 +302,8 @@ fn main() {
     let d_rel = args.dreal_error_rel;
     let seed = args.seed;
 
-    let ea_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel);
-    let ibba_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel);
+    let ea_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel, args.timeout, args.use_z3);
+    let ibba_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel, args.timeout, args.use_z3);
 
     // Early out if there are no input variables...
     if x_0.len() == 0 {
