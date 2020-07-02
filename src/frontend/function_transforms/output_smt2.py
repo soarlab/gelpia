@@ -1,6 +1,7 @@
 
 
 import sys
+import fractions
 
 from expression_walker import walk
 from pass_utils import INFIX, BINOPS, UNOPS, SYMBOLIC_CONSTS
@@ -38,6 +39,14 @@ def output_smt2(constraints):
         work_stack.append((False, 3, exp[2]))
         work_stack.append((True,  3, exp[1]))
 
+    def _e_float(work_stack, count, exp):
+        assert(exp[0] == "Float")
+        assert(len(exp) == 2)
+        rat = fractions.Fraction(exp[1])
+        work_stack.append((True, count, "/"))
+        work_stack.append((True, 2, [str(rat.numerator)]))
+        work_stack.append((True, 2, [str(rat.denominator)]))
+
     def _e_atom(work_stack, count, exp):
         assert(len(exp) == 2)
         work_stack.append((True, count, [exp[1]]))
@@ -47,7 +56,7 @@ def output_smt2(constraints):
                       "not":           _e_bool_neg,
                       "Constrain":     _e_constrain,
                       "Integer":       _e_atom,
-                      "Float":         _e_atom,
+                      "Float":         _e_float,
                       "Input":         _e_atom}
 
     def _contract_sexp(work_stack, count, args):

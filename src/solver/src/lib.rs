@@ -85,6 +85,7 @@ impl Solver {
         // for line in query.lines() {
         //     println!("debug: {}", line);
         // }
+
         if self.use_z3 {
             let mut child = Command::new("z3")
                 .arg("-smt2")
@@ -103,12 +104,14 @@ impl Solver {
             let output = child.wait_with_output().expect("Failed to read stdout");
             let result = String::from_utf8_lossy(&output.stdout);
 
-            if result.contains("unsat") {
+            if result.contains("error") {
+                panic!("z3 reported an error");
+            } else if result.contains("unsat") {
                 false
             } else if result.contains("sat") {
                 true
             } else {
-                panic!("dreal did not output an answer");
+                panic!("z3 did not output an answer");
             }
         } else {
             let mut child = Command::new("dreal")
