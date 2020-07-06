@@ -1,5 +1,6 @@
 
 
+import re
 import sys
 import fractions
 
@@ -42,10 +43,21 @@ def output_smt2(constraints):
     def _e_float(work_stack, count, exp):
         assert(exp[0] == "Float")
         assert(len(exp) == 2)
-        rat = fractions.Fraction(exp[1])
-        work_stack.append((True, count, "/"))
-        work_stack.append((True, 2, [str(rat.numerator)]))
-        work_stack.append((True, 2, [str(rat.denominator)]))
+        if "e" not in exp[1] and "E" not in exp[1]:
+            work_stack.append((True, count, [exp[1]]))
+        else:
+            match = re.match(r"([0-9]\.[0-9]*)[eE]([-+]?[0-9]*)", exp[1])
+            base = match.group(1)
+            expo = match.group(2).replace("+", "")
+            num = ["(* ", base, " (^ 10.0 ", expo, "))"]
+            work_stack.append((True, count, num))
+
+    def _e_sqrt(work_stack, count, exp):
+        assert(exp[0] == "sqrt")
+        assert(len(exp) == 2)
+        work_stack.append((True, count, "pow"))
+        work_stack.append((False, 2, ("Float", "0.5")))
+        work_stack.append((False, 2, exp[1]))
 
     def _e_atom(work_stack, count, exp):
         assert(len(exp) == 2)
@@ -57,6 +69,7 @@ def output_smt2(constraints):
                       "Constrain":     _e_constrain,
                       "Integer":       _e_atom,
                       "Float":         _e_float,
+                      "sqrt":          _e_sqrt,
                       "Input":         _e_atom}
 
     def _contract_sexp(work_stack, count, args):

@@ -145,12 +145,12 @@ def _find_max(inputs, consts, rust_function,
         line = line.strip()
         if line == "":
             continue
-        logger(logging.HIGH, "rust_solver_output: {}", line)
+        logger(logging.MEDIUM, "rust_solver_output: {}", line)
         if line.startswith("lb:"):
             match = re.match(r"lb: ([^,]*), possible ub: ([^,]*), guaranteed ub: ([^,]*)", line)
             max_lower = match.groups(1)
             max_upper = match.groups(3)
-        elif line.startswith("debug:") or line.startswith("Stopping"):
+        elif line.startswith("debug:") or line.startswith("Stopping") or "panicked" in line or "RUST_BACKTRACE=1" in line:
             pass
         else:
             answer_lines.append(line)

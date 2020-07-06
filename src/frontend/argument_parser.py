@@ -39,7 +39,7 @@ def parse_args(argv):
             with open(args.query_file, "r") as f:
                 lines = f.readlines()
         except FileNotFoundError:
-            logging.error("File not found '{}'". args.query_file)
+            logging.error("File not found '{}'", args.query_file)
             sys.exit(-1)
 
         lines = [line.strip() for line in lines]

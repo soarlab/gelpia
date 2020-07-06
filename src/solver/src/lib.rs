@@ -105,12 +105,16 @@ impl Solver {
             let result = String::from_utf8_lossy(&output.stdout);
 
             if result.contains("error") {
+                println!("{}", query);
                 panic!("z3 reported an error");
             } else if result.contains("unsat") {
                 false
-            } else if result.contains("sat") {
+            } else if result.contains("sat")
+                || result.contains("unknown")
+                || result.contains("timeout"){
                 true
             } else {
+                println!("{}", query);
                 panic!("z3 did not output an answer");
             }
         } else {
@@ -140,6 +144,7 @@ impl Solver {
             } else if result.contains("delta-sat") {
                 true
             } else {
+                println!("{}", query);
                 panic!("dreal did not output an answer");
             }
         }
