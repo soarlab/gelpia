@@ -135,6 +135,7 @@ def _find_max(inputs, consts, rust_function,
 
     assert(logger(logging.MEDIUM, "calling '{} {}'", executable, executable_args))
     answer_lines = []
+    solver_calls = 0
     max_lower = None
     max_upper = None
     if grace == 0:
@@ -152,6 +153,8 @@ def _find_max(inputs, consts, rust_function,
             max_upper = match.groups(3)
         elif line.startswith("debug:") or line.startswith("Stopping") or "panicked" in line or "RUST_BACKTRACE=1" in line:
             pass
+        elif line.startswith("SolverCalls"):
+            solver_calls += int(line.split(":")[1])
         else:
             answer_lines.append(line)
 
@@ -171,7 +174,7 @@ def _find_max(inputs, consts, rust_function,
     output = " ".join(answer_lines)
 
     if output == "Overconstrained":
-        return output, output, None
+        return output, output, None, solver_calls
 
     try:
         idx = output.find('[')
@@ -198,22 +201,23 @@ def _find_max(inputs, consts, rust_function,
         else:
             logger(logging.LOW, "  {} in any", inp)
 
-    return max_lower, max_upper, domain
+    return max_lower, max_upper, domain, solver_calls
 
 
 def find_max(function, epsilons, timeout, grace, update, iters, seed, debug, use_z3,
-             src_dir, executable, drop_constraints, max_lower=None, max_upper=None):
+             src_dir, executable, drop_constraints, max_lower=None, max_upper=None, solver_calls=None):
     inputs, consts, rust_function, interp_function, smt2 = process_function(function)
     file_id = write_rust_function(rust_function, src_dir)
     if drop_constraints:
         smt2 = ""
 
-    my_max_lower, my_max_upper, domain = _find_max(inputs, consts, rust_function,
-                                                   interp_function, smt2, file_id, epsilons, timeout,
-                                                   grace, update, iters, seed, debug, use_z3, src_dir,
-                                                   executable)
+    my_max_lower, my_max_upper, domain, my_solver_calls = _find_max(inputs, consts, rust_function,
+                                                                 interp_function, smt2, file_id, epsilons, timeout,
+                                                                 grace, update, iters, seed, debug, use_z3, src_dir,
+                                                                 executable)
     if max_lower is not None:
         # Note: this means you can't tell the difference between the answer [0.0, 0.0] and [Overconstrained, Overconstrained] 
+        solver_calls.value = my_solver_calls
         if my_max_lower == "Overconstrained":
             max_lower.value = 0.0
             max_upper.value = 0.0
@@ -221,7 +225,7 @@ def find_max(function, epsilons, timeout, grace, update, iters, seed, debug, use
             max_lower.value = my_max_lower
             max_upper.value = my_max_upper
 
-    return my_max_lower, my_max_upper
+    return my_max_lower, my_max_upper, my_solver_calls
 
 
 def find_min(function, epsilons, timeout, grace, update, iters, seed, debug, use_z3,
@@ -231,16 +235,16 @@ def find_min(function, epsilons, timeout, grace, update, iters, seed, debug, use
     if drop_constraints:
         smt2 = ""
 
-    max_lower, max_upper, domain = _find_max(inputs, consts, rust_function,
+    max_lower, max_upper, domain, solver_calls = _find_max(inputs, consts, rust_function,
                                              interp_function, smt2, file_id, epsilons, timeout,
                                              grace, update, iters, seed, debug, use_z3, src_dir,
                                              executable)
     if type(max_lower) == str:
-        return max_lower, max_upper
+        return max_lower, max_upper, solver_calls
 
     min_lower = -max_upper
     min_upper = -max_lower
-    return min_lower, min_upper
+    return min_lower, min_upper, solver_calls
 
 
 def main(argv):
@@ -253,7 +257,7 @@ def main(argv):
     cooperative = setup_rust_env(GIT_DIR, args.debug)
 
     if args.mode == "min":
-        min_lower, min_upper = find_min(args.function,
+        min_lower, min_upper, solver_calls = find_min(args.function,
                                         (args.input_epsilon,
                                          args.output_epsilon,
                                          args.output_epsilon_relative,
@@ -271,8 +275,9 @@ def main(argv):
                                         args.drop_constraints)
         print("Minimum lower bound {}".format(min_lower))
         print("Minimum upper bound {}".format(min_upper))
+        print("Solver calls {}".format(solver_calls))
     elif args.mode == "max":
-        max_lower, max_upper = find_max(args.function,
+        max_lower, max_upper, solver_calls = find_max(args.function,
                                         (args.input_epsilon,
                                          args.output_epsilon,
                                          args.output_epsilon_relative,
@@ -290,9 +295,11 @@ def main(argv):
                                         args.drop_constraints)
         print("Maximum lower bound {}".format(max_lower))
         print("Maximum upper bound {}".format(max_upper))
+        print("Solver calls {}".format(solver_calls))
     else:
         max_lower = Value("d", float("nan"))
         max_upper = Value("d", float("nan"))
+        max_solver_calls = Value("i", 0)
         p = Process(target=find_max, args=(args.function,
                                            (args.input_epsilon,
                                             args.output_epsilon,
@@ -310,9 +317,10 @@ def main(argv):
                                            cooperative,
                                            args.drop_constraints,
                                            max_lower,
-                                           max_upper))
+                                           max_upper,
+                                           max_solver_calls))
         p.start()
-        min_lower, min_upper = find_min(args.function,
+        min_lower, min_upper, min_solver_calls = find_min(args.function,
                                         (args.input_epsilon,
                                          args.output_epsilon,
                                          args.output_epsilon_relative,
@@ -333,7 +341,7 @@ def main(argv):
         print("Minimum upper bound {}".format(min_upper))
         print("Maximum lower bound {}".format(max_lower.value))
         print("Maximum upper bound {}".format(max_upper.value))
-
+        print("Solver calls {}".format(min_solver_calls + max_solver_calls.value))
     return 0
 
 

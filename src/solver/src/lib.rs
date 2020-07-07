@@ -9,6 +9,7 @@ use gr::GI;
 #[derive(Clone)]
 pub struct Solver {
     has_constraints: bool,
+    call_count: u64,
     time_limit: String,
     use_z3: bool,
     variable_names: Vec<String>,
@@ -40,6 +41,7 @@ impl Solver {
                                   else { time_limit.to_string() } };
         Solver{
             has_constraints: query.len() > 0,
+            call_count:0,
             time_limit: time_limit_string,
             use_z3: use_z3,
             variable_names: names.clone(),
@@ -79,9 +81,9 @@ impl Solver {
         query
     }
 
-    fn check_query(&self, query: String)
+    fn check_query(&mut self, query: String)
                    -> bool {
-
+        self.call_count += 1;
         // for line in query.lines() {
         //     println!("debug: {}", line);
         // }
@@ -118,7 +120,9 @@ impl Solver {
                 panic!("z3 did not output an answer");
             }
         } else {
-            let mut child = Command::new("dreal")
+            let mut child = Command::new("timeout")
+                .arg(self.time_limit.clone())
+                .arg("dreal")
                 .arg("--in")
                 .arg("--nlopt-ftol-abs")
                 .arg(self.ftol_abs.clone())
@@ -150,7 +154,7 @@ impl Solver {
         }
     }
 
-    pub fn check_may(&self, input_ranges: &Vec<GI>)
+    pub fn check_may(&mut self, input_ranges: &Vec<GI>)
                  -> bool {
         if self.has_constraints {
             let query = self.make_query(true, input_ranges);
@@ -161,7 +165,7 @@ impl Solver {
         }
     }
 
-    pub fn check_may_not(&self, input_ranges: &Vec<GI>)
+    pub fn check_may_not(&mut self, input_ranges: &Vec<GI>)
                      -> bool {
         if self.has_constraints {
             let query = self.make_query(false, input_ranges);
@@ -172,7 +176,7 @@ impl Solver {
         }
     }
 
-    pub fn check_must(&self, input_ranges: &Vec<GI>)
+    pub fn check_must(&mut self, input_ranges: &Vec<GI>)
                   -> bool {
         if self.has_constraints {
             self.check_may(input_ranges) && !self.check_may_not(input_ranges)
@@ -182,6 +186,12 @@ impl Solver {
     }
 }
 
+
+impl Drop for Solver {
+    fn drop(&mut self) {
+        println!("SolverCalls: {}", self.call_count);
+    }
+}
 
 
 

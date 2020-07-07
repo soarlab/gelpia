@@ -95,7 +95,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         sync: Arc<AtomicBool>, stop: Arc<AtomicBool>,
         f: FuncObj,
         logging: bool, max_iters: u32,
-        solver: Solver)
+        mut solver: Solver)
         -> (Flt, Flt, Vec<GI>) {
     let mut best_x = x_0.clone();
 
@@ -302,7 +302,7 @@ fn main() {
     let d_rel = args.dreal_error_rel;
     let seed = args.seed;
 
-    let ea_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel, args.timeout, args.use_z3);
+    let mut ea_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel, args.timeout, args.use_z3);
     let ibba_solver = Solver::new(&args.smt2, &args.names, d_err, d_rel, args.timeout, args.use_z3);
 
     // Early out if there are no input variables...

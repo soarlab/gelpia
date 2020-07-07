@@ -36,14 +36,14 @@ pub fn ea(x_e: Vec<GI>,
           stop: Arc<AtomicBool>,
           sync: Arc<AtomicBool>,
           fo_c: FuncObj,
-          solver: Solver) {
+          mut solver: Solver) {
     // Constant function
     if x_e.len() == 0 {
         return;
     }
     let seed = param.seed;
     ea_core(&x_e, &param, &stop, &sync, &b1, &b2, &f_bestag,
-            &x_bestbb, population, &fo_c, seed, &solver);
+            &x_bestbb, population, &fo_c, seed, &mut solver);
     return;
 }
 
@@ -54,7 +54,7 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
            x_bestbb: &Arc<RwLock<Vec<GI>>>,
            population: Arc<RwLock<Vec<Individual>>>, fo_c: &FuncObj,
            seed: u32,
-           solver: &Solver) {
+           solver: &mut Solver) {
     let rng_seed: u32 =
         match seed {
             0 => 3735928579,
@@ -136,7 +136,7 @@ fn ea_core(x_e: &Vec<GI>, param: &Parameters, stop: &Arc<AtomicBool>,
 
 fn sample(population_size: usize, population: &mut Vec<Individual>,
           fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng,
-          stop: &Arc<AtomicBool>, solver: &Solver)
+          stop: &Arc<AtomicBool>, solver: &mut Solver)
           -> bool {
     for i in 0..population_size-population.len() {
         if i % 64 == 0 && stop.load(AtOrd::Acquire) {
@@ -150,7 +150,7 @@ fn sample(population_size: usize, population: &mut Vec<Individual>,
 
 
 fn rand_individual(fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng,
-                   solver: &Solver)
+                   solver: &mut Solver)
                    -> (Individual) {
     loop {
         let new_sol =ranges.iter()
@@ -171,7 +171,7 @@ fn rand_individual(fo_c: &FuncObj, ranges: &Vec<Range<f64>>, rng: &mut GARng,
 fn next_generation(population_size:usize, population: &mut Vec<Individual>,
                    fo_c: &FuncObj, mut_rate: f64, crossover: f64,
                    dimension: &Range<usize>, ranges: &Vec<Range<f64>>,
-                   rng: &mut GARng, stop: &Arc<AtomicBool>, solver: &Solver)
+                   rng: &mut GARng, stop: &Arc<AtomicBool>, solver: &mut Solver)
                    -> bool {
 
     let elites = population.clone();
@@ -196,7 +196,7 @@ fn next_generation(population_size:usize, population: &mut Vec<Individual>,
 
 
 fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
-          ranges: &Vec<Range<f64>>, rng: &mut GARng, solver: &Solver)
+          ranges: &Vec<Range<f64>>, rng: &mut GARng, solver: &mut Solver)
           -> (Individual) {
     loop {
         let output_sol = ranges.iter().zip(input.solution.iter())
@@ -218,7 +218,7 @@ fn mutate(input: &Individual, fo_c: &FuncObj, mut_rate: f64,
 
 
 fn breed(parent1: &Individual, parent2: &Individual, fo_c: &FuncObj,
-         dimension: &Range<usize>, rng: &mut GARng, solver: &Solver)
+         dimension: &Range<usize>, rng: &mut GARng, solver: &mut Solver)
          -> (Individual) {
     loop {
         let mut child = parent1.clone();
