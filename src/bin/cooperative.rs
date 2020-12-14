@@ -70,18 +70,25 @@ fn print_q(q: &RwLockWriteGuard<BinaryHeap<Quple>>) {
 /// # Arguments
 /// * `f` - The function to evaluate with
 /// * `input` - The input domain
-fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, GI, Option<Vec<GI>>) {
+fn est_func(f: &FuncObj, input: &Vec<GI>) -> (Flt, Vec<GI>, GI, Option<Vec<GI>>) {
     let mid = midpoint_box(input);
     let (est_m, _) = f.call(&mid);
     let (fsx, dfsx) = f.call(&input);
-    let (fsx_u, _) = f.call(&input.iter()
-                            .map(|&si| GI::new_p(si.upper()))
-                            .collect::<Vec<_>>());
-    let (fsx_l, _) = f.call(&input.iter()
-                            .map(|&si| GI::new_p(si.lower()))
-                            .collect::<Vec<_>>());
-    let est_max = est_m.lower().max(fsx_u.lower()).max(fsx_l.lower());
-    (est_max, fsx, dfsx)
+    let upper = &input.iter()
+        .map(|&si| GI::new_p(si.upper()))
+        .collect::<Vec<_>>();
+    let (fsx_u, _) = f.call(&upper);
+    let lower = &input.iter()
+        .map(|&si| GI::new_p(si.lower()))
+        .collect::<Vec<_>>();
+    let (fsx_l, _) = f.call(&lower);
+    if est_m.lower() > fsx_u.lower() && est_m.lower() > fsx.lower() {
+        (est_m.lower(), mid, fsx, dfsx)
+    } else if fsx_u.lower() > est_m.lower() && fsx_u.lower() > fsx_l.lower() {
+        (fsx_u.lower(), upper.to_vec(), fsx, dfsx)
+    } else {
+        (fsx_l.lower(), lower.to_vec(), fsx, dfsx)
+    }
 }
 
 // Returns the upper bound, the domain where this bound occurs and a status
@@ -100,12 +107,17 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
     let mut best_x = x_0.clone();
 
     let mut iters: u32 = 0;
-    let (est_max, first_val, _) = est_func(&f, &x_0);
+    let (est_max, est_max_input, first_val, _) = est_func(&f, &x_0);
 
     q.write().unwrap().push(Quple{p: est_max, pf: 0, data: x_0.clone(),
                                   fdata: first_val, dfdata: None});
-    let mut f_best_low = est_max;
-    let mut f_best_high = est_max;
+    let mut f_best_low = NINF;
+    let mut f_best_high = NINF;
+
+    if solver.check_may(&est_max_input) {
+        f_best_low = est_max;
+        f_best_high = est_max;
+    }
 
     while q.read().unwrap().len() != 0 && !stop.load(Ordering::Acquire) {
         if max_iters != 0 && iters >= max_iters {
@@ -161,8 +173,8 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
         else {
             let (x_s, is_split) = split_box(&x);
             for sx in x_s {
-                let (est_max, fsx, dfsx) = est_func(&f, &sx);
-                if f_best_low < est_max  {
+                let (est_max, est_max_input, fsx, dfsx) = est_func(&f, &sx);
+                if f_best_low < est_max && solver.check_may(&est_max_input) {
                     f_best_low = est_max;
                     *x_bestbb.write().unwrap() = sx.clone();
                 }

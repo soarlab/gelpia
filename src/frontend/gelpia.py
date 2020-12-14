@@ -151,7 +151,7 @@ def _find_max(inputs, consts, rust_function,
             match = re.match(r"lb: ([^,]*), possible ub: ([^,]*), guaranteed ub: ([^,]*)", line)
             max_lower = match.groups(1)
             max_upper = match.groups(3)
-        elif line.startswith("debug:") or line.startswith("Stopping") or "panicked" in line or "RUST_BACKTRACE=1" in line:
+        elif line.startswith("debug:") or line.startswith("Stopping") or "panicked" in line or "RUST_BACKTRACE=1" in line or line.startswith("(stdin)"):
             pass
         elif line.startswith("SolverCalls"):
             solver_calls += int(line.split(":")[1])
@@ -189,8 +189,9 @@ def _find_max(inputs, consts, rust_function,
         domain = lst[-1]
 
     except Exception as e:
+        logging.error("Python exception {}", e)
         if max_lower is None:
-            logging.error("Unable to parse rust solver's output: '{}'", output)
+            logging.error("Unable to parse rust solver's output: <{}>", output)
             sys.exit(-1)
         raise e
 
