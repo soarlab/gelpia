@@ -116,7 +116,7 @@ impl Ord for Quple {
 // End Quple
 
 pub fn eps_tol(fx: GI, est: f64, e_f: f64, e_f_r: f64) -> bool {
-    (fx.upper() - est).abs() <= e_f_r*est +  e_f
+    (fx.upper() - fx.lower()).abs() <= e_f_r*est +  e_f
 }
 
 pub fn check_diff(odfx: Option<Vec<GI>>, x: &Vec<GI>, x_0: &Vec<GI>) -> bool {

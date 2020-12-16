@@ -134,6 +134,7 @@ def _find_max(inputs, consts, rust_function,
                        "-L" if logging.get_log_level() >= logging.HIGH else ""]
 
     assert(logger(logging.MEDIUM, "calling '{} {}'", executable, executable_args))
+    assert(logger(logging.MEDIUM, "stdout args:\n{}", stdout_args))
     answer_lines = []
     solver_calls = 0
     max_lower = None
