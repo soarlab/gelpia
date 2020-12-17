@@ -183,7 +183,6 @@ def pass_reverse_diff(exp, inputs):
 
     def _undiff(work_stack, count, exp):
         nonlocal seen_undiff
-        print("SEEN UNDIFF "*10)
         assert(exp[0] in {"floor_power2", "sym_interval", "sub2", "sub2_I"})
         seen_undiff = True
         while len(work_stack) > 0:
