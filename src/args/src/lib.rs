@@ -19,7 +19,7 @@ pub struct Args {
     pub y_error: f64,
     pub y_error_rel: f64,
     pub timeout: u32,
-    pub update_interval: u32,
+    pub update_interval: f64,
     pub iters: u32,
     pub names: Vec<String>,
     pub func_suffix: String,
@@ -121,9 +121,9 @@ pub fn process_args() -> Args {
     };
 
     let ui = if matches.opt_present("u") {
-        matches.opt_str("u").unwrap().parse::<u32>().unwrap()
+        matches.opt_str("u").unwrap().parse::<f64>().unwrap()
     } else {
-        0 as u32
+        0 as f64
     };
     
     let a_iters = if matches.opt_present("M") {

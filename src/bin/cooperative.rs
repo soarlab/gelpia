@@ -192,16 +192,17 @@ fn update(q: Arc<RwLock<BinaryHeap<Quple>>>, population: Arc<RwLock<Vec<Individu
           stop: Arc<AtomicBool>, sync: Arc<AtomicBool>,
           b1: Arc<Barrier>, b2: Arc<Barrier>,
           f: FuncObj,
-          upd_interval: u32,
+          upd_interval: f64,
           timeout: u32) {
     let start = time::get_time();
-    let one_sec = Duration::new(1, 0);
+    let one_millisec = Duration::from_millis(1);
+    let upd_duration = time::Duration::milliseconds((upd_interval*1000.0) as i64);
     'out: while !stop.load(Ordering::Acquire) {
         // Timer code...
         let last_update = time::get_time();
-        while upd_interval == 0 ||
-            (time::get_time() - last_update).num_seconds() <= upd_interval as i64 {
-                thread::sleep(one_sec);
+        while upd_interval == 0.0 ||
+            (time::get_time() - last_update) <= upd_duration {
+                thread::sleep(one_millisec);
                 if timeout > 0 &&
                     (time::get_time() - start).num_seconds() >= timeout as i64 {
                         let _ = writeln!(&mut std::io::stderr(), "Stopping early...");
