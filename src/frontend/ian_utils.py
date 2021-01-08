@@ -48,11 +48,17 @@ def run_async(cmd, stdout_lines, args_list, timeout, error_string="An Error has 
             # Send output
             proc.stdin.write("\n".join(stdout_lines)+"\n")
 
+            done = False
             while proc.poll() is None:
                 if not stdout_q.empty():
                     line = stdout_q.get()
                     output.append(line)
                     yield line
+                    if line.strip() == "}]":
+                        proc.kill()
+                        proc.wait(timeout=1)
+                        done = True
+                        break
 
                 # Kill proc if timeout exceeded
                 if term_time is not None:
@@ -60,12 +66,14 @@ def run_async(cmd, stdout_lines, args_list, timeout, error_string="An Error has 
                         print("Killed by timeout")
                         proc.kill()
                         proc.wait(timeout=1)
+                        break
                 #time.sleep(0.1)
 
             # Clear remaining buffered messages
-            while stdout_r.is_alive() or not stdout_q.empty():
-                if not stdout_q.empty():
-                    yield stdout_q.get()
+            if not done:
+                while stdout_r.is_alive() or not stdout_q.empty():
+                    if not stdout_q.empty():
+                        yield stdout_q.get()
 
             proc.wait()
             if (expected_return is not None) and (proc.returncode not in
