@@ -46,7 +46,7 @@ def output_smt2(constraints):
         if "e" not in exp[1] and "E" not in exp[1]:
             work_stack.append((True, count, [exp[1]]))
         else:
-            match = re.match(r"([0-9]\.[0-9]*)[eE]([-+]?[0-9]*)", exp[1])
+            match = re.match(r"([0-9]*\.?[0-9]*)[eE]([-+]?[0-9]*)", exp[1])
             base = match.group(1)
             expo = match.group(2).replace("+", "")
             num = ["(* ", base, " (^ 10.0 ", expo, "))"]
