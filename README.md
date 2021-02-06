@@ -21,12 +21,13 @@ runtime, allowing us to handle functions with many variables.
 
 
 ## Building
-Known to build on Ubuntu 14.04 through 18.04
+Known to build on Ubuntu 14.04 through 18.04.
+
 Currently only Linux is explicitly supported.
 
 * Requirements:
 	* Not included:
-		* python3
+		* python3 (Python 3.6 or greater)
 			* sly
 		* bison
 		* flex
