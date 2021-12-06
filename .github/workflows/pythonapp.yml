@@ -19,7 +19,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install sly
-        brew install flex bison wget
+        brew install flex bison wget coreutils
     - name: Build requirements
       run: |
         make requirements
