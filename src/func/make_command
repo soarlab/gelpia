@@ -11,7 +11,7 @@ cargo build --release
 touch src/lib_fillin.rs
 
 
-compiler_comm=`cargo build --release -v |& grep -Po 'Running \`\K[^\`]*' | sed -e 's/fillin/$1/g' | sed 's#src/lib_#${SCRIPTPATH}/src/lib_#g'`
+compiler_comm=`cargo build --release -v 2>&1 | perl -nle'print $& while m{Running \`\K[^\`]*}g' | sed -e 's/fillin/$1/g' | sed 's#src/lib_#${SCRIPTPATH}/src/lib_#g'`
 
 echo "#! /bin/bash"  >> comp_comm.sh
 echo "set -e"        >> comp_comm.sh

@@ -269,8 +269,8 @@ void isymint_g(gaol_int* a) {
 
 static double
 sub2(double x, double y) {
-  if ((0.5d * x <= y) && (y <= 2.0d * x)) {
-    return 0.0d;
+  if ((0.5 * x <= y) && (y <= 2.0 * x)) {
+    return 0.0;
   } else {
     return x - y;
   }
