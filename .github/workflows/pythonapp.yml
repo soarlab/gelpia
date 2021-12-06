@@ -18,8 +18,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install sly
-        sudo apt install flex bison wget
+        python -m pip install sly
+        brew install flex bison wget
     - name: Build requirements
       run: |
         make requirements
