@@ -65,6 +65,9 @@ def setup_requirements(git_dir):
     ld_lib_addition = path.join(git_dir, "requirements/lib")
     append_to_environ("LD_LIBRARY_PATH", ld_lib_addition)
 
+    dyld_fallback_lib_addition = path.join(git_dir, "requirements/lib")
+    append_to_environ("DYLD_FALLBACK_LIBRARY_PATH", dyld_fallback_lib_addition)
+
     lib_addition = path.join(git_dir, "requirements/lib")
     append_to_environ("LIBRARY_PATH", lib_addition)
 
@@ -78,6 +81,7 @@ def setup_requirements(git_dir):
 @run_once
 def setup_rust_env(git_dir, debug, serial=False):
     append_to_environ("LD_LIBRARY_PATH", path.join(git_dir, ".compiled"))
+    append_to_environ("DYLD_FALLBACK_LIBRARY_PATH", path.join(git_dir, ".compiled"))
 
     if debug:
         name = "debug"
@@ -88,6 +92,10 @@ def setup_rust_env(git_dir, debug, serial=False):
     append_to_environ("LD_LIBRARY_PATH",
                       path.join(git_dir, "src/func/target/{}".format(name)))
     append_to_environ("LD_LIBRARY_PATH",
+                      path.join(git_dir, "target/{}/deps".format(name)))
+    append_to_environ("DYLD_FALLBACK_LIBRARY_PATH",
+                      path.join(git_dir, "src/func/target/{}".format(name)))
+    append_to_environ("DYLD_FALLBACK_LIBRARY_PATH",
                       path.join(git_dir, "target/{}/deps".format(name)))
 
     if serial:
