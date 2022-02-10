@@ -22,7 +22,10 @@ class AsyncReader(threading.Thread):
     def run(self):
         output = "empty"
         while output != "":
-            output = self.fil.readline()
+            try:
+                output = self.fil.readline()
+            except:
+                output = ""
             self.q.put(output)
 
 

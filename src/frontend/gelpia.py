@@ -207,16 +207,17 @@ def _find_max(inputs, consts, rust_function,
 
 
 def find_max(function, epsilons, timeout, grace, update, iters, seed, debug, use_z3,
-             src_dir, executable, drop_constraints, max_lower=None, max_upper=None, solver_calls=None):
+             src_dir, executable, drop_constraints, max_lower=None, max_upper=None, domain=None, solver_calls=None):
     inputs, consts, rust_function, interp_function, smt2 = process_function(function)
     file_id = write_rust_function(rust_function, src_dir)
     if drop_constraints:
         smt2 = ""
 
-    my_max_lower, my_max_upper, domain, my_solver_calls = _find_max(inputs, consts, rust_function,
-                                                                 interp_function, smt2, file_id, epsilons, timeout,
-                                                                 grace, update, iters, seed, debug, use_z3, src_dir,
-                                                                 executable)
+    my_max_lower, my_max_upper, my_domain, my_solver_calls = _find_max(inputs, consts, rust_function,
+                                                                       interp_function, smt2, file_id, epsilons, timeout,
+                                                                       grace, update, iters, seed, debug, use_z3, src_dir,
+                                                                       executable)
+
     if max_lower is not None:
         # Note: this means you can't tell the difference between the answer [0.0, 0.0] and [Overconstrained, Overconstrained] 
         solver_calls.value = my_solver_calls
@@ -226,8 +227,10 @@ def find_max(function, epsilons, timeout, grace, update, iters, seed, debug, use
         else:
             max_lower.value = my_max_lower
             max_upper.value = my_max_upper
+            for key, value in my_domain:
+                domain[key] = value
 
-    return my_max_lower, my_max_upper, my_solver_calls
+    return my_max_lower, my_max_upper, my_domain, my_solver_calls
 
 
 def find_min(function, epsilons, timeout, grace, update, iters, seed, debug, use_z3,
@@ -246,7 +249,7 @@ def find_min(function, epsilons, timeout, grace, update, iters, seed, debug, use
 
     min_lower = -max_upper
     min_upper = -max_lower
-    return min_lower, min_upper, solver_calls
+    return min_lower, min_upper, domain, solver_calls
 
 
 def main(argv):
@@ -259,7 +262,7 @@ def main(argv):
     cooperative = setup_rust_env(GIT_DIR, args.debug)
 
     if args.mode == "min":
-        min_lower, min_upper, solver_calls = find_min(args.function,
+        min_lower, min_upper, domain, solver_calls = find_min(args.function,
                                         (args.input_epsilon,
                                          args.output_epsilon,
                                          args.output_epsilon_relative,
@@ -277,9 +280,10 @@ def main(argv):
                                         args.drop_constraints)
         print("Minimum lower bound {}".format(min_lower))
         print("Minimum upper bound {}".format(min_upper))
+        print("Minimum input {}".format(domain))
         print("Solver calls {}".format(solver_calls))
     elif args.mode == "max":
-        max_lower, max_upper, solver_calls = find_max(args.function,
+        max_lower, max_upper, domain, solver_calls = find_max(args.function,
                                         (args.input_epsilon,
                                          args.output_epsilon,
                                          args.output_epsilon_relative,
@@ -297,10 +301,13 @@ def main(argv):
                                         args.drop_constraints)
         print("Maximum lower bound {}".format(max_lower))
         print("Maximum upper bound {}".format(max_upper))
+        print("Maximum input {}".format(domain))
         print("Solver calls {}".format(solver_calls))
     else:
+        manager = Manager()
         max_lower = Value("d", float("nan"))
         max_upper = Value("d", float("nan"))
+        max_domain = manager.dict()
         max_solver_calls = Value("i", 0)
         p = Process(target=find_max, args=(args.function,
                                            (args.input_epsilon,
@@ -320,9 +327,10 @@ def main(argv):
                                            args.drop_constraints,
                                            max_lower,
                                            max_upper,
+                                           max_domain,
                                            max_solver_calls))
         p.start()
-        min_lower, min_upper, min_solver_calls = find_min(args.function,
+        min_lower, min_upper, min_domain, min_solver_calls = find_min(args.function,
                                         (args.input_epsilon,
                                          args.output_epsilon,
                                          args.output_epsilon_relative,
@@ -341,8 +349,10 @@ def main(argv):
         p.join()
         print("Minimum lower bound {}".format(min_lower))
         print("Minimum upper bound {}".format(min_upper))
+        print("Minimum input {}".format(min_domain))
         print("Maximum lower bound {}".format(max_lower.value))
         print("Maximum upper bound {}".format(max_upper.value))
+        print("Maximum input {}".format(max_domain))
         print("Solver calls {}".format(min_solver_calls + max_solver_calls.value))
     return 0
 
