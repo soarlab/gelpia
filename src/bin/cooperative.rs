@@ -33,6 +33,13 @@ use args::{process_args};
 
 extern crate time;
 
+
+fn width(x: &Vec<GI>) -> f64 {
+    let neg_inf = -1./0.;
+    x.iter().map(|i| i.width()).fold(neg_inf, f64::max)
+}
+
+
 /// Returns the guaranteed upperbound for the algorithm
 /// from the queue.
 fn get_upper_bound(q: &RwLockWriteGuard<BinaryHeap<Quple>>,
@@ -160,7 +167,7 @@ fn ibba(x_0: Vec<GI>, e_x: Flt, e_f: Flt, e_f_r: Flt,
             width_box(x, e_x) ||
             eps_tol(fx, iter_est, e_f, e_f_r) {
                 {
-                    if f_best_high < fx.upper() {
+                    if f_best_high < fx.upper() || (f_best_high == fx.upper() && width(x) < width(&best_x)){
                         f_best_high = fx.upper();
                         best_x = x.clone();
                         if logging {
@@ -428,7 +435,7 @@ fn main() {
         for i in lq.iter() {
             let ref top = *i;
             let (ub, dom) = (top.fdata.upper(), &top.data);
-            if ub > max {
+            if ub > max || (ub == max && width(dom) < width(&interval)) {
                 max = ub;
                 interval = dom.clone();
             }
