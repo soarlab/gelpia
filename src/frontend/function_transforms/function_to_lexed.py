@@ -74,6 +74,8 @@ class GelpiaLexer(Lexer):
                        "6.28318530717958623199592693708837032318115234375"),
                       ("Float",
                        "6.28318530717958712017434663721360266208648681640625")),
+        r"inf"     : (("Float", "inf"), ("Float", "inf")),
+        r"inf.0"   : (("Float", "inf"), ("Float", "inf")),
     }
 
     # Ignored input
