@@ -1,10 +1,12 @@
 
 # Set paths to point to locally built requirements first
-export PATH := ${CURDIR}/requirements/bin:${PATH}
+#export PATH := ${CURDIR}/requirements/bin:${PATH}
 export LD_LIBRARY_PATH := $(CURDIR)/requirements/lib:${LD_LIBRARY_PATH}
 export CPLUS_INCLUDE_PATH := $(CURDIR)/requirements/include:${CPLUS_INCLUDE_PATH}
 export LIBRARY_PATH := $(CURDIR)/requirements/lib:${LIBRARY_PATH}
 
+# override
+CXXFLAGS=--std=c++14
 
 all: bin/gelpia src/func/comp_comm.sh bin/build_func.sh bin/gaol_repl
 	@cargo build --release

@@ -23,7 +23,7 @@ args = { path = "src/args" }
 function = { path = "src/function" }
 getopts = "0.2.*"
 rand = "0.3.*"
-time = "0.3.*"
+time = "0.1.*"
 threadpool = "1.3.*"
 num_cpus = "0.*"
 
