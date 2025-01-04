@@ -233,7 +233,7 @@ def find_max(function, epsilons, timeout, grace, update, iters, seed, debug, use
         else:
             max_lower.value = my_max_lower
             max_upper.value = my_max_upper
-            for key, value in my_domain:
+            for key, value in my_domain.items():
                 domain[key] = value
 
     return my_max_lower, my_max_upper, my_domain, my_solver_calls
